@@ -9,6 +9,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Method
 
+##Pathways
+
+There exist four different pathays depending if the case has been hospitalised and/or survived. The date associated with the four health seeking pathways are given in the following table: 
+
+|                  | Onset | Hospitalisation | Death | Discharge | Report |
+|------------------|-------|-----------------|-------|-----------|--------|
+| $HD$             |   X   |        X        |   X   |           |    X   |
+| $H\bar{D}$       |   X   |        X        |       |     X     |    X   |
+| $\bar{HD}$       |   X   |                 |   X   |           |    X   |
+| $\bar{H}\bar{D}$ |   X   |                 |       |           |    X   |
+
 ## Notations
 
 For each individual $i$, we denote $y_i^k$ $(k=1, \ldots, n_{g_i})$ the observed data for that individual. 
@@ -56,14 +67,5 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-##Pathways
 
-There exist four different pathays depending if the case has been hospitalised and/or survived. The date associated with the four health seeking pathways are given in the following table: 
-
-|                  | Onset | Hospitalisation | Death | Discharge | Report |
-|------------------|-------|-----------------|-------|-----------|--------|
-| $HD$             |   X   |        X        |   X   |           |    X   |
-| $H\bar{D}$       |   X   |        X        |       |     X     |    X   |
-| $\bar{HD}$       |   X   |                 |   X   |           |    X   |
-| $\bar{H}\bar{D}$ |   X   |                 |       |           |    X   |
 

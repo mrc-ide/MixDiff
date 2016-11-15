@@ -22,15 +22,17 @@ dat_by_group <- lapply(tmp, function(x) x[,colSums(is.na(x))!=nrow(x)] )
 
 n_dates <- sapply(dat_by_group, ncol )
 
+n_groups <- length(n_dates)
+
 ###############################################
-### define parameters ###
+### define parameters to be used for initialisation of the chain ###
 ###############################################
 
 ### mean and std of distribution of various delays, by group
 mu <- list()
-for(i in 1:length(n_dates))
+for(g in 1:n_groups) 
 {
-  mu[[i]] <- rep(1.0,n_dates[i]-1)
+  mu[[g]] <- rep(1.0,n_dates[g]-1)
 }
 names(mu) <- names(n_dates)
 sigma <- mu
@@ -45,34 +47,34 @@ theta <- list(zeta = 0.05, # zeta is the probability for a date to be misrecorde
 
 
 ###############################################
-### define augmented data ###
+### define augmented data to be used for initialisation of the chain ###
 ###############################################
 
 ### D contains the unobserved true dates ###
 
 D <- list() ######### RICH MAYBE IMPROVE THIS BIT OF SHIT CODE ########
-for(i in 1:length(n_dates))
+for(g in 1:n_groups) 
 {
-  D[[i]] <- dat_by_group[[i]]
-  for(e in 1:nrow(D[[i]]))
+  D[[g]] <- dat_by_group[[g]]
+  for(e in 1:nrow(D[[g]]))
   {
-    if(any(is.na(D[[i]][e,])))
+    if(any(is.na(D[[g]][e,])))
     {
-      tmp <- which(is.na(D[[i]][e,]))
+      tmp <- which(is.na(D[[g]][e,]))
       if(1 %in% tmp) # dealing with missing values ahead of the series of dates
       {
-        min_non_NA_value <- min(which(!is.na(D[[i]][e,])))-1
+        min_non_NA_value <- min(which(!is.na(D[[g]][e,])))-1
         for(f in min_non_NA_value:1)
         {
-          D[[i]][e,f] <- D[[i]][e,f+1]
+          D[[g]][e,f] <- D[[g]][e,f+1]
         }
       }
-      if(any(is.na(D[[i]][e,]))) # dealing with remaining missing values if any
+      if(any(is.na(D[[g]][e,]))) # dealing with remaining missing values if any
       {
-        tmp <- which(is.na(D[[i]][e,]))
+        tmp <- which(is.na(D[[g]][e,]))
         for(f in tmp)
         {
-          D[[i]][e,f] <- D[[i]][e,f-1]
+          D[[g]][e,f] <- D[[g]][e,f-1]
         }
       }
     }
@@ -86,24 +88,31 @@ names(D) <- names(dat_by_group)
 ### E = 1 if date is observed and unexact i.e. dat_by_group not necessarily = D ###
 
 E <- list()
-for(i in 1:length(n_dates))
+for(g in 1:n_groups) 
 {
-  E[[i]] <- as.data.frame(matrix(NA,nrow(dat_by_group[[i]]),ncol(dat_by_group[[i]])))
-  for(j in 1:ncol(dat_by_group[[i]]))
+  E[[g]] <- as.data.frame(matrix(NA,nrow(dat_by_group[[g]]),ncol(dat_by_group[[g]])))
+  for(j in 1:ncol(dat_by_group[[g]]))
   {
-    E[[i]][,j] <- rbinom(nrow(dat_by_group[[i]]), 1, theta$zeta)
-    E[[i]][is.na(dat_by_group[[i]][,j]),j] <- -1
+    E[[g]][,j] <- rbinom(nrow(dat_by_group[[g]]), 1, theta$zeta)
+    E[[g]][is.na(dat_by_group[[g]][,j]),j] <- -1
   }
-  names(E[[i]]) <- names(dat_by_group[[i]])
+  names(E[[g]]) <- names(dat_by_group[[g]])
 }
 names(E) <- names(dat_by_group)
 
-### Note that at the moment E can be 1 i.e. there is an error, yet D=dat_by_group i.e. in effect the error is null
-### TO DO: TRY AND CHANGE SO THAT E=0 <-> dat_by_group=D
+### now update D to be different to dat_by_group if E = 1
+
+for(g in 1:n_groups) 
+{
+  with_error <- which(E[[g]]==1, arr.ind =TRUE)
+  for(ii in 1: nrow(with_error))
+  {
+    D[[g]][with_error[ii,1], with_error[ii,2]] <- dat_by_group[[g]][with_error[ii,1], with_error[ii,2]] + sample(c(-1,1), 1)
+  }
+}
 
 aug_dat <- list(D = D,
                 E = E)
-
 
 ###############################################
 ### likelihood function ###
@@ -118,10 +127,10 @@ LL_error_term<-function(E,zeta,log=T)
 {
   number_of_errors<-0
   number_of_dates<-0
-  for(i in 1:length(E))
+  for(g in 1:length(E))
   {
-    number_of_errors<-number_of_errors+sum(E[[i]]==1)
-    number_of_dates<-number_of_dates+prod(dim(E[[i]]))
+    number_of_errors<-number_of_errors+sum(E[[g]]==1)
+    number_of_dates<-number_of_dates+prod(dim(E[[g]]))
   }
   result<-dbinom(number_of_errors,number_of_dates,zeta,log=log)
 

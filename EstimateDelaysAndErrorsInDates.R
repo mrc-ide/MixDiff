@@ -26,6 +26,7 @@ n_dates <- sapply(dat_by_group, ncol )
 ### define parameters ###
 ###############################################
 
+### mean and std of distribution of various delays, by group
 mu <- list()
 for(i in 1:length(n_dates))
 {

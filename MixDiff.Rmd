@@ -40,9 +40,9 @@ $$P(y_i^k|D_i^k,E_i^k=0)=\delta_{y_i^k,D_i^k}$$
 $$P(y_i^k|D_i^k,E_i^k=1)=h_{\theta_h}\left(D_i^k\right)$$
 $$P(y_i^k|D_i^k,E_i^k=-1)=1$$
 
-Here we assume that any date between $T$ and $T_{0}$ are equally likely to be recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$. 
+Here we assume that any date between $T$ and $T_{0}$ are equally likely to be recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$.
 
-NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as error on onset date > error on death date
+NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as error on onset date > error on death date. Also think about the space of possible errors - if wider than h is smaller and moves towards E=1 might be difficult to achieve. What happens if T_0 is ridiculously early or T ridiculously late in the dataset - this will affect the likelihood. 
 
 ### Difference level
 

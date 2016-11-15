@@ -118,12 +118,52 @@ aug_dat <- list(D = D,
 ### likelihood function ###
 ###############################################
 
-LL_observation_term<-function(aug_dat, theta, obs_dat, log=TRUE)
+find_range <- function(obs_dat)
 {
-  return(1)
+  min_date <- min(obs_dat[[1]][,1], na.rm=TRUE)
+  max_date <- max(obs_dat[[1]][,1], na.rm=TRUE)
+  for(g in 1:n_groups)
+  {
+    for(j in 1:ncol(obs_dat[[g]]))
+    {
+      min_date_tmp <- min(obs_dat[[g]][,j], na.rm=TRUE)
+      min_date <- min(c(min_date, min_date_tmp), na.rm=TRUE)
+      
+      max_date_tmp <- max(obs_dat[[g]][,j], na.rm=TRUE)
+      max_date <- max(c(max_date, max_date_tmp), na.rm=TRUE)
+    }
+  }
+  return(c(min_date, max_date))
 }
 
-LL_error_term<-function(aug_dat, theta, obs_dat, log=TRUE)
+LL_observation_term<-function(aug_dat, theta, obs_dat)
+{
+  LL_no_error <- 0
+  LL_error_or_missing <- 0
+  range_dates <- find_range(obs_dat)
+  for(g in 1:n_groups)
+  {
+    ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
+    no_error <- aug_dat$E[[g]]==0
+    LL_no_error <- LL_no_error + sum( log(aug_dat$D[[g]][no_error] == obs_dat[[g]][no_error]) )
+    ### if E=1, what is the relationship between true date D and observed date y
+    # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
+    ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
+    error_or_missing <- (aug_dat$E[[g]]==-1 | aug_dat$E[[g]]==1)
+    ### K is the relative probability of observing a given error, conditional on presence of error
+    # for now, K is given as 1/n, where n is the number of dates in the range_dates
+    # could use something different if we define the space of possible errors differently. 
+    K <- (1/as.numeric(diff(range_dates))) ### think about impact of this choice
+    LL_error_or_missing <- LL_error_or_missing + sum( log( K* ((aug_dat$D[[g]][error_or_missing] >= range_dates[1]) & (aug_dat$D[[g]][error_or_missing] <= range_dates[2])) ) )
+  }
+  LL <- LL_no_error + LL_error_or_missing
+  if(is.infinite(LL)) LL <- -100000 # arbitrarily small number to avoid -Inf
+  
+  return(LL)
+}
+# LL_observation_term(aug_dat, theta, obs_dat)
+
+LL_error_term<-function(aug_dat, theta, obs_dat)
 {
   number_of_errors<-0
   number_of_recorded_dates<-0
@@ -132,11 +172,11 @@ LL_error_term<-function(aug_dat, theta, obs_dat, log=TRUE)
     number_of_errors<-number_of_errors+sum(aug_dat$E[[g]]==1)
     number_of_recorded_dates<-number_of_recorded_dates+sum(aug_dat$E[[g]] != -1)
   }
-  result<-dbinom(number_of_errors,number_of_recorded_dates,theta$zeta,log=log)
-
+  result<-dbinom(number_of_errors,number_of_recorded_dates,theta$zeta,log=TRUE)
+  
   return(result)
 }
-# LL_error_term(aug_dat, theta, obs_dat, log=TRUE)
+# LL_error_term(aug_dat, theta, obs_dat)
 
 LL_delays_term<-function()
 {

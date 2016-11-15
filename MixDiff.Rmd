@@ -7,6 +7,35 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Method
+
+## Notations
+
+For each individual $i$, we denote $y_i^k$ $(k=1, \ldots, n_{g_i})$ the observed data for that individual. 
+The number of observed data $n_{g_i}$ can depend on characteristics of the individual, defined by a grouping so that individual $i$ is in group $g_i$. 
+
+Here, we consider observed data as being epidemiologically relevant dates, which depend on the path of the individual (see table XXXXX): if the individual was hospitalised and died ($g_i=HD$) or was hospitalised and did not die ($g_i=H\bar{D}$), $n_{g_i}=4$; if the individual was not hospitalised and died ($g_i=\bar{H}D$), $n_{g_i}=3$; if the individual was not hospitalised and died ($g_i=\bar{H}\bar{D}$), $n_{g_i}=2$.
+
+We assume that each data (here date) can have been recorded with error, or can be missing in the observations. Hence we introduce augmented data $D_i^k$ $(k=1, \ldots, n_{g_i})$, where $D_i^k$ is the true data corresponding to the observed data $y_i^k$. 
+
+## Likelihood
+
+### Observation level
+
+This level describes the link between the observed and the tru data: 
+$P\left(y_i^k|D_i^k\right) = h_{\theta_h}\left(D_i^k\right)$.
+
+NOTE: discuss what h_{\theta_h} should be; could include conditions such as error on onset date > error on death date
+
+### Difference level
+
+This level describes the difference between two observations: 
+for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}\right) = f_{k-1, k}^{g_i}\left(D_i^{k-1}\right)$. 
+
+We use discretised gamma distributions for $f_{k-1, k}^{g_i}$. 
+
+<!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
+
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.

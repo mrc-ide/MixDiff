@@ -54,7 +54,6 @@ We use discretised gamma distributions for $f_{k-1, k}^{g_i}$.
 
 <!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
 
-=======
 ### Full posterior distribution
 
 The joint posteior distribution of parameters and augmented data given observed data is:

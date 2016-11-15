@@ -35,6 +35,7 @@ for(i in 1:length(n_dates))
 names(mu) <- names(n_dates)
 sigma <- mu
 
+### list of all parameters
 theta <- list(zeta = 0.05, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
               # TODO:
               # could consider having zeta being type of date specific (e.g. more error on onset than death dates),

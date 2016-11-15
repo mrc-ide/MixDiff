@@ -14,7 +14,7 @@ dat<-readRDS("Dat.rds")
 
 N <- nrow(dat) # Number of cases
 
-
+colDates <- grep("Date", names(dat))
 tmp <- split(dat[colDates],dat$Path)
 # splitting dataset according to Path and removing NA date columns in each of these
 # - should only remain dates that are relevant for each group
@@ -26,6 +26,7 @@ n_dates <- sapply(dat_by_group, ncol )
 ### define parameters ###
 ###############################################
 
+### mean and std of distribution of various delays, by group
 mu <- list()
 for(i in 1:length(n_dates))
 {
@@ -34,6 +35,7 @@ for(i in 1:length(n_dates))
 names(mu) <- names(n_dates)
 sigma <- mu
 
+### list of all parameters
 theta <- list(zeta = 0.05, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
               # TODO:
               # could consider having zeta being type of date specific (e.g. more error on onset than death dates),
@@ -76,6 +78,7 @@ for(i in 1:length(n_dates))
     }
   }
 }
+names(D) <- names(dat_by_group)
 
 ### E contains an indicator of whether the observed date is the true one or not: ###
 ### E = -1 if date is unobserved i.e. dat_by_group = -1 ###
@@ -93,6 +96,7 @@ for(i in 1:length(n_dates))
   }
   names(E[[i]]) <- names(dat_by_group[[i]])
 }
+names(E) <- names(dat_by_group)
 
 ### Note that at the moment E can be 1 i.e. there is an error, yet D=dat_by_group i.e. in effect the error is null
 ### TO DO: TRY AND CHANGE SO THAT E=0 <-> dat_by_group=D

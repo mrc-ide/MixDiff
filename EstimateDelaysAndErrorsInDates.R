@@ -4,6 +4,8 @@
 ###############################################
 ###############################################
 
+library(EpiEstim) # to use DiscrSI which does the discretised Gamma
+
 ###############################################
 ### data ###
 ###############################################
@@ -32,7 +34,7 @@ n_groups <- length(n_dates)
 mu <- list()
 for(g in 1:n_groups) 
 {
-  mu[[g]] <- rep(1.0,n_dates[g]-1)
+  mu[[g]] <- rep(15.0,n_dates[g]-1)
 }
 names(mu) <- names(n_dates)
 sigma <- mu
@@ -178,8 +180,22 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 }
 # LL_error_term(aug_dat, theta, obs_dat)
 
-LL_delays_term<-function()
+DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
 {
+  if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu, sigma))
+  return(res)
+}
+
+LL_delays_term<-function(aug_dat, theta, obs_dat)
+{
+  LL <- 0
+  for(g in 1:n_groups)
+  {
+    for(j in 2:ncol(aug_dat$D[[g]]))
+    {
+      LL <- DiscrSI_vectorised(aug_dat$D[[g]][,j] - aug_dat$D[[g]][,j-1] + 1, theta$mu[[g]][j-1], theta$sigma[[g]][j-1], log=TRUE) 
+    }
+  }
   return(1)
 }
 

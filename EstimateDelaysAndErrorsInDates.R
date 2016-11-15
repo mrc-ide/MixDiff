@@ -8,19 +8,19 @@
 ### data ###
 ###############################################
 
-dat<-readRDS("Dat.rds")
+raw_dat<-readRDS("Dat.rds")
 
-# head(dat)
+# head(raw_dat)
 
-N <- nrow(dat) # Number of cases
+N <- nrow(raw_dat) # Number of cases
 
-colDates <- grep("Date", names(dat))
-tmp <- split(dat[colDates],dat$Path)
+colDates <- grep("Date", names(raw_dat))
+tmp <- split(raw_dat[colDates],raw_dat$Path)
 # splitting dataset according to Path and removing NA date columns in each of these
 # - should only remain dates that are relevant for each group
-dat_by_group <- lapply(tmp, function(x) x[,colSums(is.na(x))!=nrow(x)] )
+obs_dat <- lapply(tmp, function(x) x[,colSums(is.na(x))!=nrow(x)] )
 
-n_dates <- sapply(dat_by_group, ncol )
+n_dates <- sapply(obs_dat, ncol )
 
 n_groups <- length(n_dates)
 
@@ -55,7 +55,7 @@ theta <- list(zeta = 0.05, # zeta is the probability for a date to be misrecorde
 D <- list() ######### RICH MAYBE IMPROVE THIS BIT OF SHIT CODE ########
 for(g in 1:n_groups) 
 {
-  D[[g]] <- dat_by_group[[g]]
+  D[[g]] <- obs_dat[[g]]
   for(e in 1:nrow(D[[g]]))
   {
     if(any(is.na(D[[g]][e,])))
@@ -80,34 +80,34 @@ for(g in 1:n_groups)
     }
   }
 }
-names(D) <- names(dat_by_group)
+names(D) <- names(obs_dat)
 
 ### E contains an indicator of whether the observed date is the true one or not: ###
-### E = -1 if date is unobserved i.e. dat_by_group = -1 ###
-### E = 0 if date is observed and exact i.e. dat_by_group = D ###
-### E = 1 if date is observed and unexact i.e. dat_by_group not necessarily = D ###
+### E = -1 if date is unobserved i.e. obs_dat = -1 ###
+### E = 0 if date is observed and exact i.e. obs_dat = D ###
+### E = 1 if date is observed and unexact i.e. obs_dat not necessarily = D ###
 
 E <- list()
 for(g in 1:n_groups) 
 {
-  E[[g]] <- as.data.frame(matrix(NA,nrow(dat_by_group[[g]]),ncol(dat_by_group[[g]])))
-  for(j in 1:ncol(dat_by_group[[g]]))
+  E[[g]] <- as.data.frame(matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]])))
+  for(j in 1:ncol(obs_dat[[g]]))
   {
-    E[[g]][,j] <- rbinom(nrow(dat_by_group[[g]]), 1, theta$zeta)
-    E[[g]][is.na(dat_by_group[[g]][,j]),j] <- -1
+    E[[g]][,j] <- rbinom(nrow(obs_dat[[g]]), 1, theta$zeta)
+    E[[g]][is.na(obs_dat[[g]][,j]),j] <- -1
   }
-  names(E[[g]]) <- names(dat_by_group[[g]])
+  names(E[[g]]) <- names(obs_dat[[g]])
 }
-names(E) <- names(dat_by_group)
+names(E) <- names(obs_dat)
 
-### now update D to be different to dat_by_group if E = 1
+### now update D to be different to obs_dat if E = 1
 
 for(g in 1:n_groups) 
 {
   with_error <- which(E[[g]]==1, arr.ind =TRUE)
   for(ii in 1: nrow(with_error))
   {
-    D[[g]][with_error[ii,1], with_error[ii,2]] <- dat_by_group[[g]][with_error[ii,1], with_error[ii,2]] + sample(c(-1,1), 1)
+    D[[g]][with_error[ii,1], with_error[ii,2]] <- obs_dat[[g]][with_error[ii,1], with_error[ii,2]] + sample(c(-1,1), 1)
   }
 }
 
@@ -118,24 +118,25 @@ aug_dat <- list(D = D,
 ### likelihood function ###
 ###############################################
 
-LL_observation_term<-function()
+LL_observation_term<-function(aug_dat, theta, obs_dat, log=TRUE)
 {
   return(1)
 }
 
-LL_error_term<-function(E,zeta,log=T)
+LL_error_term<-function(aug_dat, theta, obs_dat, log=TRUE)
 {
   number_of_errors<-0
-  number_of_dates<-0
-  for(g in 1:length(E))
+  number_of_recorded_dates<-0
+  for(g in 1:n_groups)
   {
-    number_of_errors<-number_of_errors+sum(E[[g]]==1)
-    number_of_dates<-number_of_dates+prod(dim(E[[g]]))
+    number_of_errors<-number_of_errors+sum(aug_dat$E[[g]]==1)
+    number_of_recorded_dates<-number_of_recorded_dates+sum(aug_dat$E[[g]] != -1)
   }
-  result<-dbinom(number_of_errors,number_of_dates,zeta,log=log)
+  result<-dbinom(number_of_errors,number_of_recorded_dates,theta$zeta,log=log)
 
   return(result)
 }
+# LL_error_term(aug_dat, theta, obs_dat, log=TRUE)
 
 LL_delays_term<-function()
 {

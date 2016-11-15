@@ -1,45 +1,3 @@
-load("~/Dropbox/Ebola/DATA (WHO, population, demo)/Ebola Data/WHO Ebola Line List_2015-09-28/dbCombined_cleanv42_2015-09-28.Rdata")
-
-### dates we're interested in
-colDates <- c("DateOnset", "DateHospitalCurrentAdmit", "DateDeath", "DateDischargeHosp", "DateReport")
-
-### keep only confirmed cases ###
-dat <- dat[dat$EpiCaseDef %in% 1,] ##  is Confirmed
-
-### remove those with missing hospitalisation status of final status ###
-dat <- dat[(!is.na(dat$HospitalizedEver)) & !(is.na(dat$FinalStatus)),]
-
-### checking that individuals who have a recorded date of hospitalisation or discharge are recorded as hospitalised
-table(dat$HospitalizedEver,!is.na(dat$DateHospitalCurrentAdmit) | !is.na(dat$DateDischargeHosp) )
-
-### checking that individuals who have a recorded date of death have final outcome death
-table(dat$FinalStatus,!is.na(dat$DateDeath) )
-dat$FinalStatus[!is.na(dat$DateDeath)] <- "Dead"
-
-### classification of people according to their hospitalisation status and final outcome
-table(dat$HospitalizedEver, dat$FinalStatus, useNA="ifany")
-dat$Path <- paste0("Hosp",dat$HospitalizedEver,"-",dat$FinalStatus)
-
-### dates we are interested in ###
-# date of exposure ### could use dat$ContactDateStart1 if only one exposure reported and ContactDateStart1 = ContactDateEnd1??? OR COULD INFER DATE OF EXPOSURE AS WELL AMONGST SEVERAL / UNCERTAIN DATES
-head(dat$DateOnset) # date of onset
-head(dat$DateHospitalCurrentAdmit) # date of hospitalisation
-head(dat$DateDeath) # date of death
-head(dat$DateDischargeHosp) # date of discharge
-head(dat$DateReport) # date of report
-
-### creating the dataset to use ###
-dat <- dat[,c("GlobalRecordId","DateOnset","DateHospitalCurrentAdmit","DateDeath","DateDischargeHosp","DateReport","Path")]
-
-### remove individuals with no dates at all among the dates we're interested in ###
-dat <- dat[!(rowSums(!is.na(dat[,colDates])) == 0),]
-
-### making sure that individuals who are hospitalised and die have NA in their discharge date (not interested in the delay from discharge to death which doesn't really make sense) ###
-dat$DateDischargeHosp[dat$Path == "HospYes-Dead"] <- NA # note we should never really looked at these anyway
-
-### make sure date columns are in date format ###
-for(e in colDates) dat[,e] <- as.Date(dat[,e])
-
 ###############################################
 ###############################################
 ### parameter estimation using MCMC ###
@@ -50,7 +8,7 @@ for(e in colDates) dat[,e] <- as.Date(dat[,e])
 ### data ###
 ###############################################
 
-dat<-readRDS("~/Desktop/Dat.rds")
+dat<-readRDS("Dat.rds")
 
 # head(dat)
 

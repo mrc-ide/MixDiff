@@ -14,7 +14,7 @@ dat<-readRDS("Dat.rds")
 
 N <- nrow(dat) # Number of cases
 
-
+colDates <- grep("Date", names(dat))
 tmp <- split(dat[colDates],dat$Path)
 # splitting dataset according to Path and removing NA date columns in each of these
 # - should only remain dates that are relevant for each group

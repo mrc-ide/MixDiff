@@ -233,6 +233,10 @@ LL_delays_term<-function(aug_dat, theta, obs_dat)
 
 ### TO WRITE
 
+# zeta ~ beta(low mean) # need a very informative prior
+
+# mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
+
 ###############################################
 ### posteriors ###
 ###############################################
@@ -254,7 +258,7 @@ LL_delays_term<-function(aug_dat, theta, obs_dat)
 # then accept/reject based on posterior values
 # this is symmetrical so no correction needed
 
-## alpha, beta ##
+## alpha, beta ## --> propose to reparameterise to mean and CV
 # move with a lognormal proposal, with adequate correction
 
 ## zeta ##
@@ -265,5 +269,24 @@ LL_delays_term<-function(aug_dat, theta, obs_dat)
 ###############################################
 
 ### TO WRITE
+
+###############################################
+### TO DO ###
+###############################################
+
+# Anne: 
+# find a good starting point for aug_data
+# fill in bits of codes already existing to various places
+
+# Marc: 
+# finish writing
+# think about the 1/(T-T0)
+
+# Future ideas: 
+# simulation study
+# other datasets - Marc to talk to John? 
+# outputs: proportion erroneous data - ... - nice graphs
+
+
 
 

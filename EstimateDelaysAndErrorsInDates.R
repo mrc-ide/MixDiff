@@ -78,6 +78,7 @@ for(i in 1:length(n_dates))
     }
   }
 }
+names(D) <- names(dat_by_group)
 
 ### E contains an indicator of whether the observed date is the true one or not: ###
 ### E = -1 if date is unobserved i.e. dat_by_group = -1 ###
@@ -95,6 +96,7 @@ for(i in 1:length(n_dates))
   }
   names(E[[i]]) <- names(dat_by_group[[i]])
 }
+names(E) <- names(dat_by_group)
 
 ### Note that at the moment E can be 1 i.e. there is an error, yet D=dat_by_group i.e. in effect the error is null
 ### TO DO: TRY AND CHANGE SO THAT E=0 <-> dat_by_group=D

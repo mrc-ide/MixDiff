@@ -7,6 +7,12 @@
 library(EpiEstim) # to use DiscrSI which does the discretised Gamma
 
 ###############################################
+### index_dates says which combinations of dates to use for the delays ###
+###############################################
+
+index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
+
+###############################################
 ### data ###
 ###############################################
 
@@ -65,10 +71,10 @@ for(g in 1:n_groups)
       tmp <- which(is.na(D[[g]][e,]))
       if(1 %in% tmp) # dealing with missing values ahead of the series of dates
       {
-        min_non_NA_value <- min(which(!is.na(D[[g]][e,])))-1
-        for(f in min_non_NA_value:1)
+        min_non_NA_value <- min(which(!is.na(D[[g]][e,])))
+        for(f in (min_non_NA_value-1):1)
         {
-          D[[g]][e,f] <- D[[g]][e,f+1]
+          D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][1,])][1]] <- D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][1,])][2]]
         }
       }
       if(any(is.na(D[[g]][e,]))) # dealing with remaining missing values if any
@@ -76,7 +82,7 @@ for(g in 1:n_groups)
         tmp <- which(is.na(D[[g]][e,]))
         for(f in tmp)
         {
-          D[[g]][e,f] <- D[[g]][e,f-1]
+          D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][2,])][2]] <- D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][2,])][1]]
         }
       }
     }
@@ -115,6 +121,25 @@ for(g in 1:n_groups)
 
 aug_dat <- list(D = D,
                 E = E)
+
+
+###############################################
+### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
+###############################################
+
+compute_delta <- function(aug_dat, index = index_dates )
+{
+  Delta <- list()
+  for(g in 1:n_groups)
+  {
+    Delta[[g]] <- matrix(NA, nrow(aug_dat$D[[g]]), ncol(aug_dat$D[[g]])-1)
+    for(j in 2: ncol(aug_dat$D[[g]]))
+    {
+      Delta[[g]][,j-1] <- aug_dat$D[[g]][,index[[g]][,j-1][2]] - aug_dat$D[[g]][,index[[g]][,j-1][1]]
+    }
+  }
+  return(Delta)
+}
 
 ###############################################
 ### likelihood function ###
@@ -188,14 +213,57 @@ DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
 
 LL_delays_term<-function(aug_dat, theta, obs_dat)
 {
+  Delta <- compute_delta(aug_dat)
   LL <- 0
   for(g in 1:n_groups)
   {
     for(j in 2:ncol(aug_dat$D[[g]]))
     {
-      LL <- DiscrSI_vectorised(aug_dat$D[[g]][,j] - aug_dat$D[[g]][,j-1] + 1, theta$mu[[g]][j-1], theta$sigma[[g]][j-1], log=TRUE) 
+      LL_vect_this_group <- DiscrSI_vectorised(Delta[[g]] + 1, theta$mu[[g]][j-1], theta$sigma[[g]][j-1], log=TRUE)
+      LL <- LL + sum( LL_vect_this_group )
     }
   }
-  return(1)
+  return(LL)
 }
+# LL_delays_term(aug_dat, theta, obs_dat)
+
+###############################################
+### priors ###
+###############################################
+
+### TO WRITE
+
+###############################################
+### posteriors ###
+###############################################
+
+### TO WRITE
+
+###############################################
+### move functions ###
+###############################################
+
+### TO WRITE
+
+### plan: 
+
+## D_i ##
+# probability of moving or not
+# moves by +/-1 random walk, and E_i is adjusted accordingly , 
+# i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
+# then accept/reject based on posterior values
+# this is symmetrical so no correction needed
+
+## alpha, beta ##
+# move with a lognormal proposal, with adequate correction
+
+## zeta ##
+# move with a truncated (<1) lognormal proposal, with adequate correction
+
+###############################################
+### MCMC ###
+###############################################
+
+### TO WRITE
+
 

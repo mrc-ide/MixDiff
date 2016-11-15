@@ -41,11 +41,26 @@ NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as er
 ### Difference level
 
 This level describes the difference between two observations: 
-for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}\right) = f_{k-1, k}^{g_i}\left(D_i^{k-1}\right)$. 
+for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}, g_i\right) = f_{k-1, k}^{g_i}\left(D_i^{k-1}\right)$. 
 
 We use discretised gamma distributions for $f_{k-1, k}^{g_i}$. 
 
 <!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
+
+### Full posterior distribution
+
+The joint posteior distribution of parameters and augmented data given observed data is:
+
+$\begin{aligned}
+P\left(\zeta, \alpha^{k, g_i}, \beta^{k, g_i}, D_i^k, E_i^k | g_i, y_i^k\right) \propto& P\left(\zeta, \alpha, \beta, D, E, g, y\right) \\
+  \propto& P\left(y | D, E, \zeta, \alpha, \beta, g\right) P\left(E | \zeta, D, \alpha, \beta, g\right) P\left(D | \zeta, D, \alpha, \beta, g\right) P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)\\
+    \propto& P\left(y | D, E\right) P\left(E | \zeta\right) P\left(D | \zeta, D, \alpha, \beta, g\right)P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)
+\end{aligned}$
+
+where $P\left(D | \zeta, D, \alpha, \beta, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \alpha, \beta \right)$ (assuming a uniform prior for $D_i^1$). 
+
+
+
 
 ## R Markdown
 

@@ -40,19 +40,16 @@ $$P(y_i^k|D_i^k,E_i^k=0)=\delta_{y_i^k,D_i^k}$$
 $$P(y_i^k|D_i^k,E_i^k=1)=h_{\theta_h}\left(D_i^k\right)$$
 $$P(y_i^k|D_i^k,E_i^k=-1)=1$$
 
-Here we assume that any date between $T$ and $T_{0}$ are equally likely to be recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$.
-
-This level describes the link between the observed and the true data: 
-$P\left(y_i^k|D_i^k\right) = $.
+Here we assume that any date between $T$ and $T_{0}$ are equally likely to be recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$. 
 
 NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as error on onset date > error on death date
 
 ### Difference level
 
 This level describes the difference between two observations: 
-for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}, g_i\right) = f_{k-1, k}^{g_i}\left(D_i^{k-1}\right)$. 
+for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}, g_i\right) = f_{k-1, k}^{g_i}\left(D_i^{k}-D_i^{k-1}\right)$. 
 
-We use discretised gamma distributions for $f_{k-1, k}^{g_i}$. 
+We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with shape and scale being noted respectively $\alpha_{k-1, k}^{g_i}$ and $\beta_{k-1, k}^{g_i}$. 
 
 <!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
 
@@ -61,12 +58,12 @@ We use discretised gamma distributions for $f_{k-1, k}^{g_i}$.
 The joint posteior distribution of parameters and augmented data given observed data is:
 
 $\begin{aligned}
-P\left(\zeta, \alpha^{k, g_i}, \beta^{k, g_i}, D_i^k, E_i^k | g_i, y_i^k\right) \propto& P\left(\zeta, \alpha, \beta, D, E, g, y\right) \\
-  \propto& P\left(y | D, E, \zeta, \alpha, \beta, g\right) P\left(E | \zeta, D, \alpha, \beta, g\right) P\left(D | \zeta, D, \alpha, \beta, g\right) P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)\\
-    \propto& P\left(y | D, E\right) P\left(E | \zeta\right) P\left(D | \zeta, D, \alpha, \beta, g\right)P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)
+P\left(\zeta, \alpha, \beta, D, E | g, y\right) \propto& P\left(\zeta, \alpha, \beta, D, E, g, y\right) \\
+  \propto& P\left(y | D, E, \zeta, \alpha, \beta, g\right) P\left(E | \zeta, D, \alpha, \beta, g\right) P\left(D | \zeta, \alpha, \beta, g\right) P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)\\
+    \propto& P\left(y | D, E\right) P\left(E | \zeta\right) P\left(D | \zeta, \alpha, \beta, g\right)P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)
 \end{aligned}$
 
-where $P\left(D | \zeta, D, \alpha, \beta, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \alpha, \beta \right)$ (assuming a uniform prior for $D_i^1$). 
+where $P\left(D | \zeta, \alpha, \beta, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \alpha, \beta, g \right)$ (assuming a uniform prior for $D_i^1$). 
 
 
 

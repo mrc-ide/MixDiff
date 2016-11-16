@@ -303,7 +303,12 @@ lprior_total <- function(theta, mean_prob_error=0.2, var_prob_error=0.01, mean_m
 ### posteriors ###
 ###############################################
 
-### TO WRITE
+lposterior_total <- function(aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100)
+{
+  res <- LL_total(aug_dat, theta, obs_dat) + lprior_total(theta, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  return(res)
+}
+#lposterior_total(aug_dat, theta, obs_dat)
 
 ###############################################
 ### move functions ###

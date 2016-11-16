@@ -227,6 +227,15 @@ LL_delays_term<-function(aug_dat, theta, obs_dat)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)
 
+LL_total <- function(aug_dat, theta, obs_dat)
+{
+  res <- LL_observation_term(aug_dat, theta, obs_dat) + 
+            LL_error_term(aug_dat, theta, obs_dat) + 
+            LL_delays_term(aug_dat, theta, obs_dat)
+  return(res)
+}
+# LL_total(aug_dat, theta, obs_dat)
+
 ###############################################
 ### priors ###
 ###############################################

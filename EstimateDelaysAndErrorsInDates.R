@@ -231,11 +231,64 @@ LL_delays_term<-function(aug_dat, theta, obs_dat)
 ### priors ###
 ###############################################
 
-### TO WRITE
+find_params_beta <- function(mean, var) # function to determine parameters of the beta distribution corresponding to a given mean and variance
+{
+  # for a beta distribution:
+  # mean = shape1/(shape1+shape2) 
+  # var = shape1*shape2/((shape1+shape2)^2*(shape1+shape2+1)) 
+  # after solving we find that
+  shape1 <- mean^2*(1-mean)/var - mean
+  shape2 <- shape1*(1/mean-1)
+  return(c(shape1, shape2))
+}
+# test if works: 
+# param_beta <- find_params_beta(0.1, 0.05)
+# sample_beta <- rbeta(1000, param_beta[1], param_beta[2])
+# mean(sample_beta)
+# var(sample_beta)
 
 # zeta ~ beta(low mean) # need a very informative prior
+lprior_prob_error <- function(theta, mean=0.2, var=0.01) 
+{
+  param_beta <- find_params_beta(mean, var)
+  # can use this code to plot the corresponding prior: 
+  # x <- seq(0,1,0.01)
+  # y <- dbeta(x, param_beta[1], param_beta[2])
+  # plot(x, y, type="l")
+  return(dbeta(theta$zeta, param_beta[1], param_beta[2], log = TRUE))
+}
+#lprior_prob_error(theta)
 
 # mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
+lprior_mean_delay <- function(theta, mean=100) # using the same prior for the mean of all delays
+{
+  # can use this code to plot the corresponding prior: 
+  # x <- seq(0,1000,1)
+  # y <- dexp(x, 1/mean)
+  # plot(x, y, type="l")
+  return(sum(dexp(unlist(theta$mu), 1/mean, log = TRUE)))
+}
+#lprior_mean_delay(theta)
+
+### NEED TO CHANGE THIS TO BE THE CV RATHER THAN STD
+lprior_std_delay <- function(theta, mean=100) # using the same prior for the std of all delays
+{
+  # can use this code to plot the corresponding prior: 
+  # x <- seq(0,1000,1)
+  # y <- dexp(x, 1/mean)
+  # plot(x, y, type="l")
+  return(sum(dexp(unlist(theta$sigma), 1/mean, log = TRUE)))
+}
+#lprior_std_delay(theta)
+
+lprior_total <- function(theta, mean_prob_error=0.2, var_prob_error=0.01, mean_mean_delay=100, mean_std_delay=100)
+{
+  res <- lprior_prob_error(theta, mean_prob_error, var_prob_error) + 
+    lprior_mean_delay(theta, mean_mean_delay) + 
+    lprior_std_delay(theta, mean_mean_delay)
+  return(res)
+}
+#lprior_total(theta)
 
 ###############################################
 ### posteriors ###

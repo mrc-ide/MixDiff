@@ -69,7 +69,12 @@ where $P\left(D | \zeta, \alpha, \beta, g\right) \propto \prod_i \prod_{k=2}^{n_
 
 We use an informative beta prior for $\zeta$, and uninformative flat exponential priors for $\mu$ and $\sigma$, the mean and standard deviations of all delays. 
 
+## Moves
 
+TO WRITE BETTER
+Metropolis algorithm with Lognormal proposal for $\mu$, $\sigma$
+Beta Gibbs sampler for $\zeta$
+Metropolis random walk +/-1 for dates $D$, with $E$ being automatically updated accordingly. Only a fraction of dates updates at each iteration. 
 
 
 

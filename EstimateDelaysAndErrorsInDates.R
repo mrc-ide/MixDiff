@@ -327,32 +327,22 @@ lprior_prob_error <- function(theta, mean=0.2, var=0.01)
 #lprior_prob_error(theta)
 
 # mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
-lprior_mean_delay <- function(theta, mean=100) # using the same prior for the mean of all delays
+lprior_params_delay <- function(what=c("mu", "sigma"), theta, mean=100) # using the same prior for the mean of all delays
 {
+  what <- match.arg(what)
   # can use this code to plot the corresponding prior: 
   # x <- seq(0,1000,1)
   # y <- dexp(x, 1/mean)
   # plot(x, y, type="l")
-  return(sum(dexp(unlist(theta$mu), 1/mean, log = TRUE)))
+  return(sum(dexp(unlist(theta[[what]]), 1/mean, log = TRUE)))
 }
-#lprior_mean_delay(theta)
-
-### NEED TO CHANGE THIS TO BE THE CV RATHER THAN STD
-lprior_std_delay <- function(theta, mean=100) # using the same prior for the std of all delays
-{
-  # can use this code to plot the corresponding prior: 
-  # x <- seq(0,1000,1)
-  # y <- dexp(x, 1/mean)
-  # plot(x, y, type="l")
-  return(sum(dexp(unlist(theta$sigma), 1/mean, log = TRUE)))
-}
-#lprior_std_delay(theta)
+#lprior_params_delay("mu", theta)
 
 lprior_total <- function(theta, mean_prob_error=0.2, var_prob_error=0.01, mean_mean_delay=100, mean_std_delay=100)
 {
   res <- lprior_prob_error(theta, mean_prob_error, var_prob_error) + 
-    lprior_mean_delay(theta, mean_mean_delay) + 
-    lprior_std_delay(theta, mean_mean_delay)
+    lprior_params_delay("mu", theta, mean_mean_delay) + 
+    lprior_params_delay("sigma", theta, mean_mean_delay)
   return(res)
 }
 #lprior_total(theta)
@@ -461,8 +451,19 @@ move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog,
   proposed_theta[[what]][[group_idx]][delay_idx] <- proposed_param_value
   
   # calculates probability of acceptance
-  ratio_post <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  if(what=="mu")
+  {
+    ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_mean_delay) - lprior_params_delay(what, curr_theta, prior_mean_mean_delay) 
+  }else if(what=="sigma")
+  {
+    ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_std_delay) - lprior_params_delay(what, curr_theta, prior_mean_std_delay) 
+  }
+  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) - 
+                              sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) 
+    
+  ### note that ratio_post should be the same as: 
+  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
+    # lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   p_accept <- ratio_post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}

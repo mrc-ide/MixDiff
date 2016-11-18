@@ -380,9 +380,9 @@ move_Di <- function(i, group_no, date_idx,
   
   # calculates probability of acceptance
   ratio_post <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    lposterior_total(curr_aug_dat_value, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+    lposterior_total(curr_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   # no correction needed as this move is symetrical
-  p_accept <- ratio.post 
+  p_accept <- ratio_post 
   if(p_accept>0) {p_accept <- 0}
   
   # accept/reject step
@@ -403,8 +403,9 @@ move_Di <- function(i, group_no, date_idx,
   return(list(new_aug_dat=new_aug_dat,accept=accept))
   
 }
-
-
+# test_move_Di <- move_Di(i=1, group_no=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+# test_move_Di$new_aug_dat$D[[1]][1,1] # new value
+# aug_dat$D[[1]][1,1] # old value
 
 ### move mu with a lognormal proposal ###   # NOTE: consider changing sigma to be CV
 move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog, 
@@ -426,7 +427,7 @@ move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog,
   ratio_post <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
     lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
-  p_accept <- ratio.post + correction # things are additive here as on log scale
+  p_accept <- ratio_post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}
   
   # accept/reject step
@@ -447,6 +448,9 @@ move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog,
   return(list(new_theta=new_theta,accept=accept))
   
 }
+# test_move_mu <- move_lognormal(what="mu", group_no=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100)
+# test_move_mu$new_theta$mu[[1]][1] # new value
+# theta$mu[[1]][1] # old value
 
 ### move zeta with a truncated (<1) lognormal proposal ###
 move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,  
@@ -475,7 +479,7 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
   tmp1 <- ( log(upper_bound) - log(curr_param_value) ) / sdlog
   tmp2 <- ( log(upper_bound) - log(proposed_param_value) ) / sdlog
   correction <- correction + pnorm(tmp1, log.p = TRUE) - pnorm(tmp2, log.p = TRUE)  # additional correction for the truncation
-  p_accept <- ratio.post + correction # things are additive here as on log scale
+  p_accept <- ratio_post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}
   
   # accept/reject step
@@ -496,6 +500,9 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
   return(list(new_theta=new_theta,accept=accept))
   
 }
+# test_move_zeta <- move_truncated_lognormal(what="zeta", sdlog=0.005, upper_bound=1,  aug_dat, curr_theta = theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100)
+# test_move_zeta$new_theta$zeta # new value
+# theta$zeta # old value
 
 ###############################################
 ### MCMC ###
@@ -508,8 +515,8 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
 ###############################################
 
 # Anne: 
-# find a good starting point for aug_data
-# fill in bits of codes already existing to various places
+# in the move functions, only update relevant bits of the likelihood to speed up
+# 
 
 # Marc: 
 # finish writing

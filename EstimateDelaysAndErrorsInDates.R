@@ -13,6 +13,12 @@ library(EpiEstim) # to use DiscrSI which does the discretised Gamma
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
 
 ###############################################
+### index_dates_order says which dates should be before which ones - used for initialisation ###
+###############################################
+
+index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
+
+###############################################
 ### data ###
 ###############################################
 
@@ -60,35 +66,63 @@ theta <- list(zeta = 0.05, # zeta is the probability for a date to be misrecorde
 
 ### D contains the unobserved true dates ###
 
-D <- list() ######### RICH MAYBE IMPROVE THIS BIT OF SHIT CODE ########
-for(g in 1:n_groups) 
+initialise_aug_data <- function(obs_dat, index_dates_order)
 {
-  D[[g]] <- obs_dat[[g]]
-  for(e in 1:nrow(D[[g]]))
+  D <- list()
+  for(g in 1:n_groups) 
   {
-    if(any(is.na(D[[g]][e,])))
+    D[[g]] <- obs_dat[[g]]
+    for(e in 1:nrow(D[[g]]))
     {
-      tmp <- which(is.na(D[[g]][e,]))
-      if(1 %in% tmp) # dealing with missing values ahead of the series of dates
+      missing_dates <- which(is.na(D[[g]][e,]))
+      while(length(missing_dates)>0)
       {
-        min_non_NA_value <- min(which(!is.na(D[[g]][e,])))
-        for(f in (min_non_NA_value-1):1)
+        can_be_inferred_from <- lapply(missing_dates, function(i) {
+          x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
+          from_idx <- sapply(1:nrow(x), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
+          from_value <- sapply(1:nrow(x), function(k) as.character(D[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]]))
+          rule <- sapply(1:nrow(x), function(k) if(x[k,1]==1) "before" else "after"  )
+          return(list(rule=rule,from_idx=from_idx, from_value=as.Date(from_value)))
+        })
+        can_be_inferred <- which(sapply(1:length(missing_dates), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
+        for(k in can_be_inferred)
         {
-          D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][1,])][1]] <- D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][1,])][2]]
+          x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
+          if(length(x)==1)
+          {
+            inferred <- can_be_inferred_from[[k]]$from_value[x]
+          }else
+          {
+            if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
+            {
+              inferred <- min(can_be_inferred_from[[k]]$from_value[x])
+            }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
+            {
+              inferred <- max(can_be_inferred_from[[k]]$from_value[x])
+            }else
+            {
+              max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
+              min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
+              if(min_val>max_val)
+              {
+                stop("Incompatible data to infer from. ")
+              }else
+              {
+                inferred <- median(c(min_val, max_val))
+              }
+            }
+          }
+          D[[g]][e,missing_dates[k]] <- inferred
         }
-      }
-      if(any(is.na(D[[g]][e,]))) # dealing with remaining missing values if any
-      {
-        tmp <- which(is.na(D[[g]][e,]))
-        for(f in tmp)
-        {
-          D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][2,])][2]] <- D[[g]][e,index_dates[[g]][,match(f, index_dates[[g]][2,])][1]]
-        }
+        missing_dates <- which(is.na(D[[g]][e,]))
       }
     }
   }
+  names(D) <- names(obs_dat)
+  return(D)
 }
-names(D) <- names(obs_dat)
+
+D <- initialise_aug_data(obs_dat, index_dates_order)
 
 ### E contains an indicator of whether the observed date is the true one or not: ###
 ### E = -1 if date is unobserved i.e. obs_dat = -1 ###
@@ -101,7 +135,7 @@ for(g in 1:n_groups)
   E[[g]] <- as.data.frame(matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]])))
   for(j in 1:ncol(obs_dat[[g]]))
   {
-    E[[g]][,j] <- rbinom(nrow(obs_dat[[g]]), 1, theta$zeta)
+    E[[g]][,j] <- 0 # assume no error to start with ### rbinom(nrow(obs_dat[[g]]), 1, theta$zeta)
     E[[g]][is.na(obs_dat[[g]][,j]),j] <- -1
   }
   names(E[[g]]) <- names(obs_dat[[g]])
@@ -109,19 +143,17 @@ for(g in 1:n_groups)
 names(E) <- names(obs_dat)
 
 ### now update D to be different to obs_dat if E = 1
-
-for(g in 1:n_groups) 
-{
-  with_error <- which(E[[g]]==1, arr.ind =TRUE)
-  for(ii in 1: nrow(with_error))
-  {
-    D[[g]][with_error[ii,1], with_error[ii,2]] <- obs_dat[[g]][with_error[ii,1], with_error[ii,2]] + sample(c(-1,1), 1)
-  }
-}
+# for(g in 1:n_groups) 
+# {
+#   with_error <- which(E[[g]]==1, arr.ind =TRUE)
+#   for(ii in 1: nrow(with_error))
+#   {
+#     D[[g]][with_error[ii,1], with_error[ii,2]] <- obs_dat[[g]][with_error[ii,1], with_error[ii,2]] + sample(c(-1,1), 1)
+#   }
+# }
 
 aug_dat <- list(D = D,
                 E = E)
-
 
 ###############################################
 ### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
@@ -320,7 +352,7 @@ lposterior_total <- function(aug_dat, theta, obs_dat, prior_mean_prob_error=0.2,
 # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
 # then accept/reject based on posterior values
 # this is symmetrical so no correction needed
-move_Di <- function(i, group_no, date_idx, sdlog, 
+move_Di <- function(i, group_no, date_idx, 
                     curr_aug_dat,
                     theta, 
                     obs_dat, 

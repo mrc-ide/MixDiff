@@ -685,27 +685,95 @@ for(k in 1:(n_iter-1))
 }
 })
 
-### making some plots ###
+###############################################
+### plotting the MCMC output ###
+###############################################
 
-par(mfrow=c(2, 2),mar=c(5, 6, 1, 1))
+par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
 
 # looking at the logposterior chain 
 plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 
-# looking at one zeta
+# looking at mean delay 
+n_accepted_mu_moves / n_proposed_mu_moves
+group_idx <- 1 ##########################
+j <- 1
+mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 30))
+legend("topright", "Onset-Report", lty=1)
+group_idx <- 2 ##########################
+j <- 1
+mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 30))
+for(j in 2:n_dates[group_idx])
+{
+  mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+  lines(mu, col=j)
+}
+legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+group_idx <- 3 ##########################
+j <- 1
+mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 30))
+for(j in 2:n_dates[group_idx])
+{
+  mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+  lines(mu, col=j)
+}
+legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+group_idx <- 4 ##########################
+j <- 1
+mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 30))
+for(j in 2:n_dates[group_idx])
+{
+  mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
+  lines(mu, col=j)
+}
+legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+
+# looking at zeta
+n_accepted_zeta_moves / n_proposed_zeta_moves
 zeta <- sapply(1:n_iter, function(k) theta_chain[[k]]$zeta )
 plot(zeta, type="l", xlab="Iterations", ylab="zeta")
-n_accepted_zeta_moves / n_proposed_zeta_moves
 
-# looking at one mean delay in particular
-mu1 <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[1]] )
-plot(mu1, type="l", xlab="Iterations", ylab="mean delay from onset to report\n(non hospitalised-alive group)")
-n_accepted_mu_moves / n_proposed_mu_moves
-
-# looking at one std delay in particular
-sigma1 <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[1]] )
-plot(sigma1, type="l", xlab="Iterations", ylab="std delay from onset to report\n(non hospitalised-alive group)")
+# looking at std delay
 n_accepted_sigma_moves / n_proposed_sigma_moves
+group_idx <- 1 ##########################
+j <- 1
+sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 30))
+legend("topright", "Onset-Report", lty=1)
+group_idx <- 2 ##########################
+j <- 1
+sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 30))
+for(j in 2:n_dates[group_idx])
+{
+  sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+  lines(sigma, col=j)
+}
+legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+group_idx <- 3 ##########################
+j <- 1
+sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 30))
+for(j in 2:n_dates[group_idx])
+{
+  sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+  lines(sigma, col=j)
+}
+legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+group_idx <- 4 ##########################
+j <- 1
+sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 30))
+for(j in 2:n_dates[group_idx])
+{
+  sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
+  lines(sigma, col=j)
+}
+legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 
 ###############################################
 ### TO DO ###
@@ -713,7 +781,6 @@ n_accepted_sigma_moves / n_proposed_sigma_moves
 
 # Anne: 
 # check the MCMC, try to speed up if possible, and update more than one D_i per group at each iteration
-# generates more plots
 # save MCMC latest stage so can use that as next starting point
 # find better starting points for mu and sigma
 # start with zeta closer to zero as our starting point has no error

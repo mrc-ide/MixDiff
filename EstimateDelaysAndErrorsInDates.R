@@ -328,6 +328,42 @@ lposterior_total <- function(aug_dat, theta, obs_dat, prior_mean_prob_error=0.2,
 ## alpha, beta ## --> propose to reparameterise to mean and CV
 # move with a lognormal proposal, with adequate correction
 
+### move mu with a lognormal proposal ###
+move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, curr_theta, sdlog, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) # consider changing sigma to be CV
+{
+  # draw proposed value
+  curr_param_value <- curr_theta[[what]][[group_no]][delay_idx]
+  proposed_param_value <- rlnorm(1,meanlog=log(curr_param_value), sdlog=sdlog)
+  
+  proposed_theta <- curr_theta
+  proposed_theta[[what]][[group_no]][delay_idx] <- proposed_param_value
+  
+  # calculates probability of acceptance
+  ratio_post <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
+                  lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
+  p_accept <- ratio.post + correction # things are additive here as on log scale
+  if(p_accept>0) {p_accept <- 0}
+  
+  # accept/reject step
+  tmp <- log(runif(1))
+  if(tmp<p_accept) # accepting with a certain probability
+  {
+    new_param_value <- proposed_param_value
+    accept <- 1
+  }else # reject
+  {
+    new_param_value <- curr_param_value 
+    accept <- 0
+  }	
+  
+  # return a vector of size 2 where 
+  #		the first value is the new value in the chain	
+  #		the second value is 1 if the proposed value was accepted, 0 otherwise
+  return(c(new_param_value,accept))
+  
+}
+
 ## zeta ##
 # move with a truncated (<1) lognormal proposal, with adequate correction
 

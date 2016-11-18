@@ -788,9 +788,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n
 
 # Anne: 
 # check the MCMC, try to speed up if possible, and update more than one D_i per group at each iteration
-# save MCMC latest stage so can use that as next starting point
-# find better starting points for mu and sigma
-# start with zeta closer to zero as our starting point has no error
+# start with zeta even closer to zero as our starting point has no error
 
 # Marc: 
 # finish writing

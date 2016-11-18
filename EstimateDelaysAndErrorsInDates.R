@@ -397,16 +397,16 @@ move_Di <- function(i, group_idx, date_idx,
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) - 
-                  LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) 
+    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) 
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
-                  LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+    LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i) - 
-                  LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
+    LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
   
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    # lposterior_total(curr_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  # lposterior_total(curr_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   
   # no correction needed as this move is symetrical
   p_accept <- ratio_post 
@@ -430,9 +430,9 @@ move_Di <- function(i, group_idx, date_idx,
   return(list(new_aug_dat=new_aug_dat,accept=accept))
   
 }
-# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
-# test_move_Di$new_aug_dat$D[[1]][1,1] # new value
-# aug_dat$D[[1]][1,1] # old value
+test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+test_move_Di$new_aug_dat$D[[1]][1,1] # new value
+aug_dat$D[[1]][1,1] # old value
 
 ### move mu with a lognormal proposal ###   # NOTE: consider changing sigma to be CV
 move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog, 
@@ -459,11 +459,11 @@ move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog,
     ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_std_delay) - lprior_params_delay(what, curr_theta, prior_mean_std_delay) 
   }
   ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) - 
-                              sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) 
-    
+    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) 
+  
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    # lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  # lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   p_accept <- ratio_post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}
@@ -512,14 +512,14 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
   
   # calculates probability of acceptance
   ratio_post <- lprior_prob_error(proposed_theta, mean=prior_mean_prob_error, var=prior_var_prob_error) - 
-                  lprior_prob_error(curr_theta, mean=prior_mean_prob_error, var=prior_var_prob_error)
+    lprior_prob_error(curr_theta, mean=prior_mean_prob_error, var=prior_var_prob_error)
   ratio_post <- ratio_post + LL_error_term(aug_dat, proposed_theta, obs_dat) -
-                  LL_error_term(aug_dat, curr_theta, obs_dat) 
-    
+    LL_error_term(aug_dat, curr_theta, obs_dat) 
+  
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    # lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
-    
+  # lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   tmp1 <- ( log(upper_bound) - log(curr_param_value) ) / sdlog
   tmp2 <- ( log(upper_bound) - log(proposed_param_value) ) / sdlog
@@ -553,7 +553,149 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
 ### MCMC ###
 ###############################################
 
-### TO WRITE
+n_iter <- 10
+
+### prior parameters 
+
+prior_mean_prob_error=0.2
+prior_var_prob_error=0.01
+prior_mean_mean_delay=100
+prior_mean_std_delay=100
+
+### initialisation
+
+theta_chain <- list()
+theta_chain[[1]] <- theta
+aug_dat_chain <- list()
+aug_dat_chain[[1]] <- aug_dat
+logpost_chain <- rep(NA, n_iter)
+logpost_chain[1] <- lposterior_total(aug_dat_chain[[1]], theta_chain[[1]], obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+
+n_accepted_D_moves <- 0
+n_proposed_D_moves <- 0
+
+n_accepted_mu_moves <- 0
+n_proposed_mu_moves <- 0
+
+n_accepted_sigma_moves <- 0
+n_proposed_sigma_moves <- 0
+
+n_accepted_zeta_moves <- 0
+n_proposed_zeta_moves <- 0
+
+### turn on and off various moves
+D_moves_on <- TRUE
+mu_moves_on <- TRUE
+sigma_moves_on <- TRUE
+zeta_moves_on <- TRUE
+
+### std of moves
+
+sdlog_mu <- 0.1 # for now moving all mus with the same sd, 
+# might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
+
+sdlog_sigma <- 0.05 # for now moving all sigmas with the same sd, 
+# might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
+
+sdlog_zeta <- 0.005
+
+##system.time({
+for(k in 1:(n_iter-1))
+{
+  print(k)
+  theta_chain[[k+1]] <- theta_chain[[k]]
+  aug_dat_chain[[k+1]] <- aug_dat_chain[[k]]
+  
+  # move some of the D_i
+  if(D_moves_on)
+  {
+    for(g in 1:n_groups)
+    {
+      for(j in 1:ncol(aug_dat_chain[[k]]$D[[g]]))
+      {
+        to_update <- sample(1:nrow(obs_dat[[g]]), 1) # proposing moves for only 1 date
+        for(i in to_update)
+        {
+          tmp <- move_Di (i, g, j, 
+                          aug_dat_chain[[k+1]],
+                          theta_chain[[k+1]], 
+                          obs_dat, 
+                          prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
+          n_proposed_D_moves <- n_proposed_D_moves + 1
+          n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
+          if(tmp$accept==1) aug_dat_chain[[k+1]] <- tmp$new_aug_dat # if accepted move, update accordingly
+        }
+      }
+    }
+  }
+  
+  # move mu
+  if(mu_moves_on)
+  {
+    for(g in 1:n_groups)
+    {
+      for(j in 2:ncol(aug_dat_chain[[k]]$D[[g]]))
+      {
+        tmp <- move_lognormal(what="mu", g, j-1, sdlog_mu, 
+                                          aug_dat_chain[[k+1]],
+                                          theta_chain[[k+1]], 
+                                          obs_dat, 
+                                          prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+          n_proposed_mu_moves <- n_proposed_mu_moves + 1
+          n_accepted_mu_moves <- n_accepted_mu_moves + tmp$accept
+          if(tmp$accept==1) theta_chain[[k+1]] <- tmp$new_theta # if accepted move, update accordingly
+      }
+    }
+  }
+  
+  # move sigma
+  if(sigma_moves_on)
+  {
+    for(g in 1:n_groups)
+    {
+      for(j in 2:ncol(aug_dat_chain[[k]]$D[[g]]))
+      {
+        tmp <- move_lognormal(what="sigma", g, j-1, sdlog_sigma, 
+                              aug_dat_chain[[k+1]],
+                              theta_chain[[k+1]], 
+                              obs_dat, 
+                              prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+        n_proposed_sigma_moves <- n_proposed_sigma_moves + 1
+        n_accepted_sigma_moves <- n_accepted_sigma_moves + tmp$accept
+        if(tmp$accept==1) theta_chain[[k+1]] <- tmp$new_theta # if accepted move, update accordingly
+      }
+    }
+  }
+  
+  # move zeta
+  if(zeta_moves_on)
+  {
+    tmp <- move_truncated_lognormal(what="zeta", sdlog_zeta, upper_bound=1,  
+                                         aug_dat_chain[[k+1]],
+                                         theta_chain[[k+1]], 
+                                         obs_dat, 
+                                         prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
+    n_proposed_zeta_moves <- n_proposed_zeta_moves + 1
+    n_accepted_zeta_moves <- n_accepted_zeta_moves + tmp$accept
+    if(tmp$accept==1) theta_chain[[k+1]] <- tmp$new_theta # if accepted move, update accordingly
+  }
+  
+  # recording the likelihood after all moves
+  logpost_chain[k+1] <- lposterior_total(aug_dat_chain[[k+1]], theta_chain[[k+1]], obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+}
+##})
+
+# looking at the logposterior chain 
+# logpost_chain
+
+# looking at one zeta
+# sapply(1:n_iter, function(k) theta_chain[[k]]$zeta )
+
+# looking at one mean delay in particular
+# sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[1]] )
+
+# looking at one std delay in particular
+# sapply(1:n_iter, function(k) theta_chain[[k]]sigma[[1]] )
 
 ###############################################
 ### TO DO ###

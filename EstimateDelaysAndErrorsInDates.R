@@ -821,6 +821,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n
 # check the MCMC, 
 # try to speed up if possible
 # also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
+# add some plots showing moves of augmented dates for a few individuals, in particular some with missing dates
 
 # Marc: 
 # finish writing

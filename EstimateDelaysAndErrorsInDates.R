@@ -228,6 +228,16 @@ LL_observation_term<-function(aug_dat, theta, obs_dat)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
 
+LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx)
+{
+  res <- vector()
+  missing <- aug_dat$E[[group_idx]][indiv_idx,delay_idx]==-1
+  non_missing <- aug_dat$E[[group_idx]][indiv_idx,delay_idx]!=-1
+  res[non_missing] <- log(theta$zeta)*aug_dat$E[[group_idx]][indiv_idx[non_missing],delay_idx] + log(1-theta$zeta)*(1-aug_dat$E[[group_idx]][indiv_idx[non_missing],delay_idx])
+  res[missing] <- 0
+  return(res)
+}
+
 LL_error_term<-function(aug_dat, theta, obs_dat)
 {
   number_of_errors<-0
@@ -237,11 +247,19 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
     number_of_errors<-number_of_errors+sum(aug_dat$E[[g]]==1)
     number_of_recorded_dates<-number_of_recorded_dates+sum(aug_dat$E[[g]] != -1)
   }
-  result<-dbinom(number_of_errors,number_of_recorded_dates,theta$zeta,log=TRUE)
+  #result<-dbinom(number_of_errors,number_of_recorded_dates,theta$zeta,log=TRUE)
+  result<- log(theta$zeta)*number_of_errors + log(1-theta$zeta)*(number_of_recorded_dates-number_of_errors) ### not incorporating the binomial coefficient as we knoe exactly which ones are with and without error
   
   return(result)
 }
-# LL_error_term(aug_dat, theta, obs_dat)
+# system.time(LL_error_term(aug_dat, theta, obs_dat))
+
+LL_error_term_slow<-function(aug_dat, theta, obs_dat)
+{
+  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]))) ) ) ) )
+  return(LL)
+}
+# system.time(LL_error_term_slow(aug_dat, theta, obs_dat))
 
 DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
 {

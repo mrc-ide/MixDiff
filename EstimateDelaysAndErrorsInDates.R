@@ -553,7 +553,7 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
 ### MCMC ###
 ###############################################
 
-n_iter <- 10
+n_iter <- 100 # currently (18th Nov 2016, updating only 1 Di per group at each iteration, 100 iterations take ~390 seconds)
 
 ### prior parameters 
 
@@ -599,7 +599,7 @@ sdlog_sigma <- 0.05 # for now moving all sigmas with the same sd,
 
 sdlog_zeta <- 0.005
 
-##system.time({
+system.time({
 for(k in 1:(n_iter-1))
 {
   print(k)
@@ -683,26 +683,40 @@ for(k in 1:(n_iter-1))
   # recording the likelihood after all moves
   logpost_chain[k+1] <- lposterior_total(aug_dat_chain[[k+1]], theta_chain[[k+1]], obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
 }
-##})
+})
+
+### making some plots ###
+
+par(mfrow=c(2, 2),mar=c(5, 6, 1, 1))
 
 # looking at the logposterior chain 
-# logpost_chain
+plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 
 # looking at one zeta
-# sapply(1:n_iter, function(k) theta_chain[[k]]$zeta )
+zeta <- sapply(1:n_iter, function(k) theta_chain[[k]]$zeta )
+plot(zeta, type="l", xlab="Iterations", ylab="zeta")
+n_accepted_zeta_moves / n_proposed_zeta_moves
 
 # looking at one mean delay in particular
-# sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[1]] )
+mu1 <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[1]] )
+plot(mu1, type="l", xlab="Iterations", ylab="mean delay from onset to report\n(non hospitalised-alive group)")
+n_accepted_mu_moves / n_proposed_mu_moves
 
 # looking at one std delay in particular
-# sapply(1:n_iter, function(k) theta_chain[[k]]sigma[[1]] )
+sigma1 <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[1]] )
+plot(sigma1, type="l", xlab="Iterations", ylab="std delay from onset to report\n(non hospitalised-alive group)")
+n_accepted_sigma_moves / n_proposed_sigma_moves
 
 ###############################################
 ### TO DO ###
 ###############################################
 
 # Anne: 
-# write the MCMC
+# check the MCMC, try to speed up if possible, and update more than one D_i per group at each iteration
+# generates more plots
+# save MCMC latest stage so can use that as next starting point
+# find better starting points for mu and sigma
+# start with zeta closer to zero as our starting point has no error
 
 # Marc: 
 # finish writing

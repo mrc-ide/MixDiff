@@ -258,11 +258,11 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 }
 # system.time(LL_error_term(aug_dat, theta, obs_dat))
 
-LL_error_term_slow<-function(aug_dat, theta, obs_dat)
-{
-  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]))) ) ) ) )
-  return(LL)
-}
+#LL_error_term_slow<-function(aug_dat, theta, obs_dat)
+#{
+#  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]))) ) ) ) )
+#  return(LL)
+#}
 # system.time(LL_error_term_slow(aug_dat, theta, obs_dat))
 
 DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
@@ -511,8 +511,15 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
   proposed_theta[[what]] <- proposed_param_value
   
   # calculates probability of acceptance
-  ratio_post <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  ratio_post <- lprior_prob_error(proposed_theta, mean=prior_mean_prob_error, var=prior_var_prob_error) - 
+                  lprior_prob_error(curr_theta, mean=prior_mean_prob_error, var=prior_var_prob_error)
+  ratio_post <- ratio_post + LL_error_term(aug_dat, proposed_theta, obs_dat) -
+                  LL_error_term(aug_dat, curr_theta, obs_dat) 
+    
+  ### note that ratio_post should be the same as: 
+  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
+    # lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+    
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   tmp1 <- ( log(upper_bound) - log(curr_param_value) ) / sdlog
   tmp2 <- ( log(upper_bound) - log(proposed_param_value) ) / sdlog

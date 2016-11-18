@@ -820,8 +820,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n
 # Anne: 
 # check the MCMC, 
 # try to speed up if possible
-# update more than one D_i per group at each iteration
-# also use Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale
+# also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
 
 # Marc: 
 # finish writing

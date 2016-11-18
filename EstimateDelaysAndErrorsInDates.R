@@ -39,20 +39,43 @@ n_dates <- sapply(obs_dat, ncol )
 n_groups <- length(n_dates)
 
 ###############################################
+### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
+###############################################
+
+compute_delta_group_delay_and_indiv<-function(D, group_idx, delay_idx, indiv_idx, index = index_dates)
+{
+  Delta <- D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][2]] - D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][1]]
+  return(Delta)
+}
+
+compute_delta <- function(D, index = index_dates)
+{
+  Delta <- list()
+  for(g in 1:n_groups)
+  {
+    Delta[[g]] <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
+    for(j in 2: ncol(D[[g]]))
+    {
+      Delta[[g]][,j-1] <- D[[g]][,index[[g]][,j-1][2]] - D[[g]][,index[[g]][,j-1][1]]
+    }
+  }
+  return(Delta)
+}
+
+###############################################
 ### define parameters to be used for initialisation of the chain ###
 ###############################################
 
 ### mean and std of distribution of various delays, by group
-mu <- list()
-for(g in 1:n_groups) 
-{
-  mu[[g]] <- rep(15.0,n_dates[g]-1)
-}
+### we use a the starting point the observed mean and std of each delay in each group
+obs_delta <- compute_delta(obs_dat, index_dates)
+mu <- lapply(1:n_groups, function(g) apply(obs_delta[[g]], 2, mean, na.rm=TRUE) )
 names(mu) <- names(n_dates)
-sigma <- mu
+sigma <- lapply(1:n_groups, function(g) apply(obs_delta[[g]], 2, sd, na.rm=TRUE) )
+names(sigma) <- names(n_dates)
 
 ### list of all parameters
-theta <- list(zeta = 0.05, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
+theta <- list(zeta = 0.01, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
               # TODO:
               # could consider having zeta being type of date specific (e.g. more error on onset than death dates),
               # time specific and/or space specific
@@ -156,30 +179,6 @@ aug_dat <- list(D = D,
                 E = E)
 
 ###############################################
-### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
-###############################################
-
-compute_delta_group_delay_and_indiv<-function(aug_dat, group_idx, delay_idx, indiv_idx, index = index_dates)
-{
-  Delta <- aug_dat$D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][2]] - aug_dat$D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][1]]
-  return(Delta)
-}
-
-compute_delta <- function(aug_dat, index = index_dates)
-{
-  Delta <- list()
-  for(g in 1:n_groups)
-  {
-    Delta[[g]] <- matrix(NA, nrow(aug_dat$D[[g]]), ncol(aug_dat$D[[g]])-1)
-    for(j in 2: ncol(aug_dat$D[[g]]))
-    {
-      Delta[[g]][,j-1] <- aug_dat$D[[g]][,index[[g]][,j-1][2]] - aug_dat$D[[g]][,index[[g]][,j-1][1]]
-    }
-  }
-  return(Delta)
-}
-
-###############################################
 ### likelihood function ###
 ###############################################
 
@@ -273,7 +272,7 @@ DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
 
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx)
 {
-  Delta <- compute_delta_group_delay_and_indiv(aug_dat, group_idx, delay_idx, indiv_idx, index = index_dates)
+  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx, indiv_idx, index = index_dates)
   LL <- DiscrSI_vectorised(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$sigma[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
@@ -430,9 +429,9 @@ move_Di <- function(i, group_idx, date_idx,
   return(list(new_aug_dat=new_aug_dat,accept=accept))
   
 }
-test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
-test_move_Di$new_aug_dat$D[[1]][1,1] # new value
-aug_dat$D[[1]][1,1] # old value
+# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+# test_move_Di$new_aug_dat$D[[1]][1,1] # new value
+# aug_dat$D[[1]][1,1] # old value
 
 ### move mu with a lognormal proposal ###   # NOTE: consider changing sigma to be CV
 move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog, 
@@ -685,6 +684,17 @@ for(k in 1:(n_iter-1))
 }
 })
 
+# save.image("tmp.Rdata")
+
+###############################################
+### acceptance probabilities ###
+###############################################
+
+n_accepted_D_moves / n_proposed_D_moves
+n_accepted_zeta_moves / n_proposed_zeta_moves
+n_accepted_mu_moves / n_proposed_mu_moves
+n_accepted_sigma_moves / n_proposed_sigma_moves
+
 ###############################################
 ### plotting the MCMC output ###
 ###############################################
@@ -695,16 +705,15 @@ par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
 plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 
 # looking at mean delay 
-n_accepted_mu_moves / n_proposed_mu_moves
 group_idx <- 1 ##########################
 j <- 1
 mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:n_dates[group_idx])
 {
   mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
@@ -714,7 +723,7 @@ legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_
 group_idx <- 3 ##########################
 j <- 1
 mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
 for(j in 2:n_dates[group_idx])
 {
   mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
@@ -724,7 +733,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n
 group_idx <- 4 ##########################
 j <- 1
 mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:n_dates[group_idx])
 {
   mu <- sapply(1:n_iter, function(k) theta_chain[[k]]$mu[[group_idx]][j] )
@@ -733,21 +742,19 @@ for(j in 2:n_dates[group_idx])
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 
 # looking at zeta
-n_accepted_zeta_moves / n_proposed_zeta_moves
 zeta <- sapply(1:n_iter, function(k) theta_chain[[k]]$zeta )
 plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 
 # looking at std delay
-n_accepted_sigma_moves / n_proposed_sigma_moves
 group_idx <- 1 ##########################
 j <- 1
 sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:n_dates[group_idx])
 {
   sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
@@ -757,7 +764,7 @@ legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_
 group_idx <- 3 ##########################
 j <- 1
 sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
 for(j in 2:n_dates[group_idx])
 {
   sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
@@ -767,7 +774,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n
 group_idx <- 4 ##########################
 j <- 1
 sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:n_dates[group_idx])
 {
   sigma <- sapply(1:n_iter, function(k) theta_chain[[k]]$sigma[[group_idx]][j] )

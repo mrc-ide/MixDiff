@@ -201,29 +201,33 @@ find_range <- function(obs_dat)
   return(c(min_date, max_date))
 }
 
+LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, range_dates=NULL)
+{
+  if(is.null(range_dates)) range_dates <- find_range(obs_dat)
+  LL <- vector()
+  ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
+  no_error <- aug_dat$E[[group_idx]][indiv_idx, delay_idx]==0
+  LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, delay_idx][no_error] == obs_dat[[group_idx]][indiv_idx, delay_idx][no_error]) 
+  ### if E=1, what is the relationship between true date D and observed date y
+  # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
+  ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
+  error_or_missing <- (aug_dat$E[[group_idx]][indiv_idx, delay_idx]==-1 | aug_dat$E[[group_idx]][indiv_idx, delay_idx]==1)
+  ### K is the relative probability of observing a given error, conditional on presence of error
+  # for now, K is given as 1/n, where n is the number of dates in the range_dates
+  # could use something different if we define the space of possible errors differently. 
+  ### think about impact of this choice
+  K <- (1/as.numeric(diff(range_dates)))
+  LL[error_or_missing] <- log( K* ((aug_dat$D[[group_idx]][indiv_idx, delay_idx][error_or_missing] >= range_dates[1]) & (aug_dat$D[[group_idx]][indiv_idx, delay_idx][error_or_missing] <= range_dates[2])) ) 
+  
+  LL[is.infinite(LL)] <- -100000 # arbitrarily small number to avoid -Inf
+  
+  return(LL)
+}
+
 LL_observation_term<-function(aug_dat, theta, obs_dat)
 {
-  LL_no_error <- 0
-  LL_error_or_missing <- 0
   range_dates <- find_range(obs_dat)
-  for(g in 1:n_groups)
-  {
-    ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
-    no_error <- aug_dat$E[[g]]==0
-    LL_no_error <- LL_no_error + sum( log(aug_dat$D[[g]][no_error] == obs_dat[[g]][no_error]) )
-    ### if E=1, what is the relationship between true date D and observed date y
-    # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
-    ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
-    error_or_missing <- (aug_dat$E[[g]]==-1 | aug_dat$E[[g]]==1)
-    ### K is the relative probability of observing a given error, conditional on presence of error
-    # for now, K is given as 1/n, where n is the number of dates in the range_dates
-    # could use something different if we define the space of possible errors differently. 
-    K <- (1/as.numeric(diff(range_dates))) ### think about impact of this choice
-    LL_error_or_missing <- LL_error_or_missing + sum( log( K* ((aug_dat$D[[g]][error_or_missing] >= range_dates[1]) & (aug_dat$D[[g]][error_or_missing] <= range_dates[2])) ) )
-  }
-  LL <- LL_no_error + LL_error_or_missing
-  if(is.infinite(LL)) LL <- -100000 # arbitrarily small number to avoid -Inf
-  
+  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]),range_dates)) ) ) ) )
   return(LL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)

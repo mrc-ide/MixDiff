@@ -230,8 +230,8 @@ LL_delays_term<-function(aug_dat, theta, obs_dat)
 LL_total <- function(aug_dat, theta, obs_dat)
 {
   res <- LL_observation_term(aug_dat, theta, obs_dat) + 
-            LL_error_term(aug_dat, theta, obs_dat) + 
-            LL_delays_term(aug_dat, theta, obs_dat)
+    LL_error_term(aug_dat, theta, obs_dat) + 
+    LL_delays_term(aug_dat, theta, obs_dat)
   return(res)
 }
 # LL_total(aug_dat, theta, obs_dat)
@@ -314,19 +314,71 @@ lposterior_total <- function(aug_dat, theta, obs_dat, prior_mean_prob_error=0.2,
 ### move functions ###
 ###############################################
 
-### TO WRITE
-
-### plan: 
-
 ## D_i ##
 # probability of moving or not
 # moves by +/-1 random walk, and E_i is adjusted accordingly , 
 # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
 # then accept/reject based on posterior values
 # this is symmetrical so no correction needed
+move_Di <- function(i, group_no, date_idx, sdlog, 
+                    curr_aug_dat,
+                    theta, 
+                    obs_dat, 
+                    prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+{
+  # draw proposed value for D using +/-1 random walk
+  curr_aug_dat_value <- curr_aug_dat$D[[group_no]][i,date_idx]
+  proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), 1)
+  
+  proposed_aug_dat <- curr_aug_dat
+  proposed_aug_dat$D[[group_no]][i,date_idx] <- proposed_aug_dat_value
+  
+  # adjust E_i accordingly
+  # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
+  if(is.na(obs_dat[[group_no]][i,date_idx]))
+  {
+    proposed_aug_dat$E[[group_no]][i,date_idx] <- -1 # y_i missing
+  }else if(proposed_aug_dat$D[[group_no]][i,date_idx]==obs_dat[[group_no]][i,date_idx])
+  {
+    proposed_aug_dat$E[[group_no]][i,date_idx] <- 0 # y_i observed without error
+  }else
+  {
+    proposed_aug_dat$E[[group_no]][i,date_idx] <- 1 # y_i observed with error
+  } 
+  
+  # calculates probability of acceptance
+  ratio_post <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
+    lposterior_total(curr_aug_dat_value, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  # no correction needed as this move is symetrical
+  p_accept <- ratio.post 
+  if(p_accept>0) {p_accept <- 0}
+  
+  # accept/reject step
+  tmp <- log(runif(1))
+  if(tmp<p_accept) # accepting with a certain probability
+  {
+    new_aug_dat <- proposed_aug_dat
+    accept <- 1
+  }else # reject
+  {
+    new_aug_dat <- curr_aug_dat
+    accept <- 0
+  }	
+  
+  # return a list of size 2 where 
+  #		the first value is the new augmented data set in the chain
+  #		the second value is 1 if the proposed value was accepted, 0 otherwise
+  return(list(new_aug_dat=new_aug_dat,accept=accept))
+  
+}
+
+
 
 ### move mu with a lognormal proposal ###   # NOTE: consider changing sigma to be CV
-move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, curr_theta, sdlog, 
+move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog, 
+                           aug_dat,
+                           curr_theta, 
+                           obs_dat, 
                            prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
 {
   what <- match.arg(what)
@@ -340,7 +392,7 @@ move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, curr_theta
   
   # calculates probability of acceptance
   ratio_post <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-                  lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+    lposterior_total(aug_dat, curr_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   p_accept <- ratio.post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}
@@ -365,15 +417,18 @@ move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, curr_theta
 }
 
 ### move zeta with a truncated (<1) lognormal proposal ###
-move_truncated_lognormal <- function(what=c("zeta"), curr_theta, sdlog, upper_bound=1,  
-                           prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,  
+                                     aug_dat,
+                                     curr_theta, 
+                                     obs_dat, 
+                                     prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
 {
   what <- match.arg(what)
   
   # draw proposed value
   curr_param_value <- curr_theta[[what]]
   proposed_param_value <- rlnorm(1,meanlog=log(curr_param_value), sdlog=sdlog)
-  while(proposed_param_value>upper_bound) 
+  while(proposed_param_value > upper_bound) # repeat until draw a value below the upper bound
   {
     proposed_param_value <- rlnorm(1,meanlog=log(curr_param_value), sdlog=sdlog)
   }

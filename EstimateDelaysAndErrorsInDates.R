@@ -622,6 +622,8 @@ zeta_moves_on <- TRUE
 
 ### std of moves
 
+fraction_Di_to_update <- 1/10
+
 sdlog_mu <- 0.1 # for now moving all mus with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -644,7 +646,7 @@ system.time({
       {
         for(j in 1:ncol(aug_dat_chain[[k]]$D[[g]]))
         {
-          to_update <- sample(1:nrow(obs_dat[[g]]), 1) # proposing moves for only 1 date
+          to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           for(i in to_update)
           {
             tmp <- move_Di (i, g, j, 
@@ -658,6 +660,16 @@ system.time({
           }
         }
       }
+    }
+    
+    # move zeta using Gibbs sampler
+    if(zeta_moves_on)
+    {
+      tmp <- move_zeta_gibbs(aug_dat_chain[[k+1]],
+                             theta_chain[[k+1]], 
+                             obs_dat, 
+                             prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
+      theta_chain[[k+1]] <- tmp$new_theta # always update with new theta (Gibbs sampler)
     }
     
     # move mu
@@ -696,16 +708,6 @@ system.time({
           if(tmp$accept==1) theta_chain[[k+1]] <- tmp$new_theta # if accepted move, update accordingly
         }
       }
-    }
-    
-    # move zeta using Gibbs sampler
-    if(zeta_moves_on)
-    {
-      tmp <- move_zeta_gibbs(aug_dat_chain[[k+1]],
-                             theta_chain[[k+1]], 
-                             obs_dat, 
-                             prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
-      theta_chain[[k+1]] <- tmp$new_theta # always update with new theta (Gibbs sampler)
     }
     
     # recording the likelihood after all moves
@@ -816,7 +818,10 @@ legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n
 ###############################################
 
 # Anne: 
-# check the MCMC, try to speed up if possible, and update more than one D_i per group at each iteration
+# check the MCMC, 
+# try to speed up if possible
+# update more than one D_i per group at each iteration
+# also use Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale
 
 # Marc: 
 # finish writing

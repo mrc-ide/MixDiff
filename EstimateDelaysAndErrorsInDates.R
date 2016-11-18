@@ -159,7 +159,13 @@ aug_dat <- list(D = D,
 ### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
 ###############################################
 
-compute_delta <- function(aug_dat, index = index_dates )
+compute_delta_group_delay_and_indiv<-function(aug_dat, group_idx, delay_idx, indiv_idx, index = index_dates)
+{
+  Delta <- aug_dat$D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][2]] - aug_dat$D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][1]]
+  return(Delta)
+}
+
+compute_delta <- function(aug_dat, index = index_dates)
 {
   Delta <- list()
   for(g in 1:n_groups)
@@ -243,18 +249,16 @@ DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
   return(res)
 }
 
+LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx)
+{
+  Delta <- compute_delta_group_delay_and_indiv(aug_dat, group_idx, delay_idx, indiv_idx, index = index_dates)
+  LL <- DiscrSI_vectorised(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$sigma[[group_idx]][delay_idx], log=TRUE)
+  return(LL)
+}
+
 LL_delays_term<-function(aug_dat, theta, obs_dat)
 {
-  Delta <- compute_delta(aug_dat)
-  LL <- 0
-  for(g in 1:n_groups)
-  {
-    for(j in 2:ncol(aug_dat$D[[g]]))
-    {
-      LL_vect_this_group <- DiscrSI_vectorised(Delta[[g]] + 1, theta$mu[[g]][j-1], theta$sigma[[g]][j-1], log=TRUE)
-      LL <- LL + sum( LL_vect_this_group )
-    }
-  }
+  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]))) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)

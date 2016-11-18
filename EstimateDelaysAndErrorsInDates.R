@@ -560,7 +560,6 @@ move_truncated_lognormal <- function(what=c("zeta"), sdlog, upper_bound=1,
 ###############################################
 
 # Anne: 
-# in the move functions, only update relevant bits of the likelihood to speed up
 # write the MCMC
 
 # Marc: 

@@ -201,23 +201,23 @@ find_range <- function(obs_dat)
   return(c(min_date, max_date))
 }
 
-LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, range_dates=NULL)
+LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   LL <- vector()
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
-  no_error <- aug_dat$E[[group_idx]][indiv_idx, delay_idx]==0
-  LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, delay_idx][no_error] == obs_dat[[group_idx]][indiv_idx, delay_idx][no_error]) 
+  no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx]==0
+  LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
   # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
   ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
-  error_or_missing <- (aug_dat$E[[group_idx]][indiv_idx, delay_idx]==-1 | aug_dat$E[[group_idx]][indiv_idx, delay_idx]==1)
+  error_or_missing <- (aug_dat$E[[group_idx]][indiv_idx, date_idx]==-1 | aug_dat$E[[group_idx]][indiv_idx, date_idx]==1)
   ### K is the relative probability of observing a given error, conditional on presence of error
   # for now, K is given as 1/n, where n is the number of dates in the range_dates
   # could use something different if we define the space of possible errors differently. 
   ### think about impact of this choice
   K <- (1/as.numeric(diff(range_dates)))
-  LL[error_or_missing] <- log( K* ((aug_dat$D[[group_idx]][indiv_idx, delay_idx][error_or_missing] >= range_dates[1]) & (aug_dat$D[[group_idx]][indiv_idx, delay_idx][error_or_missing] <= range_dates[2])) ) 
+  LL[error_or_missing] <- log( K* ((aug_dat$D[[group_idx]][indiv_idx, date_idx][error_or_missing] >= range_dates[1]) & (aug_dat$D[[group_idx]][indiv_idx, date_idx][error_or_missing] <= range_dates[2])) ) 
   
   LL[is.infinite(LL)] <- -100000 # arbitrarily small number to avoid -Inf
   
@@ -232,12 +232,12 @@ LL_observation_term<-function(aug_dat, theta, obs_dat)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
 
-LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx)
+LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
   res <- vector()
-  missing <- aug_dat$E[[group_idx]][indiv_idx,delay_idx]==-1
-  non_missing <- aug_dat$E[[group_idx]][indiv_idx,delay_idx]!=-1
-  res[non_missing] <- log(theta$zeta)*aug_dat$E[[group_idx]][indiv_idx[non_missing],delay_idx] + log(1-theta$zeta)*(1-aug_dat$E[[group_idx]][indiv_idx[non_missing],delay_idx])
+  missing <- aug_dat$E[[group_idx]][indiv_idx,date_idx]==-1
+  non_missing <- aug_dat$E[[group_idx]][indiv_idx,date_idx]!=-1
+  res[non_missing] <- log(theta$zeta)*aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx] + log(1-theta$zeta)*(1-aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx])
   res[missing] <- 0
   return(res)
 }
@@ -378,35 +378,46 @@ lposterior_total <- function(aug_dat, theta, obs_dat, prior_mean_prob_error=0.2,
 # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
 # then accept/reject based on posterior values
 # this is symmetrical so no correction needed
-move_Di <- function(i, group_no, date_idx, 
+move_Di <- function(i, group_idx, date_idx, 
                     curr_aug_dat,
                     theta, 
                     obs_dat, 
                     prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
 {
   # draw proposed value for D using +/-1 random walk
-  curr_aug_dat_value <- curr_aug_dat$D[[group_no]][i,date_idx]
+  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
   proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), 1)
   
   proposed_aug_dat <- curr_aug_dat
-  proposed_aug_dat$D[[group_no]][i,date_idx] <- proposed_aug_dat_value
+  proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
   
   # adjust E_i accordingly
   # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
-  if(is.na(obs_dat[[group_no]][i,date_idx]))
+  if(is.na(obs_dat[[group_idx]][i,date_idx]))
   {
-    proposed_aug_dat$E[[group_no]][i,date_idx] <- -1 # y_i missing
-  }else if(proposed_aug_dat$D[[group_no]][i,date_idx]==obs_dat[[group_no]][i,date_idx])
+    proposed_aug_dat$E[[group_idx]][i,date_idx] <- -1 # y_i missing
+  }else if(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
   {
-    proposed_aug_dat$E[[group_no]][i,date_idx] <- 0 # y_i observed without error
+    proposed_aug_dat$E[[group_idx]][i,date_idx] <- 0 # y_i observed without error
   }else
   {
-    proposed_aug_dat$E[[group_no]][i,date_idx] <- 1 # y_i observed with error
+    proposed_aug_dat$E[[group_idx]][i,date_idx] <- 1 # y_i observed with error
   } 
   
   # calculates probability of acceptance
-  ratio_post <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
-    lposterior_total(curr_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
+  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) - 
+                  LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) 
+  ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
+                  LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+  for(d in delay_idx)
+    ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i) - 
+                  LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
+  
+  ### note that ratio_post should be the same as: 
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
+    # lposterior_total(curr_aug_dat, theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  
   # no correction needed as this move is symetrical
   p_accept <- ratio_post 
   if(p_accept>0) {p_accept <- 0}
@@ -429,12 +440,12 @@ move_Di <- function(i, group_no, date_idx,
   return(list(new_aug_dat=new_aug_dat,accept=accept))
   
 }
-# test_move_Di <- move_Di(i=1, group_no=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
 
 ### move mu with a lognormal proposal ###   # NOTE: consider changing sigma to be CV
-move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog, 
+move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog, 
                            aug_dat,
                            curr_theta, 
                            obs_dat, 
@@ -443,11 +454,11 @@ move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog,
   what <- match.arg(what)
   
   # draw proposed value
-  curr_param_value <- curr_theta[[what]][[group_no]][delay_idx]
+  curr_param_value <- curr_theta[[what]][[group_idx]][delay_idx]
   proposed_param_value <- rlnorm(1,meanlog=log(curr_param_value), sdlog=sdlog)
   
   proposed_theta <- curr_theta
-  proposed_theta[[what]][[group_no]][delay_idx] <- proposed_param_value
+  proposed_theta[[what]][[group_idx]][delay_idx] <- proposed_param_value
   
   # calculates probability of acceptance
   ratio_post <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_mean_prob_error, prior_var_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
@@ -474,7 +485,7 @@ move_lognormal <- function(what=c("mu","sigma"), group_no, delay_idx, sdlog,
   return(list(new_theta=new_theta,accept=accept))
   
 }
-# test_move_mu <- move_lognormal(what="mu", group_no=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100)
+# test_move_mu <- move_lognormal(what="mu", group_idx=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, prior_mean_prob_error=0.2, prior_var_prob_error=0.01, prior_mean_mean_delay=100, prior_mean_std_delay=100)
 # test_move_mu$new_theta$mu[[1]][1] # new value
 # theta$mu[[1]][1] # old value
 

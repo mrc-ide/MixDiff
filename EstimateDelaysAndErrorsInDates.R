@@ -223,9 +223,9 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   return(LL)
 }
 
-LL_observation_term<-function(aug_dat, theta, obs_dat)
+LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 {
-  range_dates <- find_range(obs_dat)
+  if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]),range_dates)) ) ) ) )
   return(LL)
 }
@@ -375,8 +375,10 @@ move_Di <- function(i, group_idx, date_idx,
                     curr_aug_dat,
                     theta, 
                     obs_dat, 
-                    shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+                    shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100, range_dates=NULL) 
 {
+  if(is.null(range_dates)) range_dates <- find_range(obs_dat)
+  
   # draw proposed value for D using +/-1 random walk
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
   proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), 1)
@@ -399,8 +401,8 @@ move_Di <- function(i, group_idx, date_idx,
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) - 
-    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=NULL) 
+  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
+    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
     LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
@@ -584,7 +586,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 100 # currently (18th Nov 2016, updating only 1 Di per group at each iteration, 100 iterations take ~390 seconds)
+n_iter <- 10 # currently (18th Nov 2016, updating only 1 Di per group at each iteration, 100 iterations take ~390 seconds)
 
 ### prior parameters 
 
@@ -601,6 +603,8 @@ aug_dat_chain <- list()
 aug_dat_chain[[1]] <- aug_dat
 logpost_chain <- rep(NA, n_iter)
 logpost_chain[1] <- lposterior_total(aug_dat_chain[[1]], theta_chain[[1]], obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+
+range_dates <- find_range(obs_dat)
 
 n_accepted_D_moves <- 0
 n_proposed_D_moves <- 0
@@ -653,7 +657,7 @@ system.time({
                             aug_dat_chain[[k+1]],
                             theta_chain[[k+1]], 
                             obs_dat, 
-                            prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
+                            prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
             if(tmp$accept==1) aug_dat_chain[[k+1]] <- tmp$new_aug_dat # if accepted move, update accordingly

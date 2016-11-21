@@ -609,9 +609,9 @@ curr_aug_dat <- aug_dat
 aug_dat_chain <- list(D=list(), E=list())
 for(g in 1:n_groups)
 {
-  aug_dat_chain$D[[g]] <- lapply(1:n_dates[[g]], function(j) aug_dat$D[[g]][,j])
+  aug_dat_chain$D[[g]] <- lapply(1:n_dates[[g]], function(j) as.integer(aug_dat$D[[g]][,j]))
   names(aug_dat_chain$D[[g]]) <- paste0("Delay",1:n_dates[[g]])
-  aug_dat_chain$E[[g]] <- lapply(1:n_dates[[g]], function(j) aug_dat$E[[g]][,j])
+  aug_dat_chain$E[[g]] <- lapply(1:n_dates[[g]], function(j) as.integer(aug_dat$E[[g]][,j]))
   names(aug_dat_chain$E[[g]]) <- paste0("Delay",1:n_dates[[g]])
 }
 names(aug_dat_chain$D) <- names(obs_dat)
@@ -634,8 +634,8 @@ add_new_value_chain_aug_dat <- function(curr_aug_dat, new_aug_dat)
   {
     for(j in 1:n_dates[[g]])
     {
-      curr_aug_dat$D[[g]][[j]] <- rbind(curr_aug_dat$D[[g]][[j]], new_aug_dat$D[[g]][,j])
-      curr_aug_dat$E[[g]][[j]] <- rbind(curr_aug_dat$E[[g]][[j]], new_aug_dat$E[[g]][,j])
+      curr_aug_dat$D[[g]][[j]] <- rbind(curr_aug_dat$D[[g]][[j]], as.integer(new_aug_dat$D[[g]][,j]))
+      curr_aug_dat$E[[g]][[j]] <- rbind(curr_aug_dat$E[[g]][[j]], as.integer(new_aug_dat$E[[g]][,j]))
     }
   }
   return(curr_aug_dat)

@@ -949,8 +949,23 @@ for(i in 1:length(indiv_to_plot))
 }
 dev.off()
 
+
+### example of one that mixes better: 
 #plot(aug_dat_chain$D[[1]][[2]][,6], type="l")
 
+### examining the number of accepted changes per group and date
+find_number_successful_changes <- function(aug_dat_chain, group_idx, date_idx)
+{
+  tmp <- abs(apply(aug_dat_chain$D[[group_idx]][[date_idx]], 2, diff))
+  ret <- table(colSums(tmp)) # this says how many dates have had no changes, 1 change, etc... for that group and that date
+  return(ret)
+}
+number_successful_changes <- lapply(1:n_groups, function(group_idx) lapply(1:n_dates[group_idx], function(date_idx) find_number_successful_changes(aug_dat_chain, group_idx, date_idx)))
+# so most of them seem stuck; they never move
+
+# as we try to update 1/10th of dates at every iteration, 
+# we expect to try and update each date 100 times (out of 1000 iterations)
+# but we rarely see more than 1/2 changes accepted
 
 ###############################################
 ### TO DO ###

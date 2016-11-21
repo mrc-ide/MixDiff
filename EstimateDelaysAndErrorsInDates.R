@@ -958,14 +958,19 @@ find_number_successful_changes <- function(aug_dat_chain, group_idx, date_idx)
 {
   tmp <- abs(apply(aug_dat_chain$D[[group_idx]][[date_idx]], 2, diff))
   ret <- table(colSums(tmp)) # this says how many dates have had no changes, 1 change, etc... for that group and that date
+  # cbind(colSums(tmp), obs_dat[[group_idx]]) ## the ones that are moved successfully are the ones with missing data
   return(ret)
 }
 number_successful_changes <- lapply(1:n_groups, function(group_idx) lapply(1:n_dates[group_idx], function(date_idx) find_number_successful_changes(aug_dat_chain, group_idx, date_idx)))
 # so most of them seem stuck; they never move
 
-# as we try to update 1/10th of dates at every iteration, 
-# we expect to try and update each date 100 times (out of 1000 iterations)
-# but we rarely see more than 1/2 changes accepted
+sapply(1:n_groups, function(g) sapply(1:n_dates[g], function(j) unique(as.vector(aug_dat_chain$E[[g]][[j]])) ) )
+# so we never reach E=1 i.e. there is an error. 
+# This is because the probability of observing a given error is very very very small compared to the probability of observing no error
+# with the range of observed dates, we have 
+# K = 1/as.numeric(diff(range_dates)) # 0.001760563
+# assuming zeta is 0.1, K*zeta = 0.0001760563 VS (1-zeta) = 0.9
+# even worst for smaller values of zeta
 
 ###############################################
 ### TO DO ###
@@ -975,6 +980,7 @@ number_successful_changes <- lapply(1:n_groups, function(group_idx) lapply(1:n_d
 # check the MCMC, 
 # try to speed up if possible
 # considering only calculating the likelihood for some iterations (e.g. after burnin and thinning), posthoc? 
+# should we update zeta after each D_i move, or after all D_i in a group move? 
 # make sure we can go back to dates from the integers saved in aug_data_chain? i.e. what origin should be used? 
 # keep track of acceptance rate for D and for mu/sigma per group and per deay rather than altogether, to check if some moves are more successful than others. 
 # also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 

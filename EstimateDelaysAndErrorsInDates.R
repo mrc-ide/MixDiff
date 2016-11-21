@@ -585,7 +585,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 100 # currently (18th Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 1000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -772,6 +772,27 @@ n_accepted_mu_moves / n_proposed_mu_moves
 n_accepted_sigma_moves / n_proposed_sigma_moves
 
 ###############################################
+### remove burnin ###
+###############################################
+
+burnin <- 1:100
+logpost_chain <- logpost_chain[-burnin]
+theta_chain$zeta <- theta_chain$zeta[-burnin]
+for(g in 1:n_groups)
+{
+  theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin,]
+  theta_chain$sigma[[g]] <- theta_chain$sigma[[g]][-burnin,]
+}
+for(g in 1:n_groups)
+{
+  for(j in 1:n_dates[[g]])
+  {
+    aug_dat_chain$D[[g]][[j]] <- aug_dat_chain$D[[g]][[j]][-burnin,]
+    aug_dat_chain$E[[g]][[j]] <- aug_dat_chain$E[[g]][[j]][-burnin,]
+  }
+}
+
+###############################################
 ### plotting the MCMC output ###
 ###############################################
 
@@ -818,7 +839,7 @@ for(j in 2:(n_dates[group_idx]-1))
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 
 # looking at zeta
-zeta <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$zeta )
+zeta <- theta_chain$zeta
 plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 
 # looking at std delay
@@ -869,7 +890,9 @@ legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n
 # Anne: 
 # check the MCMC, 
 # try to speed up if possible
-# transform dates into numeric at start, then operate only on matrices of numeric, then convert back to dates if we want to
+# considering only calculating the likelihood for some iterations (e.g. after burnin and thinning), posthoc? 
+# make sure we can go back to dates from the integers saved in aug_data_chain? i.e. what origin should be used? 
+# keep track of acceptance rate for D and for mu/sigma per group and per deay rather than altogether, to check if some moves are more successful than others. 
 # also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
 # add some plots showing moves of augmented dates for a few individuals, in particular some with missing dates
 

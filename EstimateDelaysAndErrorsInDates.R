@@ -50,15 +50,14 @@ compute_delta_group_delay_and_indiv<-function(D, group_idx, delay_idx, indiv_idx
 
 compute_delta <- function(D, index = index_dates)
 {
-  Delta <- list()
-  for(g in 1:n_groups)
-  {
-    Delta[[g]] <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
-    for(j in 2: ncol(D[[g]]))
-    {
-      Delta[[g]][,j-1] <- D[[g]][,index[[g]][,j-1][2]] - D[[g]][,index[[g]][,j-1][1]]
-    }
-  }
+  Delta <- lapply(1:n_groups, function(g){
+      m <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
+      for(j in 1: ncol(m))
+      {
+        m[,j] <- D[[g]][,index[[g]][,j][2]] - D[[g]][,index[[g]][,j][1]]
+      }
+      return(m)
+  })
   return(Delta)
 }
 
@@ -274,16 +273,17 @@ DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
   return(res)
 }
 
-LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx)
+LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, Delta=NULL)
 {
-  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx, indiv_idx, index = index_dates)
+  if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx, indiv_idx, index = index_dates)
   LL <- DiscrSI_vectorised(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$sigma[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 
-LL_delays_term<-function(aug_dat, theta, obs_dat)
+LL_delays_term<-function(aug_dat, theta, obs_dat, Delta=NULL)
 {
-  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]))) ) ) ) )
+  if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index = index_dates)
+  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)
@@ -463,8 +463,9 @@ move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog,
   {
     ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_std_delay) - lprior_params_delay(what, curr_theta, prior_mean_std_delay) 
   }
-  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) - 
-    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]))) 
+  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx,  1:nrow(obs_dat[[group_idx]]), index = index_dates) # same for proposed and curent par values so no need to recompute twice
+  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]])), Delta) - 
+    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]])), Delta) 
   
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 

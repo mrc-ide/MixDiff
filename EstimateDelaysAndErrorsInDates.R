@@ -51,12 +51,12 @@ compute_delta_group_delay_and_indiv<-function(D, group_idx, delay_idx, indiv_idx
 compute_delta <- function(D, index = index_dates)
 {
   Delta <- lapply(1:n_groups, function(g){
-      m <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
-      for(j in 1: ncol(m))
-      {
-        m[,j] <- D[[g]][,index[[g]][,j][2]] - D[[g]][,index[[g]][,j][1]]
-      }
-      return(m)
+    m <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
+    for(j in 1: ncol(m))
+    {
+      m[,j] <- D[[g]][,index[[g]][,j][2]] - D[[g]][,index[[g]][,j][1]]
+    }
+    return(m)
   })
   return(Delta)
 }
@@ -403,7 +403,7 @@ move_Di <- function(i, group_idx, date_idx,
     LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i) - 
-      LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
+    LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
   
   ratio_post <- sum(ratio_post)
   
@@ -796,6 +796,9 @@ for(g in 1:n_groups)
 ### plotting the MCMC output ###
 ###############################################
 
+### parameters ###
+
+pdf("ParamConvergencePlots.pdf", width=14, height=7)
 par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
 
 # looking at the logposterior chain 
@@ -878,8 +881,74 @@ for(j in 2:(n_dates[group_idx]-1))
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+dev.off()
 
-### plot some of the Ds: 
+### augmented data ###
+
+pdf("AugDataConvergencePlots.pdf", width=14, height=14)
+par(mfrow=c(4, 5),mar=c(5, 6, 1, 1))
+group_idx <- 1 ##########################
+# randomly pick 5 individuals in that group
+indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
+for(i in 1:length(indiv_to_plot)) 
+{
+  j <- 1
+  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
+  for(j in 2:(n_dates[group_idx]))
+  {
+    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+    lines(date, col=j)
+  }
+  legend("topright", c("Onset","Report"), lty=1, col=1:n_dates[group_idx])
+}
+group_idx <- 2 ##########################
+# randomly pick 5 individuals in that group
+indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
+for(i in 1:length(indiv_to_plot)) 
+{
+  j <- 1
+  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
+  for(j in 2:(n_dates[group_idx]))
+  {
+    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+    lines(date, col=j)
+  }
+  legend("topright", c("Onset","Death","Report"), lty=1, col=1:n_dates[group_idx])
+}
+group_idx <- 3 ##########################
+# randomly pick 5 individuals in that group
+indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
+for(i in 1:length(indiv_to_plot)) 
+{
+  j <- 1
+  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
+  for(j in 2:(n_dates[group_idx]))
+  {
+    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+    lines(date, col=j)
+  }
+  legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=1:n_dates[group_idx])
+}
+group_idx <- 4 ##########################
+# randomly pick 5 individuals in that group
+indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
+for(i in 1:length(indiv_to_plot)) 
+{
+  j <- 1
+  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
+  for(j in 2:(n_dates[group_idx]))
+  {
+    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
+    lines(date, col=j)
+  }
+  legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=1:n_dates[group_idx])
+}
+dev.off()
+
 #plot(aug_dat_chain$D[[1]][[2]][,6], type="l")
 
 

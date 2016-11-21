@@ -762,36 +762,36 @@ plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 # looking at mean delay 
 group_idx <- 1 ##########################
 j <- 1
-mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+mu <- curr_theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
-mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+mu <- curr_theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
-for(j in 2:n_dates[group_idx])
+for(j in 2:(n_dates[group_idx]-1))
 {
-  mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+  mu <- curr_theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
-mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+mu <- curr_theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
-for(j in 2:n_dates[group_idx])
+for(j in 2:(n_dates[group_idx]-1))
 {
-  mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+  mu <- curr_theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
-mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+mu <- curr_theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
-for(j in 2:n_dates[group_idx])
+for(j in 2:(n_dates[group_idx]-1))
 {
-  mu <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$mu[[group_idx]][j] )
+  mu <- curr_theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -803,36 +803,36 @@ plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 # looking at std delay
 group_idx <- 1 ##########################
 j <- 1
-sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+sigma <- curr_theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
-sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+sigma <- curr_theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
-for(j in 2:n_dates[group_idx])
+for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+  sigma <- curr_theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
-sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+sigma <- curr_theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
-for(j in 2:n_dates[group_idx])
+for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+  sigma <- curr_theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
-sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+sigma <- curr_theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
-for(j in 2:n_dates[group_idx])
+for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- sapply(1:n_iter, function(k) theta_chain_list[[k]]$sigma[[group_idx]][j] )
+  sigma <- curr_theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])

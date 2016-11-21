@@ -600,28 +600,49 @@ prior_mean_std_delay=100
 
 range_dates <- find_range(obs_dat)
 
-theta_chain_list <- list()
-theta_chain_list[[1]] <- theta
-aug_dat_chain_list <- list()
-aug_dat_chain_list[[1]] <- aug_dat
-
+# to store param values
 curr_theta <- theta
 theta_chain <- curr_theta
-aug_dat_chain <- aug_dat
 
-add_new_value_chain_theta <- function(curr_theta_chain, new_theta)
+# to store augmented data values
+curr_aug_dat <- aug_dat
+aug_dat_chain <- list(D=list(), E=list())
+for(g in 1:n_groups)
 {
-  curr_theta_chain$zeta <- c(curr_theta_chain$zeta, new_theta$zeta)
+  aug_dat_chain$D[[g]] <- lapply(1:n_dates[[g]], function(j) aug_dat$D[[g]][,j])
+  names(aug_dat_chain$D[[g]]) <- paste0("Delay",1:n_dates[[g]])
+  aug_dat_chain$E[[g]] <- lapply(1:n_dates[[g]], function(j) aug_dat$E[[g]][,j])
+  names(aug_dat_chain$E[[g]]) <- paste0("Delay",1:n_dates[[g]])
+}
+names(aug_dat_chain$D) <- names(obs_dat)
+names(aug_dat_chain$E) <- names(obs_dat)
+
+add_new_value_chain_theta <- function(theta_chain, new_theta)
+{
+  theta_chain$zeta <- c(theta_chain$zeta, new_theta$zeta)
   for(g in 1:n_groups)
   {
-    curr_theta_chain$mu[[g]] <- rbind(curr_theta_chain$mu[[g]], new_theta$mu[[g]])
-    curr_theta_chain$sigma[[g]] <- rbind(curr_theta_chain$sigma[[g]], new_theta$sigma[[g]])
+    theta_chain$mu[[g]] <- rbind(theta_chain$mu[[g]], new_theta$mu[[g]])
+    theta_chain$sigma[[g]] <- rbind(theta_chain$sigma[[g]], new_theta$sigma[[g]])
   }
-  return(curr_theta_chain)
+  return(theta_chain)
+}
+
+add_new_value_chain_aug_dat <- function(curr_aug_dat, new_aug_dat)
+{
+  for(g in 1:n_groups)
+  {
+    for(j in 1:n_dates[[g]])
+    {
+      curr_aug_dat$D[[g]][[j]] <- rbind(curr_aug_dat$D[[g]][[j]], new_aug_dat$D[[g]][,j])
+      curr_aug_dat$E[[g]][[j]] <- rbind(curr_aug_dat$E[[g]][[j]], new_aug_dat$E[[g]][,j])
+    }
+  }
+  return(curr_aug_dat)
 }
 
 logpost_chain <- rep(NA, n_iter)
-logpost_chain[1] <- lposterior_total(aug_dat_chain_list[[1]], theta_chain_list[[1]], obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
+logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
 
 n_accepted_D_moves <- 0
 n_proposed_D_moves <- 0
@@ -657,27 +678,26 @@ system.time({
   for(k in 1:(n_iter-1))
   {
     print(k)
-    aug_dat_chain_list[[k+1]] <- aug_dat_chain_list[[k]]
     
     # move some of the D_i
     if(D_moves_on)
     {
       for(g in 1:n_groups)
       {
-        for(j in 1:ncol(aug_dat_chain_list[[k]]$D[[g]]))
+        for(j in 1:length(curr_aug_dat$D[[g]]))
         {
           to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_10_to_update <- floor(length(to_update) / move_D_by_groups_of_size)
           for(i in 1:length(n_10_to_update))
           {
             tmp <- move_Di (to_update[move_D_by_groups_of_size*(i-1)+(1:move_D_by_groups_of_size)], g, j, 
-                            aug_dat_chain_list[[k+1]],
+                            curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
                             prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
-            if(tmp$accept==1) aug_dat_chain_list[[k+1]] <- tmp$new_aug_dat # if accepted move, update accordingly
+            if(tmp$accept==1) curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
           }
         }
       }
@@ -686,7 +706,7 @@ system.time({
     # move zeta using Gibbs sampler
     if(zeta_moves_on)
     {
-      tmp <- move_zeta_gibbs(aug_dat_chain_list[[k+1]],
+      tmp <- move_zeta_gibbs(curr_aug_dat,
                              curr_theta, 
                              obs_dat, 
                              prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
@@ -698,10 +718,10 @@ system.time({
     {
       for(g in 1:n_groups)
       {
-        for(j in 2:ncol(aug_dat_chain_list[[k]]$D[[g]]))
+        for(j in 2:length(curr_aug_dat$D[[g]]))
         {
           tmp <- move_lognormal(what="mu", g, j-1, sdlog_mu, 
-                                aug_dat_chain_list[[k+1]],
+                                curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
                                 prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
@@ -717,10 +737,10 @@ system.time({
     {
       for(g in 1:n_groups)
       {
-        for(j in 2:ncol(aug_dat_chain_list[[k]]$D[[g]]))
+        for(j in 2:length(curr_aug_dat$D[[g]]))
         {
           tmp <- move_lognormal(what="sigma", g, j-1, sdlog_sigma, 
-                                aug_dat_chain_list[[k+1]],
+                                curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
                                 prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
@@ -732,10 +752,11 @@ system.time({
     }
     
     # recording the value of parameters after all moves
-    curr_theta_chain <- add_new_value_chain_theta(curr_theta_chain, curr_theta)
+    theta_chain <- add_new_value_chain_theta(theta_chain, curr_theta)
+    aug_dat_chain <- add_new_value_chain_aug_dat(aug_dat_chain, curr_aug_dat)
     
     # recording the likelihood after all moves
-    logpost_chain[k+1] <- lposterior_total(aug_dat_chain_list[[k+1]], curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
+    logpost_chain[k+1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
   }
 })
 
@@ -762,36 +783,36 @@ plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 # looking at mean delay 
 group_idx <- 1 ##########################
 j <- 1
-mu <- curr_theta_chain$mu[[group_idx]][,j]
+mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
-mu <- curr_theta_chain$mu[[group_idx]][,j]
+mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
-  mu <- curr_theta_chain$mu[[group_idx]][,j]
+  mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
-mu <- curr_theta_chain$mu[[group_idx]][,j]
+mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
-  mu <- curr_theta_chain$mu[[group_idx]][,j]
+  mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
-mu <- curr_theta_chain$mu[[group_idx]][,j]
+mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
-  mu <- curr_theta_chain$mu[[group_idx]][,j]
+  mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -803,39 +824,43 @@ plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 # looking at std delay
 group_idx <- 1 ##########################
 j <- 1
-sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+sigma <- theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
-sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+sigma <- theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+  sigma <- theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
-sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+sigma <- theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+  sigma <- theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
-sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+sigma <- theta_chain$sigma[[group_idx]][,j]
 plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- curr_theta_chain$sigma[[group_idx]][,j]
+  sigma <- theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+
+### plot some of the Ds: 
+#plot(aug_dat_chain$D[[1]][[2]][,6], type="l")
+
 
 ###############################################
 ### TO DO ###

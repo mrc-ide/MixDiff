@@ -288,9 +288,9 @@ LL_delays_term<-function(aug_dat, theta, obs_dat, Delta=NULL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)
 
-LL_total <- function(aug_dat, theta, obs_dat)
+LL_total <- function(aug_dat, theta, obs_dat, range_dates=NULL)
 {
-  res <- LL_observation_term(aug_dat, theta, obs_dat) + 
+  res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates) + 
     LL_error_term(aug_dat, theta, obs_dat) + 
     LL_delays_term(aug_dat, theta, obs_dat)
   return(res)
@@ -354,9 +354,9 @@ lprior_total <- function(theta, shape1_prob_error=3, shape2_prob_error=12, mean_
 ### posteriors ###
 ###############################################
 
-lposterior_total <- function(aug_dat, theta, obs_dat, prior_shape1_prob_error=3, prior_shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100)
+lposterior_total <- function(aug_dat, theta, obs_dat, prior_shape1_prob_error=3, prior_shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100, range_dates=NULL)
 {
-  res <- LL_total(aug_dat, theta, obs_dat) + lprior_total(theta, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  res <- LL_total(aug_dat, theta, obs_dat, range_dates) + lprior_total(theta, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
   return(res)
 }
 #lposterior_total(aug_dat, theta, obs_dat)
@@ -381,23 +381,19 @@ move_Di <- function(i, group_idx, date_idx,
   
   # draw proposed value for D using +/-1 random walk
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-  proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), 1)
+  proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), length(i), replace=TRUE)
   
   proposed_aug_dat <- curr_aug_dat
   proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
   
   # adjust E_i accordingly
   # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
-  if(is.na(obs_dat[[group_idx]][i,date_idx]))
-  {
-    proposed_aug_dat$E[[group_idx]][i,date_idx] <- -1 # y_i missing
-  }else if(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
-  {
-    proposed_aug_dat$E[[group_idx]][i,date_idx] <- 0 # y_i observed without error
-  }else
-  {
-    proposed_aug_dat$E[[group_idx]][i,date_idx] <- 1 # y_i observed with error
-  } 
+  missing <- is.na(obs_dat[[group_idx]][i,date_idx])
+  proposed_aug_dat$E[[group_idx]][i,date_idx][missing] <- -1 # y_i missing
+  erroneous <- proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx]
+  proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 0 # y_i observed without error
+  non_erroneous <- !missing & !erroneous
+  proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 1 # y_i observed with error
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
@@ -408,6 +404,8 @@ move_Di <- function(i, group_idx, date_idx,
   for(d in delay_idx)
     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i) - 
     LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
+  
+  ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
@@ -589,6 +587,8 @@ move_zeta_gibbs <- function(aug_dat,
 
 n_iter <- 10 # currently (18th Nov 2016, updating only 1 Di per group at each iteration, 100 iterations take ~390 seconds)
 
+move_D_by_groups_of_size <- 1
+
 ### prior parameters 
 
 prior_shape1_prob_error=3
@@ -598,14 +598,14 @@ prior_mean_std_delay=100
 
 ### initialisation
 
+range_dates <- find_range(obs_dat)
+
 theta_chain <- list()
 theta_chain[[1]] <- theta
 aug_dat_chain <- list()
 aug_dat_chain[[1]] <- aug_dat
 logpost_chain <- rep(NA, n_iter)
-logpost_chain[1] <- lposterior_total(aug_dat_chain[[1]], theta_chain[[1]], obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
-
-range_dates <- find_range(obs_dat)
+logpost_chain[1] <- lposterior_total(aug_dat_chain[[1]], theta_chain[[1]], obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
 
 n_accepted_D_moves <- 0
 n_proposed_D_moves <- 0
@@ -652,9 +652,10 @@ system.time({
         for(j in 1:ncol(aug_dat_chain[[k]]$D[[g]]))
         {
           to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
-          for(i in to_update)
+          n_10_to_update <- floor(length(to_update) / move_D_by_groups_of_size)
+          for(i in 1:length(n_10_to_update))
           {
-            tmp <- move_Di (i, g, j, 
+            tmp <- move_Di (to_update[move_D_by_groups_of_size*(i-1)+(1:move_D_by_groups_of_size)], g, j, 
                             aug_dat_chain[[k+1]],
                             theta_chain[[k+1]], 
                             obs_dat, 
@@ -716,7 +717,7 @@ system.time({
     }
     
     # recording the likelihood after all moves
-    logpost_chain[k+1] <- lposterior_total(aug_dat_chain[[k+1]], theta_chain[[k+1]], obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+    logpost_chain[k+1] <- lposterior_total(aug_dat_chain[[k+1]], theta_chain[[k+1]], obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
   }
 })
 

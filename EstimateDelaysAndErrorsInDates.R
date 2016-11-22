@@ -111,6 +111,32 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
     for(e in 1:nrow(D[[g]]))
     {
       #print(e)
+      
+      # first deal with incompatible dates
+      for(j in 1:ncol(index_dates_order[[g]]))
+      {
+        if(!any(is.na(D[[g]][e,index_dates_order[[g]][,j]])))
+        {
+          if(D[[g]][e,index_dates_order[[g]][1,j]] > D[[g]][e,index_dates_order[[g]][2,j]]) # there is a problem if the dates are in the wrong order
+          {
+            # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
+            tmp <- table(as.vector(index_dates_order[[g]][,sapply(1:ncol(index_dates_order[[g]]), function(j) D[[g]][e,index_dates_order[[g]][1,j]] > D[[g]][e,index_dates_order[[g]][2,j]] )]))
+            if(any(tmp>1))
+            {
+              must_be_wrong <- which.max(tmp)[1]
+            }else
+            {
+              # check which of all dates is most outlier compared to all other dates, and if several take the first one as the wrong one
+              diff_from_median <- abs(D[[g]][e,index_dates_order[[g]][,j]] - median(D[[g]][e,], na.rm=TRUE))
+              must_be_wrong <- which(diff_from_median %in% max(diff_from_median))[1]
+              must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
+            }
+            D[[g]][e,must_be_wrong] <- NA
+          }
+        }
+      }
+      
+      # now deal with missing dates
       missing_dates <- which(is.na(D[[g]][e,]))
       while(length(missing_dates)>0)
       {
@@ -284,7 +310,7 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 
 DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
 {
-  if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu, sigma))
+  if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
   return(res)
 }
 
@@ -477,8 +503,8 @@ move_lognormal <- function(what=c("mu","sigma"), group_idx, delay_idx, sdlog,
     ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_std_delay) - lprior_params_delay(what, curr_theta, prior_mean_std_delay) 
   }
   Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx,  1:nrow(obs_dat[[group_idx]]), index = index_dates) # same for proposed and curent par values so no need to recompute twice
-  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]])), Delta) - 
-    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]])), Delta) 
+  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), Delta)) - 
+    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), Delta)) 
   
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 

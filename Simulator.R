@@ -26,7 +26,7 @@ find_params_gamma <- function(mu, sigma)
 
 simul_true_data <- function(theta, n_per_group, range_dates, index_dates)
 {
-  D <- list() # index_dates_order
+  D <- list() 
   for(g in 1:length(theta$mu))
   {
     D[[g]] <- matrix(NA, n_per_group[g], length(theta$mu[[g]])+1)

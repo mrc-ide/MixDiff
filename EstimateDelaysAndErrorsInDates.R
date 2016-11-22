@@ -684,7 +684,7 @@ system.time({
     {
       for(g in 1:n_groups)
       {
-        for(j in 1:length(curr_aug_dat$D[[g]]))
+        for(j in 1:ncol(curr_aug_dat$D[[g]]))
         {
           to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_10_to_update <- floor(length(to_update) / move_D_by_groups_of_size)
@@ -718,7 +718,7 @@ system.time({
     {
       for(g in 1:n_groups)
       {
-        for(j in 2:length(curr_aug_dat$D[[g]]))
+        for(j in 2:ncol(curr_aug_dat$D[[g]]))
         {
           tmp <- move_lognormal(what="mu", g, j-1, sdlog_mu, 
                                 curr_aug_dat,
@@ -737,7 +737,7 @@ system.time({
     {
       for(g in 1:n_groups)
       {
-        for(j in 2:length(curr_aug_dat$D[[g]]))
+        for(j in 2:ncol(curr_aug_dat$D[[g]]))
         {
           tmp <- move_lognormal(what="sigma", g, j-1, sdlog_sigma, 
                                 curr_aug_dat,

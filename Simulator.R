@@ -54,9 +54,12 @@ D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 tmp <- simul_obs_dat(D, theta)
 E <- tmp$E
 obs_dat <- tmp$obs_dat
+aug_dat <- list(D=D, E=E)
+saveRDS(obs_dat, file = "SimulatedObsData.rds")
+saveRDS(aug_dat, file = "SimulatedAugData.rds")
 
 #########################################
 ### applying the MCMC to this dataset ###
 #########################################
 
-# TO WRITE
+# execute code from EstimateDelaysAndErrorsInDates.R

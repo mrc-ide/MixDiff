@@ -39,6 +39,21 @@ n_dates <- sapply(obs_dat, ncol )
 n_groups <- length(n_dates)
 
 ###############################################
+### function to handle dates ###
+###############################################
+
+date_to_int <- function(date, origin = "1970-01-01")
+{
+  if(is.character(date)) date <- as.Date(date)
+  return(as.integer(date - as.Date(origin)))
+}
+
+int_to_date <- function(int, origin = "1970-01-01")
+{
+  return(int + as.Date(origin))
+}
+
+###############################################
 ### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
 ###############################################
 
@@ -68,9 +83,9 @@ compute_delta <- function(D, index = index_dates)
 ### mean and std of distribution of various delays, by group
 ### we use a the starting point the observed mean and std of each delay in each group
 obs_delta <- compute_delta(obs_dat, index_dates)
-mu <- lapply(1:n_groups, function(g) apply(obs_delta[[g]], 2, mean, na.rm=TRUE) )
+mu <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, mean, na.rm=TRUE) ))
 names(mu) <- names(n_dates)
-sigma <- lapply(1:n_groups, function(g) apply(obs_delta[[g]], 2, sd, na.rm=TRUE) )
+sigma <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, sd, na.rm=TRUE) ))
 names(sigma) <- names(n_dates)
 
 ### list of all parameters
@@ -204,12 +219,12 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   LL <- vector()
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
-  no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx]==0
+  no_error <- which(aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% 0)
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
   # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
   ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
-  error_or_missing <- (aug_dat$E[[group_idx]][indiv_idx, date_idx]==-1 | aug_dat$E[[group_idx]][indiv_idx, date_idx]==1)
+  error_or_missing <- which((aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% -1 | aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% 1))
   ### K is the relative probability of observing a given error, conditional on presence of error
   # for now, K is given as 1/n, where n is the number of dates in the range_dates
   # could use something different if we define the space of possible errors differently. 
@@ -233,17 +248,17 @@ LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
   res <- vector()
-  missing <- aug_dat$E[[group_idx]][indiv_idx,date_idx]==-1
-  non_missing <- aug_dat$E[[group_idx]][indiv_idx,date_idx]!=-1
-  res[non_missing] <- log(theta$zeta)*aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx] + log(1-theta$zeta)*(1-aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx])
+  missing <- which(aug_dat$E[[group_idx]][indiv_idx,date_idx] %in% -1)
+  non_missing <- which(!(aug_dat$E[[group_idx]][indiv_idx,date_idx]  %in% -1))
+  res[non_missing] <- log(theta$zeta)*as.numeric(aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx]) + log(1-theta$zeta)*(1-as.numeric(aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx]))
   res[missing] <- 0
   return(res)
 }
 
 compute_n_errors <- function(aug_dat, obs_dat)
 {
-  number_of_errors <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]]==1)))
-  number_of_recorded_dates <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]] != -1)))
+  number_of_errors <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]] %in% 1)))
+  number_of_recorded_dates <- sum(sapply(1:n_groups, function(g) sum(!(aug_dat$E[[g]] %in% -1))))
   return(c(number_of_errors, number_of_recorded_dates))
 }
 # system.time(compute_n_errors(aug_dat, obs_dat))
@@ -388,11 +403,11 @@ move_Di <- function(i, group_idx, date_idx,
   
   # adjust E_i accordingly
   # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
-  missing <- is.na(obs_dat[[group_idx]][i,date_idx])
+  missing <- which(is.na(obs_dat[[group_idx]][i,date_idx]))
   proposed_aug_dat$E[[group_idx]][i,date_idx][missing] <- -1 # y_i missing
-  erroneous <- proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx]
+  erroneous <- which(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
   proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 0 # y_i observed without error
-  non_erroneous <- !missing & !erroneous
+  non_erroneous <- which(!is.na(obs_dat[[group_idx]][i,date_idx]) & proposed_aug_dat$D[[group_idx]][i,date_idx]!=obs_dat[[group_idx]][i,date_idx] )
   proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 1 # y_i observed with error
   
   # calculates probability of acceptance
@@ -807,7 +822,7 @@ plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 # looking at mean delay 
 group_idx <- 1 ##########################
 j <- 1
-mu <- theta_chain$mu[[group_idx]][,j]
+mu <- theta_chain$mu[[group_idx]]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
@@ -848,7 +863,7 @@ plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 # looking at std delay
 group_idx <- 1 ##########################
 j <- 1
-sigma <- theta_chain$sigma[[group_idx]][,j]
+sigma <- theta_chain$sigma[[group_idx]]
 plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################

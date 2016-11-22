@@ -47,9 +47,20 @@ simul_obs_dat <- function(D, theta)
 ### creating a simulated dataset ###
 ####################################
 
+n_groups <- 4
+n_dates <- c(2, 3, 4, 4)
+
+theta <- list()
 theta$prop_missing_data <- 0.1 ### this is currently missing from the estimation model
 theta$zeta <- 0.1 ### probability that, when not missing, the date is recorded with error
+theta$mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
+theta$sigma <- list(3, c(3, 3), c(3, 3, 3), c(3, 3, 3))
 n_per_group <- rep(100, 4)
+range_dates <- c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y"))
+index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
+index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
+
+
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 tmp <- simul_obs_dat(D, theta)
 E <- tmp$E
@@ -63,3 +74,5 @@ saveRDS(aug_dat, file = "SimulatedAugData.rds")
 #########################################
 
 # execute code from EstimateDelaysAndErrorsInDates.R
+
+# ISSUE obs_data is integers not dates

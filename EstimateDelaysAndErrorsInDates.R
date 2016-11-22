@@ -626,7 +626,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 10 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 1000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -801,7 +801,8 @@ system.time({
   }
 })
 
-# save.image("tmp.Rdata")
+# save.image("ResultsEbolaData.Rdata")
+# save.image("ResultsSimulatedData.Rdata")
 
 ###############################################
 ### acceptance probabilities ###
@@ -816,7 +817,7 @@ n_accepted_sigma_moves / n_proposed_sigma_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1 # 1:100
+burnin <- 1:100
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)

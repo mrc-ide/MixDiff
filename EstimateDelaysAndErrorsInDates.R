@@ -19,6 +19,20 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
 ###############################################
+### function to handle dates ###
+###############################################
+
+date_to_int <- function(date, origin = "1970-01-01")
+{
+  return(as.integer(date - as.Date(origin)))
+}
+
+int_to_date <- function(int, origin = "1970-01-01")
+{
+  return(int + as.Date(origin))
+}
+
+###############################################
 ### data ###
 ###############################################
 
@@ -32,26 +46,11 @@ colDates <- grep("Date", names(raw_dat))
 tmp <- split(raw_dat[colDates],raw_dat$Path)
 # splitting dataset according to Path and removing NA date columns in each of these
 # - should only remain dates that are relevant for each group
-obs_dat <- lapply(tmp, function(x) x[,colSums(is.na(x))!=nrow(x)] )
+obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 
 n_dates <- sapply(obs_dat, ncol )
 
 n_groups <- length(n_dates)
-
-###############################################
-### function to handle dates ###
-###############################################
-
-date_to_int <- function(date, origin = "1970-01-01")
-{
-  if(is.character(date)) date <- as.Date(date)
-  return(as.integer(date - as.Date(origin)))
-}
-
-int_to_date <- function(int, origin = "1970-01-01")
-{
-  return(int + as.Date(origin))
-}
 
 ###############################################
 ### compute_delta function to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
@@ -111,15 +110,16 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
     D[[g]] <- obs_dat[[g]]
     for(e in 1:nrow(D[[g]]))
     {
+      #print(e)
       missing_dates <- which(is.na(D[[g]][e,]))
       while(length(missing_dates)>0)
       {
         can_be_inferred_from <- lapply(missing_dates, function(i) {
           x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
           from_idx <- sapply(1:nrow(x), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
-          from_value <- sapply(1:nrow(x), function(k) as.character(D[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]]))
+          from_value <- sapply(1:nrow(x), function(k) D[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
           rule <- sapply(1:nrow(x), function(k) if(x[k,1]==1) "before" else "after"  )
-          return(list(rule=rule,from_idx=from_idx, from_value=as.Date(from_value)))
+          return(list(rule=rule,from_idx=from_idx, from_value=from_value))
         })
         can_be_inferred <- which(sapply(1:length(missing_dates), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
         for(k in can_be_inferred)
@@ -600,7 +600,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 1000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 10 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -649,8 +649,8 @@ add_new_value_chain_aug_dat <- function(curr_aug_dat, new_aug_dat)
   {
     for(j in 1:n_dates[[g]])
     {
-      curr_aug_dat$D[[g]][[j]] <- rbind(curr_aug_dat$D[[g]][[j]], as.integer(new_aug_dat$D[[g]][,j]))
-      curr_aug_dat$E[[g]][[j]] <- rbind(curr_aug_dat$E[[g]][[j]], as.integer(new_aug_dat$E[[g]][,j]))
+      curr_aug_dat$D[[g]][[j]] <- rbind(curr_aug_dat$D[[g]][[j]], new_aug_dat$D[[g]][,j])
+      curr_aug_dat$E[[g]][[j]] <- rbind(curr_aug_dat$E[[g]][[j]], new_aug_dat$E[[g]][,j])
     }
   }
   return(curr_aug_dat)
@@ -782,7 +782,7 @@ system.time({
 ###############################################
 
 n_accepted_D_moves / n_proposed_D_moves
-#n_accepted_zeta_moves / n_proposed_zeta_moves
+#n_accepted_zeta_moves / n_proposed_zeta_moves # not computed as now using Gibbs sampler for Zeta
 n_accepted_mu_moves / n_proposed_mu_moves
 n_accepted_sigma_moves / n_proposed_sigma_moves
 
@@ -790,7 +790,7 @@ n_accepted_sigma_moves / n_proposed_sigma_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1:100
+burnin <- 1 # 1:100
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)
@@ -996,10 +996,8 @@ sapply(1:n_groups, function(g) sapply(1:n_dates[g], function(j) unique(as.vector
 # try to speed up if possible
 # considering only calculating the likelihood for some iterations (e.g. after burnin and thinning), posthoc? 
 # should we update zeta after each D_i move, or after all D_i in a group move? 
-# make sure we can go back to dates from the integers saved in aug_data_chain? i.e. what origin should be used? 
 # keep track of acceptance rate for D and for mu/sigma per group and per deay rather than altogether, to check if some moves are more successful than others. 
 # also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
-# add some plots showing moves of augmented dates for a few individuals, in particular some with missing dates
 
 # Marc: 
 # finish writing

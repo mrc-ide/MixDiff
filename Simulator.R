@@ -1,3 +1,18 @@
+
+###############################################
+### function to handle dates ###
+###############################################
+
+date_to_int <- function(date, origin = "1970-01-01")
+{
+  return(as.integer(date - as.Date(origin)))
+}
+
+int_to_date <- function(int, origin = "1970-01-01")
+{
+  return(int + as.Date(origin))
+}
+
 #######################################
 ### functions to simulate a dataset ###
 #######################################
@@ -56,7 +71,7 @@ theta$zeta <- 0.1 ### probability that, when not missing, the date is recorded w
 theta$mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
 theta$sigma <- list(3, c(3, 3), c(3, 3, 3), c(3, 3, 3))
 n_per_group <- rep(100, 4)
-range_dates <- c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y"))
+range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 

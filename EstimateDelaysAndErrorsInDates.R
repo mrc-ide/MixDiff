@@ -849,12 +849,12 @@ plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 group_idx <- 1 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 15))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
@@ -864,7 +864,7 @@ legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_
 group_idx <- 3 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-alive group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
@@ -874,7 +874,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n
 group_idx <- 4 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-dead group)", ylim=c(0, 15))
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]

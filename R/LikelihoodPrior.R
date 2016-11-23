@@ -94,10 +94,17 @@ DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
   return(res)
 }
 
+DiscrSI_vectorised_from_mu_CV <- function(x, mu, CV, log=TRUE)
+{
+  sigma <- mu*CV
+  if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
+  return(res)
+}
+
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx, indiv_idx, index = index_dates)
-  LL <- DiscrSI_vectorised(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$sigma[[group_idx]][delay_idx], log=TRUE)
+  LL <- DiscrSI_vectorised_from_mu_CV(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$CV[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 
@@ -135,7 +142,7 @@ lprior_prob_error <- function(theta, shape1=3, shape2=12)
 # lprior_prob_error(theta, param_beta[1], param_beta[2])
 
 # mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
-lprior_params_delay <- function(what=c("mu", "sigma"), theta, mean=100) # using the same prior for the mean of all delays
+lprior_params_delay <- function(what=c("mu", "CV"), theta, mean=100) # using the same prior for the mean of all delays
 {
   what <- match.arg(what)
   # can use this code to plot the corresponding prior: 
@@ -150,7 +157,7 @@ lprior_total <- function(theta, shape1_prob_error=3, shape2_prob_error=12, mean_
 {
   res <- lprior_prob_error(theta, shape1_prob_error, shape2_prob_error) + 
     lprior_params_delay("mu", theta, mean_mean_delay) + 
-    lprior_params_delay("sigma", theta, mean_mean_delay)
+    lprior_params_delay("CV", theta, mean_mean_delay)
   return(res)
 }
 #lprior_total(theta)

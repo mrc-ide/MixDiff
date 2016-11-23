@@ -63,7 +63,7 @@ theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 ### Run the MCMC ###
 ###############################################
 
-n_iter <- 5000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 500 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -243,7 +243,7 @@ n_accepted_CV_moves / n_proposed_CV_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1:1000
+burnin <- 1:100
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)
@@ -478,6 +478,7 @@ dev.off()
 
 cor_mu_CV <- list()
 
+par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
 group_idx <- 1
 plot(theta_chain$mu[[group_idx]], theta_chain$CV[[group_idx]], type="l")
 cor_mu_CV[[group_idx]] <- cor.test(theta_chain$mu[[group_idx]], theta_chain$CV[[group_idx]])
@@ -493,7 +494,7 @@ for(group_idx in 2:n_groups)
 }
 
 cor_mu_CV
-# positive correlation suggests maybe sould reparameterize to be mean and CV rather than mean and SD
+# much less correlation now after we have reparameterized to be mean and CV rather than mean and SD
 
 ###############################################
 ### TO DO ###
@@ -508,7 +509,6 @@ cor_mu_CV
 # also consider using Gibbs samplers to move mu and CV --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
 # why do we tend to underestimate the mean delays? related to discretization of gamma distr? 
 # write some code to start from last point in the chain
-# reparameterize to be mean and CV rather than mean and SD???
 # create a hyperprior list which contains all the prior parameters - easier than keeping track of each of them separately
 
 # Marc: 

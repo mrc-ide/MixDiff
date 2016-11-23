@@ -1,28 +1,12 @@
-
 ###############################################
-### function to handle dates ###
+### source functions from other scripts ###
 ###############################################
 
-date_to_int <- function(date, origin = "1970-01-01")
-{
-  return(as.integer(date - as.Date(origin)))
-}
-
-int_to_date <- function(int, origin = "1970-01-01")
-{
-  return(int + as.Date(origin))
-}
+source("Utilities.R")
 
 #######################################
 ### functions to simulate a dataset ###
 #######################################
-
-find_params_gamma <- function(mu, sigma)
-{
-  a <- ((mu - 1)/sigma)^2
-  b <- sigma^2/(mu - 1)
-  return(c(a, b))
-}
 
 simul_true_data <- function(theta, n_per_group, range_dates, index_dates)
 {
@@ -66,7 +50,7 @@ n_groups <- 4
 n_dates <- c(2, 3, 4, 4)
 
 theta <- list()
-theta$prop_missing_data <- 0.1 ### this is currently missing from the estimation model
+theta$prop_missing_data <- 0.1 ### this is missing from the estimation model (directly available from the data so not explicitely modelled)
 theta$zeta <- 0.1 ### probability that, when not missing, the date is recorded with error
 theta$mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
 theta$sigma <- list(3, c(3, 3), c(3, 3, 3), c(3, 3, 3))
@@ -91,16 +75,8 @@ for(g in 1:n_groups)
   }
 }
 aug_dat <- list(D=D, E=E)
+rm(D)
+rm(E)
 saveRDS(obs_dat, file = "SimulatedObsData.rds")
 saveRDS(aug_dat, file = "SimulatedAugData.rds")
 saveRDS(theta, file = "ThetaUsedForSimulation.rds")
-rm(D)
-rm(E)
-
-#########################################
-### applying the MCMC to this dataset ###
-#########################################
-
-# execute code from EstimateDelaysAndErrorsInDates.R
-
-# ISSUE obs_data is integers not dates

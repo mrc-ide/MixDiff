@@ -74,6 +74,18 @@ find_params_gamma <- function(mean, sigma) # function to determine parameters of
 # mean(sample_gamma)
 # sd(sample_gamma)
 
+find_params_gamma_from_mean_CV <- function(mean, CV) # function to determine parameters of the gamma distribution corresponding to a given mean and CV
+{
+  sigma <- mean*CV
+  res <- find_params_gamma(mean, sigma)
+  return(res)
+}
+# test if works: 
+# param_gamma <- find_params_gamma_from_mean_CV(0.1, 0.5)
+# sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
+# mean(sample_gamma)
+# sd(sample_gamma)/mean(sample_gamma)
+
 ###############################################
 ### compute_delta functions to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
 ###############################################

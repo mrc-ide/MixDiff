@@ -52,7 +52,7 @@ NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as er
 This level describes the difference between two observations: 
 for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}, g_i\right) = f_{k-1, k}^{g_i}\left(D_i^{k}-D_i^{k-1}\right)$. 
 
-We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with shape and scale being noted respectively $\alpha_{k-1, k}^{g_i}$ and $\beta_{k-1, k}^{g_i}$. 
+We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with mean and coefficient of variation (before discretisation) being noted respectively $\mu_{k-1, k}^{g_i}$ and $CV_{k-1, k}^{g_i}$. 
 
 <!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
 
@@ -61,21 +61,21 @@ We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with shape and sca
 The joint posteior distribution of parameters and augmented data given observed data is:
 
 $\begin{aligned}
-P\left(\zeta, \alpha, \beta, D, E | g, y\right) \propto& P\left(\zeta, \alpha, \beta, D, E, g, y\right) \\
-  \propto& P\left(y | D, E, \zeta, \alpha, \beta, g\right) P\left(E | \zeta, D, \alpha, \beta, g\right) P\left(D | \zeta, \alpha, \beta, g\right) P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)\\
-    \propto& P\left(y | D, E\right) P\left(E | \zeta\right) P\left(D | \zeta, \alpha, \beta, g\right)P\left(\zeta\right) P\left(\alpha\right) P\left(\beta\right)
+P\left(\zeta, \mu, CV, D, E | g, y\right) \propto& P\left(\zeta, \mu, CV, D, E, g, y\right) \\
+  \propto& P\left(y | D, E, \zeta, \mu, CV, g\right) P\left(E | \zeta, D, \mu, CV, g\right) P\left(D | \zeta, \mu, CV, g\right) P\left(\zeta\right) P\left(\mu\right) P\left(CV\right)\\
+    \propto& P\left(y | D, E\right) P\left(E | \zeta\right) P\left(D | \zeta, \mu, CV, g\right)P\left(\zeta\right) P\left(\mu\right) P\left(CV\right)
 \end{aligned}$
 
-where $P\left(D | \zeta, \alpha, \beta, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \alpha, \beta, g \right)$ (assuming a uniform prior for $D_i^1$). 
+where $P\left(D | \zeta, \mu, CV, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \mu, CV, g \right)$ (assuming a uniform prior for $D_i^1$). 
 
 ## Priors
 
-We use an informative beta prior for $\zeta$, and uninformative flat exponential priors for $\mu$ and $\sigma$, the mean and standard deviations of all delays. 
+We use an informative beta prior for $\zeta$, and uninformative flat exponential priors for $\mu$ and $CV$, the mean and coefficient of variation of all delays. 
 
 ## Moves
 
 TO WRITE BETTER
-Metropolis algorithm with Lognormal proposal for $\mu$, $\sigma$
+Metropolis algorithm with Lognormal proposal for $\mu$, $CV$
 Beta Gibbs sampler for $\zeta$
 Independant metropolis algorithm for dates $D$, where for each date $D$ we propose a new value drawn in one of the marginal posterior delays this particular date is involved, with $E$ being automatically updated accordingly. Only a fraction of dates (1/10 at the moment) updated at each iteration. 
 

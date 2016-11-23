@@ -1,34 +1,4 @@
 ###############################################
-### define parameters to be used for initialisation of the chain ###
-###############################################
-
-initialise_theta <- function(obs_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values
-{
-  
-  ### mean and std of distribution of various delays, by group
-  ### we use a the starting point the observed mean and std of each delay in each group
-  obs_delta <- compute_delta(obs_dat, index_dates)
-  mu <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, mean, na.rm=TRUE) ))
-  names(mu) <- names(n_dates)
-  sigma <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, sd, na.rm=TRUE) ))
-  names(sigma) <- names(n_dates)
-  CV <- lapply(1:n_groups, function(g) sigma[[g]]/mu[[g]])
-  names(CV) <- names(n_dates)
-  
-  ### list of all parameters
-  theta <- list(zeta = zeta_init, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
-                # TODO:
-                # could consider having zeta being type of date specific (e.g. more error on onset than death dates),
-                # time specific and/or space specific
-                mu = mu, # mean of gamma distributions used to characterise the various delays in different groups: mu[[g]][k] is the mean k^th delay in group g
-                CV = CV) # CV of gamma distributions used to characterise the various delays in different groups: CV[[g]][k] is the CV k^th delay in group g
-  
-  return(theta)
-  
-}
-
-
-###############################################
 ### define augmented data to be used for initialisation of the chain ###
 ###############################################
 
@@ -150,4 +120,33 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
                   E = E)
   
   return(aug_dat)
+}
+
+###############################################
+### define parameters to be used for initialisation of the chain ###
+###############################################
+
+initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values
+{
+  
+  ### mean and std of distribution of various delays, by group
+  ### we use a the starting point the observed mean and std of each delay in each group
+  obs_delta <- compute_delta(aug_dat$D, index_dates)
+  mu <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, mean, na.rm=TRUE) ))
+  names(mu) <- names(n_dates)
+  sigma <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, sd, na.rm=TRUE) ))
+  names(sigma) <- names(n_dates)
+  CV <- lapply(1:n_groups, function(g) sigma[[g]]/mu[[g]])
+  names(CV) <- names(n_dates)
+  
+  ### list of all parameters
+  theta <- list(zeta = zeta_init, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
+                # TODO:
+                # could consider having zeta being type of date specific (e.g. more error on onset than death dates),
+                # time specific and/or space specific
+                mu = mu, # mean of gamma distributions used to characterise the various delays in different groups: mu[[g]][k] is the mean k^th delay in group g
+                CV = CV) # CV of gamma distributions used to characterise the various delays in different groups: CV[[g]][k] is the CV k^th delay in group g
+  
+  return(theta)
+  
 }

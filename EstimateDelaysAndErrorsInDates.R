@@ -48,16 +48,16 @@ n_dates <- sapply(obs_dat, ncol )
 n_groups <- length(n_dates)
 
 ###############################################
-### define parameters to be used for initialisation of the chain ###
-###############################################
-
-theta <- initialise_theta(obs_dat, index_dates)
-
-###############################################
 ### define augmented data to be used for initialisation of the chain ###
 ###############################################
 
 aug_dat <- initialise_aug_data(obs_dat, index_dates_order)
+
+###############################################
+### define parameters to be used for initialisation of the chain ###
+###############################################
+
+theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 
 ###############################################
 ### Run the MCMC ###

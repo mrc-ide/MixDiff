@@ -1,3 +1,6 @@
 *.Rproj
 Dat.rds
 .Rproj.user
+MixDiff.html
+.Rapp.history
+.Rhistory

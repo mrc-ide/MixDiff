@@ -1,8 +1,11 @@
+rm(list=ls())
+
 ###############################################
 ### source functions from other scripts ###
 ###############################################
 
-source("Utilities.R")
+source("R/Utilities.R")
+source("R/SimulFunctions.R")
 
 ####################################
 ### creating a simulated dataset ###

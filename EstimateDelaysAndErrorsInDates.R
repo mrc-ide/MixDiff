@@ -747,7 +747,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 500 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 5000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -819,7 +819,7 @@ n_proposed_sigma_moves <- 0
 #n_proposed_zeta_moves <- 0 # not used as Gibbs sampler
 
 ### turn on and off various moves
-D_moves_on <- FALSE
+D_moves_on <- TRUE
 mu_moves_on <- TRUE
 sigma_moves_on <- TRUE
 zeta_moves_on <- TRUE
@@ -828,10 +828,10 @@ zeta_moves_on <- TRUE
 
 fraction_Di_to_update <- 1/10
 
-sdlog_mu <- 0.1 # for now moving all mus with the same sd, 
+sdlog_mu <- 0.15 # for now moving all mus with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
-sdlog_sigma <- 0.05 # for now moving all sigmas with the same sd, 
+sdlog_sigma <- 0.15 # for now moving all sigmas with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
 #sdlog_zeta <- 0.005 # not used as Gibbs sampler
@@ -938,7 +938,7 @@ n_accepted_sigma_moves / n_proposed_sigma_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1:50
+burnin <- 1:1000
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)
@@ -959,6 +959,8 @@ for(g in 1:n_groups)
 ### plotting the MCMC output ###
 ###############################################
 
+if(USE_SIMULATED_DATA) theta_simul <- readRDS("ThetaUsedForSimulation.rds")
+
 ### parameters ###
 
 pdf("ParamConvergencePlots.pdf", width=14, height=7)
@@ -971,77 +973,123 @@ plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 group_idx <- 1 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j])
+par(xpd=FALSE)
+
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
+  par(xpd=TRUE)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+  par(xpd=FALSE)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
+  par(xpd=TRUE)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+  par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 30))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
+  par(xpd=TRUE)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+  par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 
 # looking at zeta
 zeta <- theta_chain$zeta
 plot(zeta, type="l", xlab="Iterations", ylab="zeta")
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$zeta)
+par(xpd=FALSE)
 
 # looking at std delay
 group_idx <- 1 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+par(xpd=FALSE)
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-dead group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-dead group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
+  par(xpd=TRUE)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+  par(xpd=FALSE)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-alive group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-alive group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
+  par(xpd=TRUE)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+  par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-dead group)", ylim=c(0, 30))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-dead group)", ylim=c(0, 20))
+par(xpd=TRUE)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
   lines(sigma, col=j)
+  par(xpd=TRUE)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+  par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 dev.off()

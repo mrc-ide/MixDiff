@@ -4,6 +4,7 @@
 ###############################################
 ###############################################
 
+rm(list=ls())
 library(EpiEstim) # to use DiscrSI which does the discretised Gamma
 
 ###############################################
@@ -36,17 +37,25 @@ int_to_date <- function(int, origin = "1970-01-01")
 ### data ###
 ###############################################
 
-raw_dat<-readRDS("Dat.rds")
+USE_SIMULATED_DATA <- TRUE
 
-# head(raw_dat)
+if(!USE_SIMULATED_DATA)
+{
+  
+  raw_dat<-readRDS("Dat.rds")
+  
+  # head(raw_dat)
+  
+  colDates <- grep("Date", names(raw_dat))
+  tmp <- split(raw_dat[colDates],raw_dat$Path)
+  # splitting dataset according to Path and removing NA date columns in each of these
+  # - should only remain dates that are relevant for each group
+  obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
+} else
+{
+  obs_dat <- readRDS("SimulatedObsData.rds")  
+}
 
-N <- nrow(raw_dat) # Number of cases
-
-colDates <- grep("Date", names(raw_dat))
-tmp <- split(raw_dat[colDates],raw_dat$Path)
-# splitting dataset according to Path and removing NA date columns in each of these
-# - should only remain dates that are relevant for each group
-obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 
 n_dates <- sapply(obs_dat, ncol )
 
@@ -132,6 +141,22 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
               must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
             }
             D[[g]][e,must_be_wrong] <- NA
+            while(!(must_be_wrong %in% index_dates_order[[g]][,j]))
+            {
+              # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
+              tmp <- table(as.vector(index_dates_order[[g]][,sapply(1:ncol(index_dates_order[[g]]), function(j) D[[g]][e,index_dates_order[[g]][1,j]] > D[[g]][e,index_dates_order[[g]][2,j]] )]))
+              if(any(tmp>1))
+              {
+                must_be_wrong <- which.max(tmp)[1]
+              }else
+              {
+                # check which of all dates is most outlier compared to all other dates, and if several take the first one as the wrong one
+                diff_from_median <- abs(D[[g]][e,index_dates_order[[g]][,j]] - median(D[[g]][e,], na.rm=TRUE))
+                must_be_wrong <- which(diff_from_median %in% max(diff_from_median))[1]
+                must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
+              }
+              D[[g]][e,must_be_wrong] <- NA
+            }
           }
         }
       }
@@ -198,22 +223,13 @@ for(g in 1:n_groups)
   E[[g]] <- as.data.frame(matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]])))
   for(j in 1:ncol(obs_dat[[g]]))
   {
-    E[[g]][,j] <- 0 # assume no error to start with ### rbinom(nrow(obs_dat[[g]]), 1, theta$zeta)
-    E[[g]][is.na(obs_dat[[g]][,j]),j] <- -1
+    E[[g]][!(D[[g]][,j] %in% obs_dat[[g]][,j]),j] <- 1 # error
+    E[[g]][D[[g]][,j] %in% obs_dat[[g]][,j],j] <- 0 # no error
+    E[[g]][is.na(obs_dat[[g]][,j]),j] <- -1 # missing value
   }
   names(E[[g]]) <- names(obs_dat[[g]])
 }
 names(E) <- names(obs_dat)
-
-### now update D to be different to obs_dat if E = 1
-# for(g in 1:n_groups) 
-# {
-#   with_error <- which(E[[g]]==1, arr.ind =TRUE)
-#   for(ii in 1: nrow(with_error))
-#   {
-#     D[[g]][with_error[ii,1], with_error[ii,2]] <- obs_dat[[g]][with_error[ii,1], with_error[ii,2]] + sample(c(-1,1), 1)
-#   }
-# }
 
 aug_dat <- list(D = D,
                 E = E)
@@ -358,6 +374,18 @@ find_params_beta <- function(mean, var) # function to determine parameters of th
 # mean(sample_beta)
 # var(sample_beta)
 
+find_params_gamma <- function(mean, sigma) # function to determine parameters of the gamma distribution corresponding to a given mean and std
+{
+  shape <- (mean/sigma)^2
+  scale <- sigma^2/(mean)
+  return(c(shape, scale))
+}
+# test if works: 
+# param_gamma <- find_params_gamma(0.1, 0.05)
+# sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
+# mean(sample_gamma)
+# sd(sample_gamma)
+
 # zeta ~ beta(low mean) # need a very informative prior
 lprior_prob_error <- function(theta, shape1=3, shape2=12) 
 {
@@ -412,6 +440,78 @@ lposterior_total <- function(aug_dat, theta, obs_dat, prior_shape1_prob_error=3,
 # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
 # then accept/reject based on posterior values
 # this is symmetrical so no correction needed
+move_Di_plus_minus_one <- function(i, group_idx, date_idx, 
+                                   curr_aug_dat,
+                                   theta, 
+                                   obs_dat, 
+                                   shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100, range_dates=NULL) 
+{
+  if(is.null(range_dates)) range_dates <- find_range(obs_dat)
+  
+  # draw proposed value for D using +/-1 random walk
+  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
+  proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), length(i), replace=TRUE)
+  
+  proposed_aug_dat <- curr_aug_dat
+  proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
+  
+  # adjust E_i accordingly
+  # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
+  missing <- which(is.na(obs_dat[[group_idx]][i,date_idx]))
+  proposed_aug_dat$E[[group_idx]][i,date_idx][missing] <- -1 # y_i missing
+  erroneous <- which(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
+  proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 0 # y_i observed without error
+  non_erroneous <- which(!is.na(obs_dat[[group_idx]][i,date_idx]) & proposed_aug_dat$D[[group_idx]][i,date_idx]!=obs_dat[[group_idx]][i,date_idx] )
+  proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 1 # y_i observed with error
+  
+  # calculates probability of acceptance
+  delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
+  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
+    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+  ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
+    LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+  for(d in delay_idx)
+    ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i) - 
+    LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
+  
+  ratio_post <- sum(ratio_post)
+  
+  ### note that ratio_post should be the same as: 
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  
+  # no correction needed as this move is symetrical
+  p_accept <- ratio_post 
+  if(p_accept>0) {p_accept <- 0}
+  
+  # accept/reject step
+  tmp <- log(runif(1))
+  if(tmp<p_accept) # accepting with a certain probability
+  {
+    new_aug_dat <- proposed_aug_dat
+    accept <- 1
+  }else # reject
+  {
+    new_aug_dat <- curr_aug_dat
+    accept <- 0
+  }	
+  
+  # return a list of size 2 where 
+  #		the first value is the new augmented data set in the chain
+  #		the second value is 1 if the proposed value was accepted, 0 otherwise
+  return(list(new_aug_dat=new_aug_dat,accept=accept))
+  
+}
+# test_move_Di <- move_Di_plus_minus_one(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100) 
+# test_move_Di$new_aug_dat$D[[1]][1,1] # new value
+# aug_dat$D[[1]][1,1] # old value
+
+## D_i ##
+# probability of moving or not
+# moves by drawing in the marginal posterior of one of the delays, and E_i is adjusted accordingly , 
+# i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
+# then accept/reject based on posterior values
+# this is symmetrical as independant so no correction needed
 move_Di <- function(i, group_idx, date_idx, 
                     curr_aug_dat,
                     theta, 
@@ -420,9 +520,30 @@ move_Di <- function(i, group_idx, date_idx,
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
-  # draw proposed value for D using +/-1 random walk
+  # draw proposed value for D using one of the delays
+  
+  # which delays is this particular date involved in?
+  
+  x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
+  which_delay <- x[2]
+  from_idx <- sapply(1:nrow(x), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
+  from_value <- sapply(1:nrow(x), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
+  
+  # if several delays involved, choose one at random
+  tmp <- sample(1:length(from_idx), 1)
+  from_idx <- from_idx[tmp]
+  from_value <- from_value[tmp]
+  param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], theta$sigma[[group_idx]][which_delay])
+  
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-  proposed_aug_dat_value <- curr_aug_dat_value + sample(c(-1,1), length(i), replace=TRUE)
+  sample_delay <- rgamma(1, shape=param_delay[1], scale=param_delay[2])
+  if(date_idx<from_idx)
+  {
+    proposed_aug_dat_value <- from_value - round(sample_delay)
+  }else
+  {
+    proposed_aug_dat_value <- from_value + round(sample_delay)
+  }
   
   proposed_aug_dat <- curr_aug_dat
   proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
@@ -626,7 +747,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 1000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 500 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -698,7 +819,7 @@ n_proposed_sigma_moves <- 0
 #n_proposed_zeta_moves <- 0 # not used as Gibbs sampler
 
 ### turn on and off various moves
-D_moves_on <- TRUE
+D_moves_on <- FALSE
 mu_moves_on <- TRUE
 sigma_moves_on <- TRUE
 zeta_moves_on <- TRUE
@@ -817,7 +938,7 @@ n_accepted_sigma_moves / n_proposed_sigma_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1:100
+burnin <- 1:50
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)
@@ -850,12 +971,12 @@ plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
 group_idx <- 1 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 15))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 30))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 15))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 30))
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
@@ -865,7 +986,7 @@ legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_
 group_idx <- 3 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 15))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 30))
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
@@ -875,7 +996,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n
 group_idx <- 4 ##########################
 j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 15))
+plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 30))
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
@@ -891,12 +1012,12 @@ plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 group_idx <- 1 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 30))
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-dead group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-dead group)", ylim=c(0, 30))
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
@@ -906,7 +1027,7 @@ legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_
 group_idx <- 3 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-alive group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-alive group)", ylim=c(0, 30))
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]
@@ -916,7 +1037,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n
 group_idx <- 4 ##########################
 j <- 1
 sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-dead group)", ylim=c(0, 15))
+plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-dead group)", ylim=c(0, 30))
 for(j in 2:(n_dates[group_idx]-1))
 {
   sigma <- theta_chain$sigma[[group_idx]][,j]

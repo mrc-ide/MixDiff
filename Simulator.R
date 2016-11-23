@@ -93,6 +93,8 @@ for(g in 1:n_groups)
 aug_dat <- list(D=D, E=E)
 saveRDS(obs_dat, file = "SimulatedObsData.rds")
 saveRDS(aug_dat, file = "SimulatedAugData.rds")
+rm(D)
+rm(E)
 
 #########################################
 ### applying the MCMC to this dataset ###

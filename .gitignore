@@ -1,5 +1,6 @@
 *.Rproj
-Dat.rds
+*Dat.rds
+*MakeEbolaDataset.R
 .Rproj.user
 MixDiff.html
 .Rapp.history

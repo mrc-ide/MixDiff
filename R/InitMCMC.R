@@ -12,6 +12,8 @@ initialise_theta <- function(obs_dat, index_dates, zeta_init=0.1) # zeta_init do
   names(mu) <- names(n_dates)
   sigma <- lapply(1:n_groups, function(g) abs(apply(obs_delta[[g]], 2, sd, na.rm=TRUE) ))
   names(sigma) <- names(n_dates)
+  CV <- lapply(1:n_groups, function(g) sigma[[g]]/mu[[g]])
+  names(CV) <- names(n_dates)
   
   ### list of all parameters
   theta <- list(zeta = zeta_init, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
@@ -19,7 +21,7 @@ initialise_theta <- function(obs_dat, index_dates, zeta_init=0.1) # zeta_init do
                 # could consider having zeta being type of date specific (e.g. more error on onset than death dates),
                 # time specific and/or space specific
                 mu = mu, # mean of gamma distributions used to characterise the various delays in different groups: mu[[g]][k] is the mean k^th delay in group g
-                sigma = sigma) # sigma of gamma distributions used to characterise the various delays in different groups: sigma[[g]][k] is the std k^th delay in group g
+                CV = CV) # CV of gamma distributions used to characterise the various delays in different groups: CV[[g]][k] is the CV k^th delay in group g
   
   return(theta)
   

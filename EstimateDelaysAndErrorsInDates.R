@@ -747,7 +747,7 @@ move_zeta_gibbs <- function(aug_dat,
 ### MCMC ###
 ###############################################
 
-n_iter <- 20000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 1000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -831,7 +831,7 @@ fraction_Di_to_update <- 1/10
 sdlog_mu <- 0.15 # for now moving all mus with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
-sdlog_sigma <- 0.15 # for now moving all sigmas with the same sd, 
+sdlog_sigma <- 0.25 # for now moving all sigmas with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
 #sdlog_zeta <- 0.005 # not used as Gibbs sampler
@@ -938,13 +938,20 @@ n_accepted_sigma_moves / n_proposed_sigma_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1:5000
+burnin <- 1:500
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)
 {
+  if(n_dates[g]>=3)
+  {
   theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin,]
   theta_chain$sigma[[g]] <- theta_chain$sigma[[g]][-burnin,]
+  }else
+  {
+    theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin]
+    theta_chain$sigma[[g]] <- theta_chain$sigma[[g]][-burnin]
+  }
 }
 for(g in 1:n_groups)
 {
@@ -1194,6 +1201,9 @@ sapply(1:n_groups, function(g) sapply(1:n_dates[g], function(j) unique(as.vector
 # should we update zeta after each D_i move, or after all D_i in a group move? 
 # keep track of acceptance rate for D and for mu/sigma per group and per deay rather than altogether, to check if some moves are more successful than others. 
 # also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
+# why do we tend to underestimate the mean delays? related to discretization of gamma distr? 
+# write some code to start from last point in the chain
+# check correlations between outputs
 
 # Marc: 
 # finish writing

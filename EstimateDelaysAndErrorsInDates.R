@@ -72,7 +72,7 @@ move_D_by_groups_of_size <- 1
 prior_shape1_prob_error=3
 prior_shape2_prob_error=12
 prior_mean_mean_delay=100
-prior_mean_std_delay=100
+prior_mean_CV_delay=100
 
 ### initialisation
 
@@ -96,7 +96,7 @@ names(aug_dat_chain$D) <- names(obs_dat)
 names(aug_dat_chain$E) <- names(obs_dat)
 
 logpost_chain <- rep(NA, n_iter)
-logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
+logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates)
 
 n_accepted_D_moves <- 0
 n_proposed_D_moves <- 0
@@ -104,8 +104,8 @@ n_proposed_D_moves <- 0
 n_accepted_mu_moves <- 0
 n_proposed_mu_moves <- 0
 
-n_accepted_sigma_moves <- 0
-n_proposed_sigma_moves <- 0
+n_accepted_CV_moves <- 0
+n_proposed_CV_moves <- 0
 
 #n_accepted_zeta_moves <- 0 # not used as Gibbs sampler 
 #n_proposed_zeta_moves <- 0 # not used as Gibbs sampler
@@ -113,7 +113,7 @@ n_proposed_sigma_moves <- 0
 ### turn on and off various moves, useful for debugging
 D_moves_on <- TRUE
 mu_moves_on <- TRUE
-sigma_moves_on <- TRUE
+CV_moves_on <- TRUE
 zeta_moves_on <- TRUE
 
 ### std of moves
@@ -123,7 +123,7 @@ fraction_Di_to_update <- 1/10
 sdlog_mu <- 0.15 # for now moving all mus with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
-sdlog_sigma <- 0.25 # for now moving all sigmas with the same sd, 
+sdlog_CV <- 0.25 # for now moving all CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
 #sdlog_zeta <- 0.005 # not used as Gibbs sampler
@@ -148,7 +148,7 @@ system.time({
                             curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
-                            prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates) 
+                            prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
             if(tmp$accept==1) curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
@@ -163,7 +163,7 @@ system.time({
       tmp <- move_zeta_gibbs(curr_aug_dat,
                              curr_theta, 
                              obs_dat, 
-                             prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay) 
+                             prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay) 
       curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
     }
     
@@ -178,7 +178,7 @@ system.time({
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
-                                prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+                                prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay)
           n_proposed_mu_moves <- n_proposed_mu_moves + 1
           n_accepted_mu_moves <- n_accepted_mu_moves + tmp$accept
           if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
@@ -186,20 +186,20 @@ system.time({
       }
     }
     
-    # move sigma
-    if(sigma_moves_on)
+    # move CV
+    if(CV_moves_on)
     {
       for(g in 1:n_groups)
       {
         for(j in 2:ncol(curr_aug_dat$D[[g]]))
         {
-          tmp <- move_lognormal(what="sigma", g, j-1, sdlog_sigma, 
+          tmp <- move_lognormal(what="CV", g, j-1, sdlog_CV, 
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
-                                prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
-          n_proposed_sigma_moves <- n_proposed_sigma_moves + 1
-          n_accepted_sigma_moves <- n_accepted_sigma_moves + tmp$accept
+                                prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay)
+          n_proposed_CV_moves <- n_proposed_CV_moves + 1
+          n_accepted_CV_moves <- n_accepted_CV_moves + tmp$accept
           if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
         }
       }
@@ -210,7 +210,7 @@ system.time({
     aug_dat_chain <- add_new_value_chain_aug_dat(aug_dat_chain, curr_aug_dat)
     
     # recording the likelihood after all moves
-    logpost_chain[k+1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay, range_dates)
+    logpost_chain[k+1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates)
   }
 })
 
@@ -236,7 +236,7 @@ if(!USE_SIMULATED_DATA)
 
 n_accepted_D_moves / n_proposed_D_moves
 n_accepted_mu_moves / n_proposed_mu_moves
-n_accepted_sigma_moves / n_proposed_sigma_moves
+n_accepted_CV_moves / n_proposed_CV_moves
 #n_accepted_zeta_moves / n_proposed_zeta_moves # not computed as now using Gibbs sampler for Zeta
 
 ###############################################
@@ -251,11 +251,11 @@ for(g in 1:n_groups)
   if(n_dates[g]>=3)
   {
     theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin,]
-    theta_chain$sigma[[g]] <- theta_chain$sigma[[g]][-burnin,]
+    theta_chain$CV[[g]] <- theta_chain$CV[[g]][-burnin,]
   }else
   {
     theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin]
-    theta_chain$sigma[[g]] <- theta_chain$sigma[[g]][-burnin]
+    theta_chain$CV[[g]] <- theta_chain$CV[[g]][-burnin]
   }
 }
 for(g in 1:n_groups)
@@ -347,60 +347,60 @@ par(xpd=TRUE)
 if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$zeta)
 par(xpd=FALSE)
 
-# looking at std delay
+# looking at CV delay
 group_idx <- 1 ##########################
 j <- 1
-sigma <- theta_chain$sigma[[group_idx]]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-alive group)", ylim=c(0, 20))
+CV <- theta_chain$CV[[group_idx]]
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-alive group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
-sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(non hospitalised-dead group)", ylim=c(0, 20))
+CV <- theta_chain$CV[[group_idx]][,j]
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-dead group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- theta_chain$sigma[[group_idx]][,j]
-  lines(sigma, col=j)
+  CV <- theta_chain$CV[[group_idx]][,j]
+  lines(CV, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 3 ##########################
 j <- 1
-sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-alive group)", ylim=c(0, 20))
+CV <- theta_chain$CV[[group_idx]][,j]
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-alive group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- theta_chain$sigma[[group_idx]][,j]
-  lines(sigma, col=j)
+  CV <- theta_chain$CV[[group_idx]][,j]
+  lines(CV, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
 group_idx <- 4 ##########################
 j <- 1
-sigma <- theta_chain$sigma[[group_idx]][,j]
-plot(sigma, type="l", xlab="Iterations", ylab="std delays\n(hospitalised-dead group)", ylim=c(0, 20))
+CV <- theta_chain$CV[[group_idx]][,j]
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-dead group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
-  sigma <- theta_chain$sigma[[group_idx]][,j]
-  lines(sigma, col=j)
+  CV <- theta_chain$CV[[group_idx]][,j]
+  lines(CV, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$sigma[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -476,23 +476,23 @@ dev.off()
 ### Correlations ###
 ###############################################
 
-cor_mu_sigma <- list()
+cor_mu_CV <- list()
 
 group_idx <- 1
-plot(theta_chain$mu[[group_idx]], theta_chain$sigma[[group_idx]], type="l")
-cor_mu_sigma[[group_idx]] <- cor.test(theta_chain$mu[[group_idx]], theta_chain$sigma[[group_idx]])
+plot(theta_chain$mu[[group_idx]], theta_chain$CV[[group_idx]], type="l")
+cor_mu_CV[[group_idx]] <- cor.test(theta_chain$mu[[group_idx]], theta_chain$CV[[group_idx]])
 
 for(group_idx in 2:n_groups)
 {
-  cor_mu_sigma[[group_idx]] <- list()
+  cor_mu_CV[[group_idx]] <- list()
   for(j in 1:(n_dates[[group_idx]]-1))
   {
-    plot(theta_chain$mu[[group_idx]][,j], theta_chain$sigma[[group_idx]][,j], type="l", col=j)
-    cor_mu_sigma[[group_idx]][[j]] <- cor.test(theta_chain$mu[[group_idx]][,j], theta_chain$sigma[[group_idx]][,j])
+    plot(theta_chain$mu[[group_idx]][,j], theta_chain$CV[[group_idx]][,j], type="l", col=j)
+    cor_mu_CV[[group_idx]][[j]] <- cor.test(theta_chain$mu[[group_idx]][,j], theta_chain$CV[[group_idx]][,j])
   }
 }
 
-cor_mu_sigma
+cor_mu_CV
 # positive correlation suggests maybe sould reparameterize to be mean and CV rather than mean and SD
 
 ###############################################
@@ -504,11 +504,11 @@ cor_mu_sigma
 # try to speed up if possible
 # considering only calculating the likelihood for some iterations (e.g. after burnin and thinning), posthoc? 
 # should we update zeta after each D_i move, or after all D_i in a group move? 
-# keep track of acceptance rate for D and for mu/sigma per group and per deay rather than altogether, to check if some moves are more successful than others. 
-# also consider using Gibbs samplers to move mu and sigma --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
+# keep track of acceptance rate for D and for mu/CV per group and per deay rather than altogether, to check if some moves are more successful than others. 
+# also consider using Gibbs samplers to move mu and CV --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
 # why do we tend to underestimate the mean delays? related to discretization of gamma distr? 
 # write some code to start from last point in the chain
-# reparameterize to be mean and CV rather than mean and SD
+# reparameterize to be mean and CV rather than mean and SD???
 # create a hyperprior list which contains all the prior parameters - easier than keeping track of each of them separately
 
 # Marc: 

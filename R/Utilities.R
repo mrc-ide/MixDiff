@@ -9,7 +9,7 @@ add_new_value_chain_theta <- function(theta_chain, new_theta)
   for(g in 1:n_groups)
   {
     theta_chain$mu[[g]] <- rbind(theta_chain$mu[[g]], new_theta$mu[[g]])
-    theta_chain$sigma[[g]] <- rbind(theta_chain$sigma[[g]], new_theta$sigma[[g]])
+    theta_chain$CV[[g]] <- rbind(theta_chain$CV[[g]], new_theta$CV[[g]])
   }
   return(theta_chain)
 }

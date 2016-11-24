@@ -63,7 +63,7 @@ theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 ### Run the MCMC ###
 ###############################################
 
-n_iter <- 500 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+n_iter <- 50000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
 
 move_D_by_groups_of_size <- 1
 
@@ -243,7 +243,7 @@ n_accepted_CV_moves / n_proposed_CV_moves
 ### remove burnin ###
 ###############################################
 
-burnin <- 1:100
+burnin <- 1:25000
 logpost_chain <- logpost_chain[-burnin]
 theta_chain$zeta <- theta_chain$zeta[-burnin]
 for(g in 1:n_groups)
@@ -351,7 +351,7 @@ par(xpd=FALSE)
 group_idx <- 1 ##########################
 j <- 1
 CV <- theta_chain$CV[[group_idx]]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-alive group)", ylim=c(0, 20))
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-alive group)", ylim=c(0, 2))
 par(xpd=TRUE)
 if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
@@ -359,7 +359,7 @@ legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
 j <- 1
 CV <- theta_chain$CV[[group_idx]][,j]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-dead group)", ylim=c(0, 20))
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-dead group)", ylim=c(0, 2))
 par(xpd=TRUE)
 if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
@@ -375,7 +375,7 @@ legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_
 group_idx <- 3 ##########################
 j <- 1
 CV <- theta_chain$CV[[group_idx]][,j]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-alive group)", ylim=c(0, 20))
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-alive group)", ylim=c(0, 2))
 par(xpd=TRUE)
 if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
@@ -391,7 +391,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n
 group_idx <- 4 ##########################
 j <- 1
 CV <- theta_chain$CV[[group_idx]][,j]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-dead group)", ylim=c(0, 20))
+plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-dead group)", ylim=c(0, 2))
 par(xpd=TRUE)
 if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)

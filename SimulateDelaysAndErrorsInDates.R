@@ -15,8 +15,8 @@ n_groups <- 4
 n_dates <- c(2, 3, 4, 4)
 
 theta <- list()
-theta$prop_missing_data <- 0.1 ### this is missing from the estimation model (directly available from the data so not explicitely modelled)
-theta$zeta <- 0.1 ### probability that, when not missing, the date is recorded with error
+theta$prop_missing_data <- 0.05 ### this is missing from the estimation model (directly available from the data so not explicitely modelled)
+theta$zeta <- 0.05 ### probability that, when not missing, the date is recorded with error
 theta$mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
 theta$CV <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5))
 n_per_group <- rep(100, 4)

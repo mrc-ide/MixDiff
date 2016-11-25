@@ -27,15 +27,15 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+tmp <- simul_obs_dat(D, theta, range_dates)
+E <- tmp$E
+obs_dat <- tmp$obs_dat
 
 ####################################
 ### THIS IS WHERE I AM IN CHECKING STUFF WORK - DOCUMENTING FUNCTIONS APPROPRIATELY ###
 ####################################
 
-tmp <- simul_obs_dat(D, theta, range_dates)
-E <- tmp$E
-obs_dat <- tmp$obs_dat
-# remove those with only missing dates - assuming that you always have at least one date present
+# remove those with only missing dates - assuming that you always have at least one date present ### consider adding this to function
 for(g in 1:n_groups)
 {
   exclude <- which(rowSums(is.na(obs_dat[[g]]))==ncol(obs_dat[[g]]))

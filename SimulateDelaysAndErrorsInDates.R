@@ -1,11 +1,13 @@
 rm(list=ls())
 
 ###############################################
-### source functions from other scripts ###
+### if needed, compile documentation, then check, build and install the package ###
 ###############################################
 
-source("R/Utilities.R")
-source("R/SimulFunctions.R")
+roxygen2::roxygenise()
+devtools::check()
+devtools::build()
+devtools::install()
 
 ####################################
 ### creating a simulated dataset ###

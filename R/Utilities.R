@@ -33,11 +33,27 @@ add_new_value_chain_aug_dat <- function(curr_aug_dat, new_aug_dat)
 ### functions to handle dates ###
 ###############################################
 
+#' Convert date to integer corresponding to number of days from a given origin
+#'
+#' @param date \code{Date} object to be converted to integer.
+#' @param origin The date used as origin for counting days.
+#' @return An integer corresponding to the number of days since \code{origin}.
+#' @export
+#' @examples
+#' date_to_int(as.Date("1970-01-01"))
 date_to_int <- function(date, origin = "1970-01-01")
 {
   return(as.integer(date - as.Date(origin)))
 }
 
+#' Convert integer to date, based on a given origin from which the integer counts the number of days
+#' 
+#' @param int integer to be converted to \code{Date}.
+#' @param origin The date used as origin for counting days.
+#' @return A \code{Date} object corresponding to \code{int} days after \code{origin}.
+#' @export
+#' @examples
+#' int_to_date(365)
 int_to_date <- function(int, origin = "1970-01-01")
 {
   return(int + as.Date(origin))
@@ -47,7 +63,17 @@ int_to_date <- function(int, origin = "1970-01-01")
 ### functions to find parameters of distributions from mean/var or mean/sd ###
 ###############################################
 
-
+#' Finds the two shape parameters of the beta distribution, given a mean and variance
+#' 
+#' @param mean Mean of the beta distribution
+#' @param var Variance of the beta distribution
+#' @return A vector containing the two shape parameters of the beta distribution.
+#' @export
+#' @examples
+#' param_beta <- find_params_beta(0.1, 0.05)
+#' sample_beta <- rbeta(1000, param_beta[1], param_beta[2])
+#' mean(sample_beta) # compare to 0.1
+#' var(sample_beta) # compare to 0.05
 find_params_beta <- function(mean, var) # function to determine parameters of the beta distribution corresponding to a given mean and variance
 {
   # for a beta distribution:
@@ -58,35 +84,25 @@ find_params_beta <- function(mean, var) # function to determine parameters of th
   shape2 <- shape1*(1/mean-1)
   return(c(shape1, shape2))
 }
-# test if works: 
-# param_beta <- find_params_beta(0.1, 0.05)
-# sample_beta <- rbeta(1000, param_beta[1], param_beta[2])
-# mean(sample_beta)
-# var(sample_beta)
 
-find_params_gamma <- function(mean, sigma) # function to determine parameters of the gamma distribution corresponding to a given mean and std
+#' Finds the shape and scale parameters of the gamma distribution, given a mean and standard deviation
+#' 
+#' @param mean Mean of the gamma distribution
+#' @param sigma Standard deviation of the gamma distribution
+#' @param CV asn alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
+#' @return A vector containing the shape and scale parameters of the gamma distribution.
+#' @export
+#' @examples
+#' param_gamma <- find_params_gamma(mean=0.1, sigma=0.05)
+#' sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
+#' mean(sample_gamma) # compare to 0.1
+#' sd(sample_gamma) # compare to 0.05
+find_params_gamma <- function(mean, sigma=mean*CV, CV) # function to determine parameters of the gamma distribution corresponding to a given mean and std
 {
   shape <- (mean/sigma)^2
   scale <- sigma^2/(mean)
   return(c(shape, scale))
 }
-# test if works: 
-# param_gamma <- find_params_gamma(0.1, 0.05)
-# sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
-# mean(sample_gamma)
-# sd(sample_gamma)
-
-find_params_gamma_from_mean_CV <- function(mean, CV) # function to determine parameters of the gamma distribution corresponding to a given mean and CV
-{
-  sigma <- mean*CV
-  res <- find_params_gamma(mean, sigma)
-  return(res)
-}
-# test if works: 
-# param_gamma <- find_params_gamma_from_mean_CV(0.1, 0.5)
-# sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
-# mean(sample_gamma)
-# sd(sample_gamma)/mean(sample_gamma)
 
 ###############################################
 ### compute_delta functions to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###

@@ -29,7 +29,7 @@ move_Di <- function(i, group_idx, date_idx,
   tmp <- sample(1:length(from_idx), 1)
   from_idx <- from_idx[tmp]
   from_value <- from_value[tmp]
-  param_delay <- find_params_gamma_from_mean_CV(theta$mu[[group_idx]][which_delay], theta$CV[[group_idx]][which_delay])
+  param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
   sample_delay <- rgamma(1, shape=param_delay[1], scale=param_delay[2])

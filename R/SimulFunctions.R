@@ -11,7 +11,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates)
     D[[g]][,1] <- sample(range_dates[1]:range_dates[2], n_per_group[g], replace = TRUE)
     for(j in 1:ncol(index_dates[[g]]))
     {
-      params <- find_params_gamma_from_mean_CV(theta$mu[[g]][j], theta$CV[[g]][j])
+      params <- find_params_gamma(theta$mu[[g]][j], CV=theta$CV[[g]][j])
       delay <- rgamma(n_per_group[g], shape=params[1], scale=params[2])
       D[[g]][,index_dates[[g]][2,j]]  <- D[[g]][,index_dates[[g]][1,j]] + round(delay)
     }

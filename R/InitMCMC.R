@@ -4,8 +4,10 @@
 
 ### D contains the unobserved true dates ###
 
+#' @import stats
 initialise_aug_data <- function(obs_dat, index_dates_order)
 {
+  n_groups <- length(obs_dat)
   D <- list()
   for(g in 1:n_groups) 
   {
@@ -128,7 +130,9 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
 
 initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values
 {
-  
+  n_groups <- length(aug_dat$D)
+  n_dates <- sapply(aug_dat$D, ncol)
+    
   ### mean and std of distribution of various delays, by group
   ### we use a the starting point the observed mean and std of each delay in each group
   obs_delta <- compute_delta(aug_dat$D, index_dates)

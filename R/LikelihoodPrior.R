@@ -2,24 +2,6 @@
 ### likelihood function ###
 ###############################################
 
-find_range <- function(obs_dat)
-{
-  min_date <- min(obs_dat[[1]][,1], na.rm=TRUE)
-  max_date <- max(obs_dat[[1]][,1], na.rm=TRUE)
-  for(g in 1:n_groups)
-  {
-    for(j in 1:ncol(obs_dat[[g]]))
-    {
-      min_date_tmp <- min(obs_dat[[g]][,j], na.rm=TRUE)
-      min_date <- min(c(min_date, min_date_tmp), na.rm=TRUE)
-      
-      max_date_tmp <- max(obs_dat[[g]][,j], na.rm=TRUE)
-      max_date <- max(c(max_date, max_date_tmp), na.rm=TRUE)
-    }
-  }
-  return(c(min_date, max_date))
-}
-
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)

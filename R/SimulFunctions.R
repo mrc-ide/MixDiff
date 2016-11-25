@@ -19,7 +19,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates)
   return(D)
 }
 
-simul_obs_dat <- function(D, theta)
+simul_obs_dat <- function(D, theta, range_dates)
 {
   E <- D
   obs_dat <- D

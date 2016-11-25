@@ -46,7 +46,7 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
 LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
-  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]),range_dates)) ) ) ) )
+  LL <- sum (sapply(1:length(obs_dat), function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]),range_dates)) ) ) ) )
   return(LL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
@@ -63,6 +63,7 @@ LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, grou
 
 compute_n_errors <- function(aug_dat, obs_dat)
 {
+  n_groups <- length(obs_dat)
   number_of_errors <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]] %in% 1)))
   number_of_recorded_dates <- sum(sapply(1:n_groups, function(g) sum(!(aug_dat$E[[g]] %in% -1))))
   return(c(number_of_errors, number_of_recorded_dates))
@@ -112,7 +113,7 @@ LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, gro
 LL_delays_term<-function(aug_dat, theta, obs_dat, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index = index_dates)
-  LL <- sum (sapply(1:lenght(obs_dat), function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
+  LL <- sum (sapply(1:length(obs_dat), function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)

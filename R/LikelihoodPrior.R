@@ -88,6 +88,7 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 #}
 # system.time(LL_error_term_slow(aug_dat, theta, obs_dat))
 
+#' @import EpiEstim
 DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
 {
   if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
@@ -111,7 +112,7 @@ LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, gro
 LL_delays_term<-function(aug_dat, theta, obs_dat, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index = index_dates)
-  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
+  LL <- sum (sapply(1:lenght(obs_dat), function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)

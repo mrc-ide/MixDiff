@@ -89,7 +89,7 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
                 stop("Incompatible data to infer from. ")
               }else
               {
-                inferred <- median(c(min_val, max_val))
+                inferred <- floor(median(c(min_val, max_val)))
               }
             }
           }

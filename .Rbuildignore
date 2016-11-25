@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+EbolaData$
+SimulatedData$
+EstimateDelaysAndErrorsInDates.R
+SimulateDelaysAndErrorsInDates.R
+MixDiff.Rmd
+MixDiff.html
+P_20160624_100437.jpg
+Rprof.out

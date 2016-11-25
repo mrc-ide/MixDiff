@@ -21,12 +21,17 @@ theta$prop_missing_data <- 0.05 ### this is missing from the estimation model (d
 theta$zeta <- 0.05 ### probability that, when not missing, the date is recorded with error
 theta$mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
 theta$CV <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5))
-n_per_group <- rep(100, 4)
+n_per_group <- rep(100, n_groups)
 range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+
+####################################
+### THIS IS WHERE I AM IN CHECKING STUFF WORK - DOCUMENTING FUNCTIONS APPROPRIATELY ###
+####################################
+
 tmp <- simul_obs_dat(D, theta, range_dates)
 E <- tmp$E
 obs_dat <- tmp$obs_dat

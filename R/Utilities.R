@@ -89,7 +89,7 @@ find_params_beta <- function(mean, var) # function to determine parameters of th
 #' 
 #' @param mean Mean of the gamma distribution
 #' @param sigma Standard deviation of the gamma distribution
-#' @param CV asn alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
+#' @param CV An alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
 #' @return A vector containing the shape and scale parameters of the gamma distribution.
 #' @export
 #' @examples

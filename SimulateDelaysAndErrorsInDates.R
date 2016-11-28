@@ -27,6 +27,7 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE)
 tmp <- simul_obs_dat(D, theta, range_dates)
 E <- tmp$E
 obs_dat <- tmp$obs_dat

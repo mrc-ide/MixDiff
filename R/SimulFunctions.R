@@ -8,10 +8,13 @@
 #' @param n_per_group Vector containing the number of individuals to simulate in each group
 #' @param range_dates Range of integers in which to draw the first set of dates (these will ve drawn unifromly in that range)
 #' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
-#' @details \code{theta} should be a list containing
+#' @param simul_error A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
+#' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{prop_missing_data} (only required if \code{simul_error} is TRUE)}{: A scalar in [0;1] giving the probability of each data point being missing.}
+#'  \item{\code{zeta} (only required if \code{simul_error} is TRUE)}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
 #' \code{n_per_group} should be a vector of length \code{n_groups}.
 #' 
@@ -22,7 +25,16 @@
 #' In the simulation, date 1 will be drawn uniformly within \code{range_dates}. 
 #' Then date 2 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
 #' Finally, date 3 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
-#' @return A list of length \code{length(n_per_group)} matrices; each has \code{length(n_per_group)} rows corresponding to individuals and a certain number of columns derived from \code{index_dates}. Elements of the matrices are integers corresponding to dates (see \code{\link[MixDiff]{int_to_date}} and \code{\link[MixDiff]{date_to_int}})
+#' @return Either: 
+#' \itemize{
+#'  \item{If \code{simul_error} is FALSE:}{ A list of length \code{length(n_per_group)} matrices; each has \code{length(n_per_group)} rows corresponding to individuals and a certain number of columns derived from \code{index_dates}. Elements of the matrices are integers corresponding to dates (see \code{\link[MixDiff]{int_to_date}} and \code{\link[MixDiff]{date_to_int}})}
+#'  \item{If \code{simul_error} is TRUE:}{ A list of three items. 
+#'  \itemize{
+#'  \item{\code{true_dat}}{ The same as \code{simul_error} is FALSE (see above)}
+#'  \item{\code{obs_dat}}{ A list structured as \code{true_dat} but where missing data and errors have been introduced}
+#'  \item{\code{E} A list structured similarly to \code{true_dat} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}}
+#'  }
+#'  }
 #' @export
 #' @examples
 #' ### Number of groups of individuals to simulate ###
@@ -41,7 +53,7 @@
 #' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-simul_true_data <- function(theta, n_per_group, range_dates, index_dates)
+simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE)
 {
   D <- list() 
   for(g in 1:length(theta$mu))
@@ -55,7 +67,13 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates)
       D[[g]][,index_dates[[g]][2,j]]  <- D[[g]][,index_dates[[g]][1,j]] + round(delay)
     }
   }
-  return(D)
+  if(simul_error)
+  {
+    observed_D <- simul_obs_dat(D, theta, range_dates)
+    return(list(true_dat=D, obs_dat=observed_D$obs_dat, E=observed_D$E))
+  }else{
+    return(D)
+  }
 }
 
 #' Introduces missingness and errors in data

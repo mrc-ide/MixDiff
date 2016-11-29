@@ -6,8 +6,8 @@
 
 #' Initialises augmented data based on observed data (for the MCMC)
 #' 
-#' @param obs_dat A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
-#' @param index_dates_order A list containing indications on ordering of dates, see details.
+#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 #' @details \code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
 #' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
 #' Each column specifies a rule saying that the origin date must be before the destination date.  
@@ -39,10 +39,7 @@
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 #' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data ###
-#' index_dates_order <- list(matrix(c(1, 2), nrow=2), 
-#'                              cbind(c(1, 2), c(1, 3)), 
-#'                              cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), 
-#'                              cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
+#' index_dates_order <- index_dates
 #' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order)
 initialise_aug_data <- function(obs_dat, index_dates_order)
 {
@@ -167,6 +164,44 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
 ### define parameters to be used for initialisation of the chain ###
 ###############################################
 
+#' Initialises parameters data on augmented data (for the MCMC)
+#' 
+#' @param aug_dat A list of data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param index_dates A list containing indications on which delays to consider in the simulation, same as in \code{\link{simul_true_data}}.
+#' @param zeta_init A scalar giving the value zeta should be initialised to. 
+#' @return A list containing:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' @import stats
+#' @export
+#' @examples
+#' ### Number of groups of individuals to simulate ###
+#' n_groups <- 2
+#' ### Number of dates to simulate for each group ###
+#' n_dates <- c(2, 3)
+#' ### Setting up the parameters for the simulation ###
+#' theta <- list()
+#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' theta$prop_missing_data <- 0.25 # probability of data missing in observations
+#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
+#' ### Number of individuals to simulate in each group ###
+#' n_per_group <- rep(10, n_groups)
+#' ### Range of dates in which to draw the first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Perform the simulation ###
+#' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+#' ### Initialise augmented data first ###
+#' index_dates_order <- index_dates
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order)
+#' ### Now initialise parameters based on the augmented data above ###
+#' theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values
 {
   n_groups <- length(aug_dat$D)

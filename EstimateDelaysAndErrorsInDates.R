@@ -51,6 +51,7 @@ aug_dat <- initialise_aug_data(obs_dat, index_dates_order)
 ### define parameters to be used for initialisation of the chain ###
 ###############################################
 
+index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
 theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 
 ###############################################
@@ -504,6 +505,7 @@ cor_mu_CV
 # why do we tend to underestimate the mean delays? related to discretization of gamma distr? 
 # write some code to start from last point in the chain
 # create a hyperprior list which contains all the prior parameters - easier than keeping track of each of them separately
+# in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 
 # Marc: 
 # finish writing

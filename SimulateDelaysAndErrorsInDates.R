@@ -27,29 +27,12 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE)
-tmp <- simul_obs_dat(D, theta, range_dates)
+D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, remove_allNA_indiv=TRUE)
+tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
 E <- tmp$E
 obs_dat <- tmp$obs_dat
 
-####################################
-### THIS IS WHERE I AM IN CHECKING STUFF WORK - DOCUMENTING FUNCTIONS APPROPRIATELY ###
-####################################
-
-# remove those with only missing dates - assuming that you always have at least one date present ### consider adding this to function
-for(g in 1:n_groups)
-{
-  exclude <- which(rowSums(is.na(obs_dat[[g]]))==ncol(obs_dat[[g]]))
-  if(length(exclude)>0)
-  {
-    obs_dat[[g]] <- obs_dat[[g]][-exclude,]
-    D[[g]] <- D[[g]][-exclude,]
-    E[[g]] <- E[[g]][-exclude,]
-  }
-}
-aug_dat <- list(D=D, E=E)
-rm(D)
-rm(E)
+aug_dat <- list(D=D$true_dat)
 
 ####################################
 ### saving this somewhere ###

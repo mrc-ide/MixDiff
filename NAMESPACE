@@ -3,6 +3,7 @@
 export(date_to_int)
 export(find_params_beta)
 export(find_params_gamma)
+export(initialise_aug_data)
 export(int_to_date)
 export(simul_obs_dat)
 export(simul_true_data)

@@ -77,7 +77,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
 
 #' Introduces missingness and errors in data
 #' 
-#' @param D list of data, in the format returne by \code{\link{simul_true_data}}. 
+#' @param D list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
 #' @param theta list of parameters; see details.
 #' @param range_dates Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)
 #' @param remove_allNA_indiv A boolean stating whether individuals with only NA dates should be removed or not. 

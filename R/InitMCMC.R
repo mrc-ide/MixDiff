@@ -4,7 +4,46 @@
 
 ### D contains the unobserved true dates ###
 
+#' Initialises augmented data based on observed data (for the MCMC)
+#' 
+#' @param obs_dat A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
+#' @param index_dates_order A list containing indications on ordering of dates, see details.
+#' @details \code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
+#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+#' Each column specifies a rule saying that the origin date must be before the destination date.  
+#' @return A list with two elements: 
+#' \itemize{
+#'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules specified in \code{index_dates_order}}
+#'  \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
+#' }
 #' @import stats
+#' @export
+#' @examples
+#' ### Number of groups of individuals to simulate ###
+#' n_groups <- 2
+#' ### Number of dates to simulate for each group ###
+#' n_dates <- c(2, 3)
+#' ### Setting up the parameters for the simulation ###
+#' theta <- list()
+#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' theta$prop_missing_data <- 0.25 # probability of data missing in observations
+#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
+#' ### Number of individuals to simulate in each group ###
+#' n_per_group <- rep(10, n_groups)
+#' ### Range of dates in which to draw the first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Perform the simulation ###
+#' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+#' ### Initialise augmented data ###
+#' index_dates_order <- list(matrix(c(1, 2), nrow=2), 
+#'                              cbind(c(1, 2), c(1, 3)), 
+#'                              cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), 
+#'                              cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order)
 initialise_aug_data <- function(obs_dat, index_dates_order)
 {
   n_groups <- length(obs_dat)

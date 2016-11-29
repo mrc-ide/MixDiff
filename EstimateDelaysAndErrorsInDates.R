@@ -5,22 +5,15 @@
 ###############################################
 
 rm(list=ls())
-library(EpiEstim) # to use DiscrSI which does the discretised Gamma
 
 ###############################################
-### source functions from other scripts ###
+### if needed, compile documentation, then check, build and install the package ###
 ###############################################
 
-source("R/InitMCMC.R")
-source("R/MCMCMoves.R")
-source("R/Utilities.R")
-source("R/LikelihoodPrior.R")
-
-###############################################
-### source objects from Constants.R ###
-###############################################
-
-source("R/Constants.R")
+roxygen2::roxygenise()
+devtools::check()
+devtools::build()
+devtools::install()
 
 ###############################################
 ### read in data ###
@@ -51,6 +44,7 @@ n_groups <- length(n_dates)
 ### define augmented data to be used for initialisation of the chain ###
 ###############################################
 
+index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 aug_dat <- initialise_aug_data(obs_dat, index_dates_order)
 
 ###############################################

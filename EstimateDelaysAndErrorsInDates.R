@@ -55,12 +55,6 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 
 ###############################################
-###############################################
-### THIS IS WHERE I AM AT IN TERMS OF RECODING INTO THE PACKAGE
-###############################################
-###############################################
-
-###############################################
 ### Run the MCMC ###
 ###############################################
 
@@ -94,7 +88,7 @@ curr_aug_dat <- aug_dat
 aug_dat_chain <- list()
 aug_dat_chain[[1]] <- curr_aug_dat
 
-logpost_chain <- rep(NA, MCMC_settings$chain_properties$n_iter)
+logpost_chain <- rep(NA, (MCMC_settings$chain_properties$n_iter - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every)
 logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperpriors, index_dates, range_dates)
 
 n_accepted_D_moves <- 0
@@ -107,26 +101,28 @@ n_accepted_CV_moves <- 0
 n_proposed_CV_moves <- 0
 
 system.time({
-  for(k in 1:(MCMC_settings$chain_properties$n_iter-1))
+  for(k in seq_len(MCMC_settings$chain_properties$n_iter-1))
   {
     print(k)
     
     # move some of the D_i
     if(MCMC_settings$moves_switch$D_on)
     {
-      for(g in 1:n_groups)
+      for(g in seq_len(n_groups))
       {
-        for(j in 1:ncol(curr_aug_dat$D[[g]]))
+        for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
           to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
-          for(i in 1:length(n_10_to_update))
+          for(i in seq_len(length(n_10_to_update)))
           {
-            tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(1:MCMC_settings$moves_options$move_D_by_groups_of_size)], g, j, 
+            tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
-                            prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates) 
+                            hyperpriors, 
+                            index_dates,
+                            range_dates) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
             if(tmp$accept==1) curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
@@ -141,22 +137,31 @@ system.time({
       tmp <- move_zeta_gibbs(curr_aug_dat,
                              curr_theta, 
                              obs_dat, 
-                             prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay) 
+                             hyperpriors) 
       curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
     }
+    
+    ###############################################
+    ###############################################
+    ### THIS IS WHERE I AM AT IN TERMS OF RECODING INTO THE PACKAGE
+    ###############################################
+    ###############################################
+    
+    
     
     # move mu
     if(MCMC_settings$moves_switch$mu_on)
     {
-      for(g in 1:n_groups)
+      for(g in seq_len(n_groups))
       {
-        for(j in 2:ncol(curr_aug_dat$D[[g]]))
+        for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
-          tmp <- move_lognormal(what="mu", g, j-1, sdlog_mu, 
+          tmp <- move_lognormal(what="mu", g, j-1, MCMC_settings$moves_options$sdlog_mu, 
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
-                                prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay)
+                                hyperpriors,
+                                index_dates)
           n_proposed_mu_moves <- n_proposed_mu_moves + 1
           n_accepted_mu_moves <- n_accepted_mu_moves + tmp$accept
           if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
@@ -167,15 +172,16 @@ system.time({
     # move CV
     if(MCMC_settings$moves_switch$CV_on)
     {
-      for(g in 1:n_groups)
+      for(g in seq_len(n_groups))
       {
-        for(j in 2:ncol(curr_aug_dat$D[[g]]))
+        for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
-          tmp <- move_lognormal(what="CV", g, j-1, sdlog_CV, 
+          tmp <- move_lognormal(what="CV", g, j-1, MCMC_settings$moves_options$sdlog_CV, 
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
-                                prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay)
+                                hyperpriors,
+                                index_dates)
           n_proposed_CV_moves <- n_proposed_CV_moves + 1
           n_accepted_CV_moves <- n_accepted_CV_moves + tmp$accept
           if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
@@ -183,15 +189,31 @@ system.time({
       }
     }
     
-    # recording the value of parameters after all moves
-    theta_chain <- add_new_value_chain_theta(theta_chain, curr_theta)
-    aug_dat_chain <- add_new_value_chain_aug_dat(aug_dat_chain, curr_aug_dat)
-    
-    # recording the likelihood after all moves #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
-    if( (k>=MCMC_settings$chain_properties$burnin) & (k %% record_every)==0)
-      logpost_chain[k+1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates)
+    # recording value of parameters and corresponding posterior after all moves 
+    if( (k>=MCMC_settings$chain_properties$burnin) & (k %% MCMC_settings$chain_properties$record_every)==0)
+    {
+      idx <- (k - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every+1
+      theta_chain[[idx]] <- curr_theta
+      aug_dat_chain[[idx]] <- curr_aug_dat
+      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperpriors, index_dates, range_dates) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
+    }
   }
 })
+
+###############################################
+### acceptance probabilities ###
+###############################################
+
+accept_prob <- list(
+  D_moves=n_accepted_D_moves / n_proposed_D_moves,
+  mu_moves=n_accepted_mu_moves / n_proposed_mu_moves,
+  CV_moves=n_accepted_CV_moves / n_proposed_CV_moves,
+  zeta_moves=1)
+
+
+###############################################
+### save results --> DO BETTER< SAVE ONLY WHAT IS NEEDED ###
+###############################################
 
 if(!USE_SIMULATED_DATA)
 {
@@ -209,42 +231,6 @@ if(!USE_SIMULATED_DATA)
   save.image(paste0(where_to_load_from,"/ResultsEstimation_SimulatedData_",ext,".Rdata"))
 }
 
-###############################################
-### acceptance probabilities ###
-###############################################
-
-n_accepted_D_moves / n_proposed_D_moves
-n_accepted_mu_moves / n_proposed_mu_moves
-n_accepted_CV_moves / n_proposed_CV_moves
-#n_accepted_zeta_moves / n_proposed_zeta_moves # not computed as now using Gibbs sampler for Zeta
-
-###############################################
-### remove burnin ###
-###############################################
-
-burnin <- 1:25000
-logpost_chain <- logpost_chain[-burnin]
-theta_chain$zeta <- theta_chain$zeta[-burnin]
-for(g in 1:n_groups)
-{
-  if(n_dates[g]>=3)
-  {
-    theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin,]
-    theta_chain$CV[[g]] <- theta_chain$CV[[g]][-burnin,]
-  }else
-  {
-    theta_chain$mu[[g]] <- theta_chain$mu[[g]][-burnin]
-    theta_chain$CV[[g]] <- theta_chain$CV[[g]][-burnin]
-  }
-}
-for(g in 1:n_groups)
-{
-  for(j in 1:n_dates[[g]])
-  {
-    aug_dat_chain$D[[g]][[j]] <- aug_dat_chain$D[[g]][[j]][-burnin,]
-    aug_dat_chain$E[[g]][[j]] <- aug_dat_chain$E[[g]][[j]][-burnin,]
-  }
-}
 
 ###############################################
 ### plotting the MCMC output ###
@@ -490,7 +476,9 @@ cor_mu_CV
 # write some code to start from last point in the chain
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 # currently initialisation of augmented data can still start in stupid place, where order of dates is ok but delays are too large, so make sure this is not the case
- 
+# everywhere replace 1:n by seq_len(n) 
+# where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
+
 # Marc: 
 # finish writing
 # think about the 1/(T-T0)

@@ -2,12 +2,48 @@
 ### move functions ###
 ###############################################
 
-## D_i ##
-# probability of moving or not
-# moves by drawing in the marginal posterior of one of the delays, and E_i is adjusted accordingly , 
-# i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
-# then accept/reject based on posterior values
-# this is symmetrical as independant so no correction needed
+#' Performs one iteration of an MCMC move for the augmented data
+#' 
+#' @param i The index of the individual for whom augmented data should be moved
+#' @param group_idx The index of the group for whom augmented data should be moved
+#' @param date_idx The index of the date which should be moved
+#' @param curr_aug_dat The current augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param theta List of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param hyperpriors A list of hyperpriors: see details.
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @details \code{theta} should be a list containing:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' \code{hyperpriors} should be a list containing:
+#' \itemize{
+#'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
+#'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
+#' }
+#' \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
+#' The function performs the move as follows, using a Metropolis algorithm. 
+#' For the date to be moved, a new value is drawn from the marginal posterior of one of the delays this dates is involved in.
+#' If the date is involved in several delays, one of the delays is randomly selected. 
+#' The element E indicating whether the observed date is missing, recorded correctly or recorded with error, is adjusted accordingly given the proposed value of D. 
+#' The new augmented data is then accepted with probability given by the ratio of the posterior values at the new augmented data and the old augmented data. 
+#' @return A list of two elements:
+#'  \itemize{
+#'  \item{\code{new_aug_dat}}{: Same as \code{curr_aug_dat} but where the relevant dates have been updated}
+#'  \item{\code{accept}}{: A scalar with value 1 if the move was accepted and 0 otherwise}
+#' }
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 move_Di <- function(i, group_idx, date_idx, 
                     curr_aug_dat,
                     theta, 
@@ -62,8 +98,8 @@ move_Di <- function(i, group_idx, date_idx,
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
     LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
-    ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i) - 
-    LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i)
+    ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
+    LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
   
   ratio_post <- sum(ratio_post)
   
@@ -97,7 +133,47 @@ move_Di <- function(i, group_idx, date_idx,
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
 
-### move mu with a lognormal proposal ### 
+#' Performs one iteration of an MCMC move for either the parameter mu or the parameter CV (mean or CV of the various delays to be estimated)
+#' 
+#' @param what A string ("mu" or "CV") indicating which of the parameters to move
+#' @param group_idx The index of the group for which mu or CV should be moved
+#' @param delay_idx The index of the delay for which mu or CV should be moved
+#' @param sdlog The standard deviation to be used for the proposal distribution, see details. 
+#' @param aug_dat The augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param curr_theta The current list of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param hyperpriors A list of hyperpriors: see details.
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @details \code{curr_theta} should be a list containing:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' \code{hyperpriors} should be a list containing:
+#' \itemize{
+#'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
+#'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
+#' }
+#' 
+#' \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
+#' The function performs the move as follows, using a Metropolis-Hastings algorithm. 
+#' For the parameter to be moved, a new value is drawn from a lognormal distribution with parameters \code{meanlog} equals the log of the current parameter value, and \code{sdlog=sdlog}.
+#' The new parameter set is then accepted with probability given by the ratio of the posterior values at the new parameter set and the old parameter set, multiplie by a correction factor to reflect the non-symetrical nature of the move. 
+#' @return A list of two elements:
+#'  \itemize{
+#'  \item{\code{new_theta}}{: Same as \code{curr_theta} but where \code{curr_theta$zeta} has been updated}
+#'  \item{\code{accept}}{: A scalar with value 1 if the move was accepted and 0 otherwise}
+#' }
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog, 
                            aug_dat,
                            curr_theta, 
@@ -123,8 +199,8 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
     ratio_post <- lprior_params_delay(what, proposed_theta, hyperpriors) - lprior_params_delay(what, curr_theta, hyperpriors) 
   }
   Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, 1:nrow(obs_dat[[group_idx]]), delay_idx,  index_dates) # same for proposed and curent par values so no need to recompute twice
-  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), Delta)) - 
-    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), Delta)) 
+  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), index_dates, Delta)) - 
+    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), index_dates, Delta)) 
   
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors) - 
@@ -155,7 +231,40 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 # test_move_mu$new_theta$mu[[1]][1] # new value
 # theta$mu[[1]][1] # old value
 
-### move zeta with a truncated (<1) lognormal proposal ###
+#' Performs one iteration of an MCMC move for the parameter zeta (probability of a data being recorded erroneously, given it is recorded)
+#' 
+#' @param aug_dat The augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param curr_theta The current list of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param hyperpriors A list of hyperpriors: see details.
+#' @details \code{curr_theta} should be a list containing:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' \code{hyperpriors} should be a list containing:
+#' \itemize{
+#'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
+#'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
+#' }
+#' 
+#' The function performs the move, using a Gibbs sampler. 
+#' A new value of parameter zeta is drawn from its marginal posterior distribution, that is a beta distribution with parameters: 
+#' \itemize{
+#'  \item{\code{first shape parameter}}{: Equal to \code{hyperpriors$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
+#'  \item{\code{second shape parameter}}{: Equal to \code{hyperpriors$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}
+#' }
+#' @return A list of two elements:
+#'  \itemize{
+#'  \item{\code{new_theta}}{: Same as \code{curr_theta} but where \code{curr_theta$zeta} has been updated}
+#'  \item{\code{accept}}{: A scalar with value 1 (as we are using a Gibbs sampler the move is always accepted)}
+#' }
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 move_zeta_gibbs <- function(aug_dat,
                             curr_theta, 
                             obs_dat, 

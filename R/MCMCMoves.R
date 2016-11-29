@@ -104,8 +104,8 @@ move_Di <- function(i, group_idx, date_idx,
   ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors)
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
   
   # no correction needed as this move is symetrical
   p_accept <- ratio_post 
@@ -203,8 +203,8 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
     sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), index_dates, Delta)) 
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors) - 
-  # lposterior_total(aug_dat, curr_theta, obs_dat, hyperpriors)
+  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors, index_dates) - 
+  # lposterior_total(aug_dat, curr_theta, obs_dat, hyperpriors, index_dates)
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   p_accept <- ratio_post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}

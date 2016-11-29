@@ -2,6 +2,7 @@
 ### likelihood function ###
 ###############################################
 
+#' @export
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
@@ -33,6 +34,7 @@ LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
 
+#' @export
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
   res <- vector()
@@ -78,6 +80,7 @@ DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
   return(res)
 }
 
+#' @export
 DiscrSI_vectorised_from_mu_CV <- function(x, mu, CV, log=TRUE)
 {
   sigma <- mu*CV
@@ -85,6 +88,7 @@ DiscrSI_vectorised_from_mu_CV <- function(x, mu, CV, log=TRUE)
   return(res)
 }
 
+#' @export
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, indiv_idx, delay_idx, index_dates)
@@ -126,6 +130,7 @@ lprior_prob_error <- function(theta, hyperpriors)
 # lprior_prob_error(theta, list(shape1_prob_error=param_beta[1], shape2_prob_error=param_beta[2]))
 
 # mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
+#' @export
 lprior_params_delay <- function(what=c("mu", "CV"), theta, hyperpriors) # using the same prior for the mean of all delays
 {
   what <- match.arg(what)

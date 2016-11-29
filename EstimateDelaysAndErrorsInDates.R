@@ -70,19 +70,13 @@ hyperpriors <- list(
 ###############################################
 
 MCMCres <- RunMCMC(obs_dat, 
-                    MCMC_settings,
-                    hyperpriors,
-                    index_dates,
-                    index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
+                   MCMC_settings,
+                   hyperpriors,
+                   index_dates,
+                   index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
 
 ###############################################
-###############################################
-### THIS IS WHERE I AM AT IN TERMS OF RECODING INTO THE PACKAGE
-###############################################
-###############################################
-
-###############################################
-### save results --> DO BETTER< SAVE ONLY WHAT IS NEEDED ###
+### save results ###
 ###############################################
 
 if(!USE_SIMULATED_DATA)
@@ -91,221 +85,52 @@ if(!USE_SIMULATED_DATA)
   ext <- date()
   ext <- gsub(" ","_",ext)
   ext <- gsub(":","",ext)
-  save.image(paste0("EbolaData/ResultsEstimation_EbolaData_",ext,".Rdata"))
+  saveRDS(MCMCres, paste0("EbolaData/ResultsEstimation_EbolaData_",ext,".rds"))
 }else
 {
   # add time to name so that can keep track of several results if needed # could change this if want more specific naming of various runs
   ext <- date()
   ext <- gsub(" ","_",ext)
   ext <- gsub(":","",ext)
-  save.image(paste0(where_to_load_from,"/ResultsEstimation_SimulatedData_",ext,".Rdata"))
+  saveRDS(MCMCres, paste0(where_to_load_from,"/ResultsEstimation_SimulatedData_",ext,".rds"))
 }
-
 
 ###############################################
 ### plotting the MCMC output ###
 ###############################################
 
-if(USE_SIMULATED_DATA) theta_simul <- readRDS(paste0(where_to_load_from,"/ThetaUsedForSimulation.rds"))
+# If working on simulated data, load the parameters used for simulation for comparison with MCMC estimates
+if(USE_SIMULATED_DATA) 
+{
+  theta_true <- readRDS(paste0(where_to_load_from,"/ThetaUsedForSimulation.rds"))
+  aug_dat_true <- readRDS(paste0(where_to_load_from,"/SimulatedAugData.rds"))
+}else
+{
+  theta_true <- NULL
+  aug_dat_true <- NULL
+}
 
-### parameters ###
-
+### plot parameter chains ###
 pdf(paste0(where_to_load_from,"/ParamConvergencePlots_",ext,".pdf"), width=14, height=7)
-par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
-
-# looking at the logposterior chain 
-plot(logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
-
-# looking at mean delay 
-group_idx <- 1 ##########################
-j <- 1
-mu <- theta_chain$mu[[group_idx]]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 20))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j])
-par(xpd=FALSE)
-
-legend("topright", "Onset-Report", lty=1)
-group_idx <- 2 ##########################
-j <- 1
-mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 20))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
-par(xpd=FALSE)
-for(j in 2:(n_dates[group_idx]-1))
-{
-  mu <- theta_chain$mu[[group_idx]][,j]
-  lines(mu, col=j)
-  par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-}
-legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
-group_idx <- 3 ##########################
-j <- 1
-mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 20))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
-par(xpd=FALSE)
-for(j in 2:(n_dates[group_idx]-1))
-{
-  mu <- theta_chain$mu[[group_idx]][,j]
-  lines(mu, col=j)
-  par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-}
-legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
-group_idx <- 4 ##########################
-j <- 1
-mu <- theta_chain$mu[[group_idx]][,j]
-plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 20))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
-par(xpd=FALSE)
-for(j in 2:(n_dates[group_idx]-1))
-{
-  mu <- theta_chain$mu[[group_idx]][,j]
-  lines(mu, col=j)
-  par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-}
-legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
-
-# looking at zeta
-zeta <- theta_chain$zeta
-plot(zeta, type="l", xlab="Iterations", ylab="zeta")
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$zeta)
-par(xpd=FALSE)
-
-# looking at CV delay
-group_idx <- 1 ##########################
-j <- 1
-CV <- theta_chain$CV[[group_idx]]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-alive group)", ylim=c(0, 2))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-par(xpd=FALSE)
-legend("topright", "Onset-Report", lty=1)
-group_idx <- 2 ##########################
-j <- 1
-CV <- theta_chain$CV[[group_idx]][,j]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-dead group)", ylim=c(0, 2))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-par(xpd=FALSE)
-for(j in 2:(n_dates[group_idx]-1))
-{
-  CV <- theta_chain$CV[[group_idx]][,j]
-  lines(CV, col=j)
-  par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-}
-legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
-group_idx <- 3 ##########################
-j <- 1
-CV <- theta_chain$CV[[group_idx]][,j]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-alive group)", ylim=c(0, 2))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-par(xpd=FALSE)
-for(j in 2:(n_dates[group_idx]-1))
-{
-  CV <- theta_chain$CV[[group_idx]][,j]
-  lines(CV, col=j)
-  par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-}
-legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
-group_idx <- 4 ##########################
-j <- 1
-CV <- theta_chain$CV[[group_idx]][,j]
-plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-dead group)", ylim=c(0, 2))
-par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-par(xpd=FALSE)
-for(j in 2:(n_dates[group_idx]-1))
-{
-  CV <- theta_chain$CV[[group_idx]][,j]
-  lines(CV, col=j)
-  par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-}
-legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+plot_parameter_chains(MCMCres, theta_true)
 dev.off()
 
-### augmented data ###
-
+### plot augmented data chains ###
 pdf(paste0(where_to_load_from,"/AugDataConvergencePlots_",ext,".pdf"), width=14, height=14)
-par(mfrow=c(4, 5),mar=c(5, 6, 1, 1))
-group_idx <- 1 ##########################
-# randomly pick 5 individuals in that group
-indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
-for(i in 1:length(indiv_to_plot)) 
-{
-  j <- 1
-  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-  for(j in 2:(n_dates[group_idx]))
-  {
-    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-    lines(date, col=j)
-  }
-  legend("topright", c("Onset","Report"), lty=1, col=1:n_dates[group_idx])
-}
-group_idx <- 2 ##########################
-# randomly pick 5 individuals in that group
-indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
-for(i in 1:length(indiv_to_plot)) 
-{
-  j <- 1
-  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-  for(j in 2:(n_dates[group_idx]))
-  {
-    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-    lines(date, col=j)
-  }
-  legend("topright", c("Onset","Death","Report"), lty=1, col=1:n_dates[group_idx])
-}
-group_idx <- 3 ##########################
-# randomly pick 5 individuals in that group
-indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
-for(i in 1:length(indiv_to_plot)) 
-{
-  j <- 1
-  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-  for(j in 2:(n_dates[group_idx]))
-  {
-    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-    lines(date, col=j)
-  }
-  legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=1:n_dates[group_idx])
-}
-group_idx <- 4 ##########################
-# randomly pick 5 individuals in that group
-indiv_to_plot <- sample(1:ncol(aug_dat_chain$D[[group_idx]][[1]]), 5)
-for(i in 1:length(indiv_to_plot)) 
-{
-  j <- 1
-  date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-  plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-  for(j in 2:(n_dates[group_idx]))
-  {
-    date <- aug_dat_chain$D[[group_idx]][[j]][,indiv_to_plot[i]]
-    lines(date, col=j)
-  }
-  legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=1:n_dates[group_idx])
-}
+plot_aug_dat_chains(MCMCres, aug_dat_true)
 dev.off()
+
+
+
+
+
+###############################################
+###############################################
+### THIS IS WHERE I AM AT IN TERMS OF RECODING INTO THE PACKAGE
+###############################################
+###############################################
+
+
 
 ###############################################
 ### Correlations ###

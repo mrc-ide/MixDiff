@@ -131,6 +131,33 @@ compute_delta <- function(D, index = index_dates)
 ### find range of dates
 ###############################################
 
+#' Find range of dates from a dataset
+#' 
+#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @return A vector of two integers coresponding to the range in \code{obs_dat}. 
+#' @import stats
+#' @export
+#' @examples
+#' ### Number of groups of individuals to simulate ###
+#' n_groups <- 2
+#' ### Number of dates to simulate for each group ###
+#' n_dates <- c(2, 3)
+#' ### Setting up the parameters for the simulation ###
+#' theta <- list()
+#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' ### Number of individuals to simulate in each group ###
+#' n_per_group <- rep(10, n_groups)
+#' ### Range of dates in which to draw the first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Perform the simulation ###
+#' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+#' ### Find the range ###
+#' find_range(D$true_dat)
+#' ### Compare with range specified in the first place ### 
+#' range_dates
 find_range <- function(obs_dat)
 {
   min_date <- min(obs_dat[[1]][,1], na.rm=TRUE)

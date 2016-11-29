@@ -55,6 +55,12 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 
 ###############################################
+###############################################
+### THIS IS WHERE I AM AT IN TERMS OF RECODING INTO THE PACKAGE
+###############################################
+###############################################
+
+###############################################
 ### Run the MCMC ###
 ###############################################
 
@@ -64,10 +70,11 @@ move_D_by_groups_of_size <- 1
 
 ### prior parameters 
 
-prior_shape1_prob_error=3
-prior_shape2_prob_error=12
-prior_mean_mean_delay=100
-prior_mean_CV_delay=100
+hyperpriors <- list(
+  prior_shape1_prob_error=3, 
+  prior_shape2_prob_error=12, 
+  prior_mean_mean_delay=100, 
+  prior_mean_CV_delay=100)
 
 ### initialisation
 

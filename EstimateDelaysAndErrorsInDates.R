@@ -120,41 +120,11 @@ pdf(paste0(where_to_load_from,"/AugDataConvergencePlots_",ext,".pdf"), width=14,
 plot_aug_dat_chains(MCMCres, aug_dat_true)
 dev.off()
 
-
-
-
-
-###############################################
-###############################################
-### THIS IS WHERE I AM AT IN TERMS OF RECODING INTO THE PACKAGE
-###############################################
-###############################################
-
-
-
 ###############################################
 ### Correlations ###
 ###############################################
 
-cor_mu_CV <- list()
-
-par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
-group_idx <- 1
-plot(theta_chain$mu[[group_idx]], theta_chain$CV[[group_idx]], type="l")
-cor_mu_CV[[group_idx]] <- cor.test(theta_chain$mu[[group_idx]], theta_chain$CV[[group_idx]])
-
-for(group_idx in 2:n_groups)
-{
-  cor_mu_CV[[group_idx]] <- list()
-  for(j in 1:(n_dates[[group_idx]]-1))
-  {
-    plot(theta_chain$mu[[group_idx]][,j], theta_chain$CV[[group_idx]][,j], type="l", col=j)
-    cor_mu_CV[[group_idx]][[j]] <- cor.test(theta_chain$mu[[group_idx]][,j], theta_chain$CV[[group_idx]][,j])
-  }
-}
-
-cor_mu_CV
-# much less correlation now after we have reparameterized to be mean and CV rather than mean and SD
+cor_mu_CV <- compute_correlations_mu_CV(MCMCres)
 
 ###############################################
 ### TO DO ###

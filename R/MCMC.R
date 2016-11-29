@@ -475,3 +475,45 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=1:n_dates[group_idx])
   }
 }
+
+#' Compute correlation between the MCMC chains of mean and CV of each delay
+#' 
+#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param plot A boolean indicating whether to plot the correlations or not
+#' @return A list of results of correlation test (obtained from the function \code{\link{cor.test}}) between the posterior mean and the posterior CV for each delay. 
+#' @import graphics
+#' @import stats
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
+{
+  cor_mu_CV <- list()
+  
+  if(plot) par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
+  
+  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_groups <- length(n_dates)
+  
+  iterations <- 1:length(MCMCres$theta_chain)
+  
+  group_idx <- 1
+  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]])
+  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]])
+  if(plot) plot(mu, CV, type="l")
+  cor_mu_CV[[group_idx]] <- cor.test(mu, CV)
+  
+  for(group_idx in 2:n_groups)
+  {
+    cor_mu_CV[[group_idx]] <- list()
+    for(j in 1:(n_dates[[group_idx]]-1))
+    {
+      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
+      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
+      if(plot) plot(mu, CV, type="l", col=j)
+      cor_mu_CV[[group_idx]][[j]] <- cor.test(mu, CV)
+    }
+  }
+  
+  return(cor_mu_CV)
+}

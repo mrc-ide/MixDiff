@@ -154,4 +154,3 @@ test_that("Simplified likelihood ratio used in move_lognormal is correct", {
     expect_equal(ratio_post, ratio_post_long) # testing that the short version is equal to the full calculation
   }
 })
-

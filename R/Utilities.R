@@ -1,34 +1,3 @@
-
-###############################################
-### functions to add a new value at end of chains ###
-###############################################
-
-add_new_value_chain_theta <- function(theta_chain, new_theta)
-{
-  n_groups <- length(theta_chain$mu)
-  theta_chain$zeta <- c(theta_chain$zeta, new_theta$zeta)
-  for(g in 1:n_groups)
-  {
-    theta_chain$mu[[g]] <- rbind(theta_chain$mu[[g]], new_theta$mu[[g]])
-    theta_chain$CV[[g]] <- rbind(theta_chain$CV[[g]], new_theta$CV[[g]])
-  }
-  return(theta_chain)
-}
-
-add_new_value_chain_aug_dat <- function(curr_aug_dat, new_aug_dat)
-{
-  n_groups <- length(curr_aug_dat$D)
-  for(g in 1:n_groups)
-  {
-    for(j in 1:length(curr_aug_dat$D[[g]]))
-    {
-      curr_aug_dat$D[[g]][[j]] <- rbind(curr_aug_dat$D[[g]][[j]], new_aug_dat$D[[g]][,j])
-      curr_aug_dat$E[[g]][[j]] <- rbind(curr_aug_dat$E[[g]][[j]], new_aug_dat$E[[g]][,j])
-    }
-  }
-  return(curr_aug_dat)
-}
-
 ###############################################
 ### functions to handle dates ###
 ###############################################

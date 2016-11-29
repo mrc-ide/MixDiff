@@ -154,3 +154,29 @@ test_that("Simplified likelihood ratio used in move_lognormal is correct", {
     expect_equal(ratio_post, ratio_post_long) # testing that the short version is equal to the full calculation
   }
 })
+
+test_that("my_DiscrSI is the same as DiscrSI", {
+  
+  k <- c(2.0,3.4)
+  mu <- 1
+  sigma <- 1
+  
+  # compare with EpiEstim function (uses mu+1)
+  expect_equal(my_DiscrSI(k, mu, sigma), c(DiscrSI(k[1], mu+1, sigma), DiscrSI(k[2], mu+1, sigma)))
+  
+  # compare with vectorised version of EpiEstim function, which uses mu instead of mu+1
+  expect_equal(my_DiscrSI(k, mu, sigma), DiscrSI_vectorised(k, mu, sigma, log=FALSE))
+  
+})
+
+test_that("my_DiscrSI_from_mu_CV is the same as DiscrSI_vectorised_from_mu_CV", {
+  
+  k <- c(2.0,3.4)
+  mu <- 1
+  CV <- 1
+  log <- FALSE
+  
+  # compare with version of EpiEstim function coded from CV instead of simga, which uses mu instead of mu+1
+  expect_equal(my_DiscrSI_from_mu_CV(k, mu, CV, log=log), DiscrSI_vectorised_from_mu_CV(k, mu, CV, log=log))
+  
+})

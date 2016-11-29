@@ -12,7 +12,9 @@ move_Di <- function(i, group_idx, date_idx,
                     curr_aug_dat,
                     theta, 
                     obs_dat, 
-                    shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_CV_delay=100, range_dates=NULL) 
+                    hyperpriors, 
+                    index_dates,
+                    range_dates=NULL) 
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
@@ -66,8 +68,8 @@ move_Di <- function(i, group_idx, date_idx,
   ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay)
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors)
   
   # no correction needed as this move is symetrical
   p_accept <- ratio_post 
@@ -91,7 +93,7 @@ move_Di <- function(i, group_idx, date_idx,
   return(list(new_aug_dat=new_aug_dat,accept=accept))
   
 }
-# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_CV_delay=100) 
+# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, hyperpriors) 
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
 
@@ -100,7 +102,8 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
                            aug_dat,
                            curr_theta, 
                            obs_dat, 
-                           shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_CV_delay=100) 
+                           hyperpriors,
+                           index_dates) 
 {
   what <- match.arg(what)
   
@@ -114,18 +117,18 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
   # calculates probability of acceptance
   if(what=="mu")
   {
-    ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_mean_delay) - lprior_params_delay(what, curr_theta, prior_mean_mean_delay) 
+    ratio_post <- lprior_params_delay(what, proposed_theta, hyperpriors) - lprior_params_delay(what, curr_theta, hyperpriors) 
   }else if(what=="CV")
   {
-    ratio_post <- lprior_params_delay(what, proposed_theta, prior_mean_CV_delay) - lprior_params_delay(what, curr_theta, prior_mean_CV_delay) 
+    ratio_post <- lprior_params_delay(what, proposed_theta, hyperpriors) - lprior_params_delay(what, curr_theta, hyperpriors) 
   }
-  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx,  1:nrow(obs_dat[[group_idx]]), index = index_dates) # same for proposed and curent par values so no need to recompute twice
+  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, 1:nrow(obs_dat[[group_idx]]), delay_idx,  index_dates) # same for proposed and curent par values so no need to recompute twice
   ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), Delta)) - 
     sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), Delta)) 
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay) - 
-  # lposterior_total(aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay)
+  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors) - 
+  # lposterior_total(aug_dat, curr_theta, obs_dat, hyperpriors)
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   p_accept <- ratio_post + correction # things are additive here as on log scale
   if(p_accept>0) {p_accept <- 0}
@@ -148,7 +151,7 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
   return(list(new_theta=new_theta,accept=accept))
   
 }
-# test_move_mu <- move_lognormal(what="mu", group_idx=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_CV_delay=100)
+# test_move_mu <- move_lognormal(what="mu", group_idx=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, hyperpriors)
 # test_move_mu$new_theta$mu[[1]][1] # new value
 # theta$mu[[1]][1] # old value
 
@@ -156,14 +159,14 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 move_zeta_gibbs <- function(aug_dat,
                             curr_theta, 
                             obs_dat, 
-                            shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_CV_delay=100) 
+                            hyperpriors) 
 {
   tmp <- compute_n_errors(aug_dat, obs_dat)
   number_of_errors <- tmp[1]
   number_of_recorded_dates <- tmp[2]
   
   # drawing from the marginal posterior distribution directly
-  new_zeta <- rbeta(1, shape1=shape1_prob_error + number_of_errors, shape2 = shape2_prob_error + number_of_recorded_dates-number_of_errors)
+  new_zeta <- rbeta(1, shape1=hyperpriors$shape1_prob_error + number_of_errors, shape2 = hyperpriors$shape2_prob_error + number_of_recorded_dates-number_of_errors)
   
   # therefore accept automatically 
   new_theta <- curr_theta
@@ -176,6 +179,6 @@ move_zeta_gibbs <- function(aug_dat,
   return(list(new_theta=new_theta,accept=accept))
   
 }
-# test_move_zeta_gibbs <- move_zeta_gibbs(aug_dat, curr_theta = theta, obs_dat, shape1_prob_error=3, shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_CV_delay=100)
+# test_move_zeta_gibbs <- move_zeta_gibbs(aug_dat, curr_theta = theta, obs_dat, hyperpriors)
 # test_move_zeta_gibbs$new_theta$zeta # new value
 # theta$zeta # old value

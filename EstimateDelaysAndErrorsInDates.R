@@ -64,17 +64,21 @@ theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 ### Run the MCMC ###
 ###############################################
 
-n_iter <- 50000 # currently (21st Nov 2016, updating 1/10th of Di per group at each iteration, 100 iterations take ~360 seconds)
+### MCMC settings
 
-move_D_by_groups_of_size <- 1
+MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
+                       chain_properties=list(n_iter = 100, burnin = 50, record_every=10))
+# for now moving all mus and CVs with the same sd, 
+# might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
 ### prior parameters 
 
 hyperpriors <- list(
-  prior_shape1_prob_error=3, 
-  prior_shape2_prob_error=12, 
-  prior_mean_mean_delay=100, 
-  prior_mean_CV_delay=100)
+  shape1_prob_error=3, 
+  shape2_prob_error=12, 
+  mean_mean_delay=100, 
+  mean_CV_delay=100)
 
 ### initialisation
 
@@ -82,23 +86,16 @@ range_dates <- find_range(obs_dat)
 
 # to store param values
 curr_theta <- theta
-theta_chain <- curr_theta
+theta_chain <- list()
+theta_chain[[1]] <- curr_theta
 
 # to store augmented data values
 curr_aug_dat <- aug_dat
-aug_dat_chain <- list(D=list(), E=list())
-for(g in 1:n_groups)
-{
-  aug_dat_chain$D[[g]] <- lapply(1:n_dates[[g]], function(j) as.integer(aug_dat$D[[g]][,j]))
-  names(aug_dat_chain$D[[g]]) <- paste0("Delay",1:n_dates[[g]])
-  aug_dat_chain$E[[g]] <- lapply(1:n_dates[[g]], function(j) as.integer(aug_dat$E[[g]][,j]))
-  names(aug_dat_chain$E[[g]]) <- paste0("Delay",1:n_dates[[g]])
-}
-names(aug_dat_chain$D) <- names(obs_dat)
-names(aug_dat_chain$E) <- names(obs_dat)
+aug_dat_chain <- list()
+aug_dat_chain[[1]] <- curr_aug_dat
 
-logpost_chain <- rep(NA, n_iter)
-logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates)
+logpost_chain <- rep(NA, MCMC_settings$chain_properties$n_iter)
+logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperpriors, index_dates, range_dates)
 
 n_accepted_D_moves <- 0
 n_proposed_D_moves <- 0
@@ -109,44 +106,23 @@ n_proposed_mu_moves <- 0
 n_accepted_CV_moves <- 0
 n_proposed_CV_moves <- 0
 
-#n_accepted_zeta_moves <- 0 # not used as Gibbs sampler 
-#n_proposed_zeta_moves <- 0 # not used as Gibbs sampler
-
-### turn on and off various moves, useful for debugging
-D_moves_on <- TRUE
-mu_moves_on <- TRUE
-CV_moves_on <- TRUE
-zeta_moves_on <- TRUE
-
-### std of moves
-
-fraction_Di_to_update <- 1/10
-
-sdlog_mu <- 0.15 # for now moving all mus with the same sd, 
-# might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
-
-sdlog_CV <- 0.25 # for now moving all CVs with the same sd, 
-# might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
-
-#sdlog_zeta <- 0.005 # not used as Gibbs sampler
-
 system.time({
-  for(k in 1:(n_iter-1))
+  for(k in 1:(MCMC_settings$chain_properties$n_iter-1))
   {
     print(k)
     
     # move some of the D_i
-    if(D_moves_on)
+    if(MCMC_settings$moves_switch$D_on)
     {
       for(g in 1:n_groups)
       {
         for(j in 1:ncol(curr_aug_dat$D[[g]]))
         {
-          to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
-          n_10_to_update <- floor(length(to_update) / move_D_by_groups_of_size)
+          to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
+          n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in 1:length(n_10_to_update))
           {
-            tmp <- move_Di (to_update[move_D_by_groups_of_size*(i-1)+(1:move_D_by_groups_of_size)], g, j, 
+            tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(1:MCMC_settings$moves_options$move_D_by_groups_of_size)], g, j, 
                             curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
@@ -160,7 +136,7 @@ system.time({
     }
     
     # move zeta using Gibbs sampler
-    if(zeta_moves_on)
+    if(MCMC_settings$moves_switch$zeta_on)
     {
       tmp <- move_zeta_gibbs(curr_aug_dat,
                              curr_theta, 
@@ -170,7 +146,7 @@ system.time({
     }
     
     # move mu
-    if(mu_moves_on)
+    if(MCMC_settings$moves_switch$mu_on)
     {
       for(g in 1:n_groups)
       {
@@ -189,7 +165,7 @@ system.time({
     }
     
     # move CV
-    if(CV_moves_on)
+    if(MCMC_settings$moves_switch$CV_on)
     {
       for(g in 1:n_groups)
       {
@@ -211,8 +187,9 @@ system.time({
     theta_chain <- add_new_value_chain_theta(theta_chain, curr_theta)
     aug_dat_chain <- add_new_value_chain_aug_dat(aug_dat_chain, curr_aug_dat)
     
-    # recording the likelihood after all moves
-    logpost_chain[k+1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates)
+    # recording the likelihood after all moves #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
+    if( (k>=MCMC_settings$chain_properties$burnin) & (k %% record_every)==0)
+      logpost_chain[k+1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_CV_delay, range_dates)
   }
 })
 
@@ -289,7 +266,7 @@ j <- 1
 mu <- theta_chain$mu[[group_idx]]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j])
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j])
 par(xpd=FALSE)
 
 legend("topright", "Onset-Report", lty=1)
@@ -298,14 +275,14 @@ j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -314,14 +291,14 @@ j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -330,14 +307,14 @@ j <- 1
 mu <- theta_chain$mu[[group_idx]][,j]
 plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 20))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   mu <- theta_chain$mu[[group_idx]][,j]
   lines(mu, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$mu[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -346,7 +323,7 @@ legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n
 zeta <- theta_chain$zeta
 plot(zeta, type="l", xlab="Iterations", ylab="zeta")
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$zeta)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$zeta)
 par(xpd=FALSE)
 
 # looking at CV delay
@@ -355,7 +332,7 @@ j <- 1
 CV <- theta_chain$CV[[group_idx]]
 plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-alive group)", ylim=c(0, 2))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 legend("topright", "Onset-Report", lty=1)
 group_idx <- 2 ##########################
@@ -363,14 +340,14 @@ j <- 1
 CV <- theta_chain$CV[[group_idx]][,j]
 plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-dead group)", ylim=c(0, 2))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   CV <- theta_chain$CV[[group_idx]][,j]
   lines(CV, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -379,14 +356,14 @@ j <- 1
 CV <- theta_chain$CV[[group_idx]][,j]
 plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-alive group)", ylim=c(0, 2))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   CV <- theta_chain$CV[[group_idx]][,j]
   lines(CV, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -395,14 +372,14 @@ j <- 1
 CV <- theta_chain$CV[[group_idx]][,j]
 plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-dead group)", ylim=c(0, 2))
 par(xpd=TRUE)
-if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
 par(xpd=FALSE)
 for(j in 2:(n_dates[group_idx]-1))
 {
   CV <- theta_chain$CV[[group_idx]][,j]
   lines(CV, col=j)
   par(xpd=TRUE)
-  if(USE_SIMULATED_DATA) points(n_iter-max(burnin)+n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
+  if(USE_SIMULATED_DATA) points(MCMC_settings$chain_properties$n_iter-max(burnin)+MCMC_settings$chain_properties$n_iter/25,theta_simul$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
 }
 legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
@@ -511,9 +488,9 @@ cor_mu_CV
 # also consider using Gibbs samplers to move mu and CV --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
 # why do we tend to underestimate the mean delays? related to discretization of gamma distr? 
 # write some code to start from last point in the chain
-# create a hyperprior list which contains all the prior parameters - easier than keeping track of each of them separately
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
-
+# currently initialisation of augmented data can still start in stupid place, where order of dates is ok but delays are too large, so make sure this is not the case
+ 
 # Marc: 
 # finish writing
 # think about the 1/(T-T0)

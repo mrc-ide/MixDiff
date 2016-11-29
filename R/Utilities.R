@@ -108,19 +108,76 @@ find_params_gamma <- function(mean, sigma=mean*CV, CV) # function to determine p
 ### compute_delta functions to compute relevant delays based on index, which tells you which dates should be used for delayl calculation ###
 ###############################################
 
-compute_delta_group_delay_and_indiv<-function(D, group_idx, delay_idx, indiv_idx, index = index_dates)
+#' Compute relevant delays for one individual, based on data
+#' 
+#' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
+#' @param group_idx a scalar or vector giving the index of the group(s) for which to calculate the delays
+#' @param indiv_idx a scalar or vector giving the index of the individuals in group \code{group_idx} for which to calculate the delays
+#' @param delay_idx a scalar or vector giving the index of the delay(s) to be calculated
+#' @param index_dates A list containing indications on which delays to consider in the simulation. 
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. 
+#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' @return A list of same length as \code{D}. Each element in the list is a matrix with same number of rows as in \code{D}, but potentially a different number of columns, corresponding to the relevant delays calculated for that group. 
+#' @export
+#' @examples
+#' ### Number of groups of individuals to simulate ###
+#' n_groups <- 2
+#' ### Number of dates to simulate for each group ###
+#' n_dates <- c(2, 3)
+#' ### Setting up the parameters for the simulation ###
+#' theta <- list()
+#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' ### Number of individuals to simulate in each group ###
+#' n_per_group <- rep(10, n_groups)
+#' ### Range of dates in which to draw the first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Perform the simulation ###
+#' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+#' ### Compute the first delay for first individual in first group ###
+#' compute_delta_group_delay_and_indiv(D$true_dat, group_idx=1, indiv_idx=1, delay_idx=1, index_dates)
+compute_delta_group_delay_and_indiv<-function(D, group_idx, indiv_idx, delay_idx, index_dates)
 {
-  Delta <- D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][2]] - D[[group_idx]][indiv_idx,index[[group_idx]][,delay_idx][1]]
+  Delta <- D[[group_idx]][indiv_idx,index_dates[[group_idx]][,delay_idx][2]] - D[[group_idx]][indiv_idx,index_dates[[group_idx]][,delay_idx][1]]
   return(Delta)
 }
 
-compute_delta <- function(D, index = index_dates)
+#' Compute relevant delays based on data
+#' 
+#' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
+#' @param index_dates A list containing indications on which delays to consider in the simulation. 
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. 
+#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' @return A list of same length as \code{D}. Each element in the list is a matrix with same number of rows as in \code{D}, but potentially a different number of columns, corresponding to the relevant delays calculated for that group. 
+#' @export
+#' @examples
+#' ### Number of groups of individuals to simulate ###
+#' n_groups <- 2
+#' ### Number of dates to simulate for each group ###
+#' n_dates <- c(2, 3)
+#' ### Setting up the parameters for the simulation ###
+#' theta <- list()
+#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' ### Number of individuals to simulate in each group ###
+#' n_per_group <- rep(10, n_groups)
+#' ### Range of dates in which to draw the first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Perform the simulation ###
+#' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+#' ### Compute the corresponding delays ###
+#' Delays <- compute_delta(D$true_dat, index_dates)
+compute_delta <- function(D, index_dates)
 {
   Delta <- lapply(1:length(D), function(g){
     m <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
     for(j in 1: ncol(m))
     {
-      m[,j] <- D[[g]][,index[[g]][,j][2]] - D[[g]][,index[[g]][,j][1]]
+      m[,j] <- D[[g]][,index_dates[[g]][,j][2]] - D[[g]][,index_dates[[g]][,j][1]]
     }
     return(m)
   })

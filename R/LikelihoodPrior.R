@@ -85,26 +85,26 @@ DiscrSI_vectorised_from_mu_CV <- function(x, mu, CV, log=TRUE)
   return(res)
 }
 
-LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, Delta=NULL)
+LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {
-  if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, delay_idx, indiv_idx, index = index_dates)
+  if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, indiv_idx, delay_idx, index_dates)
   LL <- DiscrSI_vectorised_from_mu_CV(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$CV[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 
-LL_delays_term<-function(aug_dat, theta, obs_dat, Delta=NULL)
+LL_delays_term<-function(aug_dat, theta, obs_dat, index_dates, Delta=NULL)
 {
-  if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index = index_dates)
-  LL <- sum (sapply(1:length(obs_dat), function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
+  if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index_dates)
+  LL <- sum (sapply(1:length(obs_dat), function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), index_dates, Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)
 
-LL_total <- function(aug_dat, theta, obs_dat, range_dates=NULL)
+LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates=NULL)
 {
   res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates) + 
     LL_error_term(aug_dat, theta, obs_dat) + 
-    LL_delays_term(aug_dat, theta, obs_dat)
+    LL_delays_term(aug_dat, theta, obs_dat, index_dates)
   return(res)
 }
 # LL_total(aug_dat, theta, obs_dat)
@@ -114,45 +114,103 @@ LL_total <- function(aug_dat, theta, obs_dat, range_dates=NULL)
 ###############################################
 
 # zeta ~ beta(low mean) # need a very informative prior
-lprior_prob_error <- function(theta, shape1=3, shape2=12) 
+lprior_prob_error <- function(theta, hyperpriors) 
 {
   # can use this code to plot the corresponding prior: 
   # x <- seq(0,1,0.01)
-  # y <- dbeta(x, shape1, shape2)
+  # y <- dbeta(x, hyperpriors$shape1_prob_error,  hyperpriors$shape2_prob_error)
   # plot(x, y, type="l")
-  return(dbeta(theta$zeta, shape1, shape2, log = TRUE))
+  return(dbeta(theta$zeta, hyperpriors$shape1_prob_error,  hyperpriors$shape2_prob_error, log = TRUE))
 }
 # param_beta <- find_params_beta(mean=0.2, var=0.01)
-# lprior_prob_error(theta, param_beta[1], param_beta[2])
+# lprior_prob_error(theta, list(shape1_prob_error=param_beta[1], shape2_prob_error=param_beta[2]))
 
 # mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
-lprior_params_delay <- function(what=c("mu", "CV"), theta, mean=100) # using the same prior for the mean of all delays
+lprior_params_delay <- function(what=c("mu", "CV"), theta, hyperpriors) # using the same prior for the mean of all delays
 {
   what <- match.arg(what)
   # can use this code to plot the corresponding prior: 
   # x <- seq(0,1000,1)
-  # y <- dexp(x, 1/mean)
+  # y <- dexp(x, 1/hyperpriors$mean_mean_delay)
   # plot(x, y, type="l")
-  return(sum(dexp(unlist(theta[[what]]), 1/mean, log = TRUE)))
+  return(sum(dexp(unlist(theta[[what]]), 1/hyperpriors$mean_mean_delay, log = TRUE)))
 }
-#lprior_params_delay("mu", theta)
+#lprior_params_delay("mu", theta, list(mean_mean_delay=10))
 
-lprior_total <- function(theta, shape1_prob_error=3, shape2_prob_error=12, mean_mean_delay=100, mean_std_delay=100)
+lprior_total <- function(theta, hyperpriors)
 {
-  res <- lprior_prob_error(theta, shape1_prob_error, shape2_prob_error) + 
-    lprior_params_delay("mu", theta, mean_mean_delay) + 
-    lprior_params_delay("CV", theta, mean_mean_delay)
+  res <- lprior_prob_error(theta, hyperpriors) + 
+    lprior_params_delay("mu", theta, hyperpriors) + 
+    lprior_params_delay("CV", theta, hyperpriors)
   return(res)
 }
-#lprior_total(theta)
+#lprior_total(theta, list(shape1_prob_error=3, shape2_prob_error=12, mean_mean_delay=100, mean_CV_delay=100))
 
 ###############################################
 ### posteriors ###
 ###############################################
 
-lposterior_total <- function(aug_dat, theta, obs_dat, prior_shape1_prob_error=3, prior_shape2_prob_error=12, prior_mean_mean_delay=100, prior_mean_std_delay=100, range_dates=NULL)
+#' Compute the log joint posterior distribution of augmented data and parameters given observed data
+#' 
+#' @param aug_dat A list of augmented data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
+#' @param theta List of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param hyperpriors A list of hyperpriors: see details.
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @details \code{theta} should be a list containing:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' \code{hyperpriors} should be a list containing:
+#' \itemize{
+#'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
+#'  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
+#'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
+#' }
+#' \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' @return A scalar giving the value of the log posterior. 
+#' @export
+#' @examples
+#' ### Number of groups of individuals to simulate ###
+#' n_groups <- 2
+#' ### Number of dates to simulate for each group ###
+#' n_dates <- c(2, 3)
+#' ### Setting up the parameters for the simulation ###
+#' theta <- list()
+#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' theta$prop_missing_data <- 0.25 # probability of data missing in observations
+#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
+#' ### Number of individuals to simulate in each group ###
+#' n_per_group <- rep(10, n_groups)
+#' ### Range of dates in which to draw the first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Simulate data ###
+#' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
+#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+#' obs_dat <- observed_D$obs_dat
+#' true_aug_dat <- list(D=D$true_dat, E=observed_D$E)
+#' ### Define hyperpriors ###
+#' hyperpriors <- list(shape1_prob_error=3, shape2_prob_error=12, 
+#'                      mean_mean_delay=100, mean_CV_delay=100)
+#' ### Compute log posterior distribution for that data
+#' lposterior_total(true_aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+#' ### Now use initalised augmented data 
+#' ### and check that posterior value for this is lower than for true data:
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates)
+#' lposterior_total(aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+lposterior_total <- function(aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=NULL)
 {
-  res <- LL_total(aug_dat, theta, obs_dat, range_dates) + lprior_total(theta, prior_shape1_prob_error, prior_shape2_prob_error, prior_mean_mean_delay, prior_mean_std_delay)
+  res <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates) + lprior_total(theta, hyperpriors)
   return(res)
 }
-#lposterior_total(aug_dat, theta, obs_dat)
+#lposterior_total(aug_dat, theta, obs_dat, hyperpriors=list(shape1_prob_error=3, shape2_prob_error=12, mean_mean_delay=100, mean_CV_delay=100))

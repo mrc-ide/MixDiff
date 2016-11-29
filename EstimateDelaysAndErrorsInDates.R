@@ -37,9 +37,6 @@ if(!USE_SIMULATED_DATA)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
 }
 
-n_dates <- sapply(obs_dat, ncol )
-n_groups <- length(n_dates)
-
 ###############################################
 ### define index_dates andindex_dates_order  ###
 ###############################################

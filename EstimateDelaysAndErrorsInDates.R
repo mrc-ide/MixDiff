@@ -69,11 +69,19 @@ hyperpriors <- list(
 ### Run the MCMC  ###
 ###############################################
 
+set.seed(1)
+system.time({
 MCMCres <- RunMCMC(obs_dat, 
                    MCMC_settings,
                    hyperpriors,
                    index_dates,
                    index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
+})
+# before changing DiscrSI function this takes 14.575 
+# after change takes 4.6 minutes --> 3 times faster!
+
+# results are saved as below so can compare with new version
+
 
 ###############################################
 ### save results ###
@@ -143,6 +151,8 @@ cor_mu_CV <- compute_correlations_mu_CV(MCMCres)
 # currently initialisation of augmented data can still start in stupid place, where order of dates is ok but delays are too large, so make sure this is not the case
 # everywhere replace 1:n by seq_len(n) 
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
+# question for Rich: should all functions used in tests be "public"?
+# line 124 of likelihood should this be Delta or Delta+1?!?!
 
 # Marc: 
 # finish writing

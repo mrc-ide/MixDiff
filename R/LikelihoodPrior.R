@@ -7,12 +7,13 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   LL <- vector()
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
-  no_error <- which(aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% 0)
+  indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% 0
+  no_error <- which(indicator_no_error)
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
   # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
   ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
-  error_or_missing <- which((aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% -1 | aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% 1))
+  error_or_missing <- which(!indicator_no_error)
   ### K is the relative probability of observing a given error, conditional on presence of error
   # for now, K is given as 1/n, where n is the number of dates in the range_dates
   # could use something different if we define the space of possible errors differently. 

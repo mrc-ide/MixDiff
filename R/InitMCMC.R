@@ -143,7 +143,7 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
   E <- list()
   for(g in 1:n_groups) 
   {
-    E[[g]] <- as.data.frame(matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]])))
+    E[[g]] <- matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]]))
     for(j in 1:ncol(obs_dat[[g]]))
     {
       E[[g]][!(D[[g]][,j] %in% obs_dat[[g]][,j]),j] <- 1 # error

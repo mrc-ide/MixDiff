@@ -7,7 +7,7 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   LL <- vector()
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
-  indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] %in% 0
+  indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 0
   no_error <- which(indicator_no_error)
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
@@ -37,8 +37,9 @@ LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
   res <- vector()
-  missing <- which(aug_dat$E[[group_idx]][indiv_idx,date_idx] %in% -1)
-  non_missing <- which(!(aug_dat$E[[group_idx]][indiv_idx,date_idx]  %in% -1))
+  indicator_missing <- aug_dat$E[[group_idx]][indiv_idx,date_idx] == -1
+  missing <- which(indicator_missing)
+  non_missing <- which(!indicator_missing)
   res[non_missing] <- log(theta$zeta)*as.numeric(aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx]) + log(1-theta$zeta)*(1-as.numeric(aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx]))
   res[missing] <- 0
   return(res)
@@ -47,7 +48,7 @@ LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, grou
 compute_n_errors <- function(aug_dat, obs_dat)
 {
   n_groups <- length(obs_dat)
-  number_of_errors <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]] %in% 1)))
+  number_of_errors <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]] == 1)))
   number_of_recorded_dates <- sum(sapply(1:n_groups, function(g) sum(!(aug_dat$E[[g]] %in% -1))))
   return(c(number_of_errors, number_of_recorded_dates))
 }

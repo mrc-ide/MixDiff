@@ -91,8 +91,9 @@ DiscrGamma <- function (k, mu, CV=NULL, sigma=mu*CV, log=TRUE)
                                                     a, scale) - 2 * (k - 1) * pgamma(k - 1, a, scale)
   res <- res + (a / scale) * (2 * pgamma(k - 1, a + 1, scale) - pgamma(k - 
                                                                        2, a + 1, scale) - pgamma(k, a + 1, scale))
+  res <-pmax(0, res)
   return(if(log) log(res) else res)
-  return(pmax(0, res))
+  return()
 }
 
 ####################################

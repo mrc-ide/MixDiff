@@ -51,7 +51,7 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 
 MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
-                       chain_properties=list(n_iter = 100, burnin = 50, record_every=10))
+                       chain_properties=list(n_iter = 5000, burnin = 1000, record_every=10))
 # for now moving all mus and CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -77,11 +77,7 @@ MCMCres <- RunMCMC(obs_dat,
                    index_dates,
                    index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
 })
-# before changing DiscrSI function this takes 14.575 
-# after change takes 4.6 minutes --> 3 times faster!
-
-# results are saved as below so can compare with new version
-
+# 30 Nov 5000 iterations take 240s
 
 ###############################################
 ### save results ###

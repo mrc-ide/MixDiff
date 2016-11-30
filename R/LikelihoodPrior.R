@@ -75,8 +75,12 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 # discretised Gamma distribution - see Cori et al. AJE 2013
 ####################################
 
-DiscrGamma <- function (k, mu, sigma) 
+DiscrGamma <- function (k, mu, CV=NULL, sigma=mu*CV, log=TRUE) 
 {
+  if (!is.null(CV)) {
+    if(CV < 0)
+      stop("CV must be >=0.")
+  }
   if (sigma < 0) {
     stop("sigma must be >=0.")
   }
@@ -87,21 +91,16 @@ DiscrGamma <- function (k, mu, sigma)
                                                     a, scale) - 2 * (k - 1) * pgamma(k - 1, a, scale)
   res <- res + (a / scale) * (2 * pgamma(k - 1, a + 1, scale) - pgamma(k - 
                                                                        2, a + 1, scale) - pgamma(k, a + 1, scale))
+  return(if(log) log(res) else res)
   return(pmax(0, res))
 }
 
-DiscrGamma_from_mu_CV <- function(x, mu, CV, log=TRUE)
-{
-  sigma <- mu*CV
-  res <- DiscrGamma(x, mu, sigma) 
-  return(if(log) log(res) else res)
-}
 ####################################
 
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, indiv_idx, delay_idx, index_dates)
-  LL <- DiscrGamma_from_mu_CV(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$CV[[group_idx]][delay_idx], log=TRUE)
+  LL <- DiscrGamma(Delta + 1, mu=theta$mu[[group_idx]][delay_idx], CV=theta$CV[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 

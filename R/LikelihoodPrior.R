@@ -2,7 +2,6 @@
 ### likelihood function ###
 ###############################################
 
-#' @export
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
@@ -34,7 +33,6 @@ LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
 
-#' @export
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
   res <- vector()
@@ -73,25 +71,26 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 #}
 # system.time(LL_error_term_slow(aug_dat, theta, obs_dat))
 
-#' @import EpiEstim
-DiscrSI_vectorised <- function(x, mu, sigma, log=TRUE)
-{
-  if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
-  return(res)
-}
-
-#' @export
-DiscrSI_vectorised_from_mu_CV <- function(x, mu, CV, log=TRUE)
-{
-  sigma <- mu*CV
-  if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
-  return(res)
-}
-
 ####################################
-# attempt to vectorise DiscrSI
+# discretised Gamma distribution - see Cori et al. AJE 2013
 ####################################
-my_DiscrSI <- function (k, mu, sigma) 
+
+# #' @import EpiEstim
+# DiscrSI_vectorised_slow <- function(x, mu, sigma, log=TRUE)
+# {
+#   if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
+#   return(res)
+# }
+# 
+# #' @export
+# DiscrSI_vectorised_from_mu_CV_slow <- function(x, mu, CV, log=TRUE)
+# {
+#   sigma <- mu*CV
+#   if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
+#   return(res)
+# }
+
+DiscrGamma <- function (k, mu, sigma) 
 {
   if (sigma < 0) {
     stop("sigma must be >=0.")
@@ -106,23 +105,18 @@ my_DiscrSI <- function (k, mu, sigma)
   return(pmax(0, res))
 }
 
-my_DiscrSI_from_mu_CV <- function(x, mu, CV, log=TRUE)
+DiscrGamma_from_mu_CV <- function(x, mu, CV, log=TRUE)
 {
   sigma <- mu*CV
-  res <- my_DiscrSI(x, mu, sigma) 
+  res <- DiscrGamma(x, mu, sigma) 
   return(if(log) log(res) else res)
 }
 ####################################
 
-
-
-
-#' @export
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, indiv_idx, delay_idx, index_dates)
-  #LL <- DiscrSI_vectorised_from_mu_CV(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$CV[[group_idx]][delay_idx], log=TRUE)
-  LL <- my_DiscrSI_from_mu_CV(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$CV[[group_idx]][delay_idx], log=TRUE)
+  LL <- DiscrGamma_from_mu_CV(Delta + 1, theta$mu[[group_idx]][delay_idx], theta$CV[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 
@@ -160,7 +154,6 @@ lprior_prob_error <- function(theta, hyperpriors)
 # lprior_prob_error(theta, list(shape1_prob_error=param_beta[1], shape2_prob_error=param_beta[2]))
 
 # mu and CV ~ Exp(mean 1000) # very informative prior should be ok because data will be informative
-#' @export
 lprior_params_delay <- function(what=c("mu", "CV"), theta, hyperpriors) # using the same prior for the mean of all delays
 {
   what <- match.arg(what)

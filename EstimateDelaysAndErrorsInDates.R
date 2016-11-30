@@ -131,6 +131,14 @@ dev.off()
 cor_mu_CV <- compute_correlations_mu_CV(MCMCres)
 
 ###############################################
+### Get and plot posterior estimates ###
+###############################################
+
+pdf(paste0(where_to_load_from,"/PosteriorDistrPlots_",ext,".pdf"), width=14, height=7)
+MCMCres_summary <- get_param_posterior_estimates(MCMCres, theta_true=theta_true, cex.axis=0.8)
+dev.off()
+
+###############################################
 ### TO DO ###
 ###############################################
 
@@ -139,9 +147,7 @@ cor_mu_CV <- compute_correlations_mu_CV(MCMCres)
 # try to speed up if possible
 # considering only calculating the likelihood for some iterations (e.g. after burnin and thinning), posthoc? 
 # should we update zeta after each D_i move, or after all D_i in a group move? 
-# keep track of acceptance rate for D and for mu/CV per group and per deay rather than altogether, to check if some moves are more successful than others. 
-# also consider using Gibbs samplers to move mu and CV --> for this need to reformulate as shape/scale: but doesn't seem obvious to sample from the posterior distribution? 
-# why do we tend to underestimate the mean delays? related to discretization of gamma distr? 
+# keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 # currently initialisation of augmented data can still start in stupid place, where order of dates is ok but delays are too large, so make sure this is not the case

@@ -87,16 +87,15 @@ DiscrGamma <- function (k, mu, CV=NULL, sigma=mu*CV, log=TRUE)
   a <- (mu/sigma)^2
   #b <- sigma^2/mu
   scale <- mu/(sigma^2)
-  res <- k * pgamma(k, a, scale) + (k - 2) * pgamma(k - 2, 
-                                                    a, scale) - 2 * (k - 1) * pgamma(k - 1, a, scale)
-  res <- res + (a / scale) * (2 * pgamma(k - 1, a + 1, scale) - pgamma(k - 
-                                                                       2, a + 1, scale) - pgamma(k, a + 1, scale))
+  
+  res <- k * pgamma(k, a, scale) + (k - 2) * pgamma(k - 2, a, scale) - 2 * (k - 1) * pgamma(k - 1, a, scale)
+  
+  res <- res + (a / scale) * (2 * pgamma(k - 1, a + 1, scale) - pgamma(k - 2, a + 1, scale) - pgamma(k, a + 1, scale))
+  
   res <-pmax(0, res)
   return(if(log) log(res) else res)
   return()
 }
-
-####################################
 
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {

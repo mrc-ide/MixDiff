@@ -51,7 +51,7 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 
 MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
-                       chain_properties=list(n_iter = 5000, burnin = 1000, record_every=10))
+                       chain_properties=list(n_iter = 500, burnin = 100, record_every=1))
 # for now moving all mus and CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -70,6 +70,7 @@ hyperpriors <- list(
 ###############################################
 
 set.seed(1)
+Rprof()
 system.time({
 MCMCres <- RunMCMC(obs_dat, 
                    MCMC_settings,
@@ -77,7 +78,10 @@ MCMCres <- RunMCMC(obs_dat,
                    index_dates,
                    index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
 })
+Rprof(NULL)
+summaryRprof()
 # 30 Nov 5000 iterations take 240s
+# 30 Nov --> n_iter = 500, burnin = 100, record_every=1 takes 30secs
 
 ###############################################
 ### save results ###

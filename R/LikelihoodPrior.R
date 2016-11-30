@@ -75,21 +75,6 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 # discretised Gamma distribution - see Cori et al. AJE 2013
 ####################################
 
-# #' @import EpiEstim
-# DiscrSI_vectorised_slow <- function(x, mu, sigma, log=TRUE)
-# {
-#   if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
-#   return(res)
-# }
-# 
-# #' @export
-# DiscrSI_vectorised_from_mu_CV_slow <- function(x, mu, CV, log=TRUE)
-# {
-#   sigma <- mu*CV
-#   if(log) res <- sapply(x, function(k) log(DiscrSI(k, mu+1, sigma))) else res <- sapply(x, function(k) DiscrSI(k, mu+1, sigma)) ### here we use mu+1 because we don't want the shifted gamma, just the gamma
-#   return(res)
-# }
-
 DiscrGamma <- function (k, mu, sigma) 
 {
   if (sigma < 0) {

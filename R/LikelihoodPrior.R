@@ -47,9 +47,8 @@ LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, grou
 
 compute_n_errors <- function(aug_dat, obs_dat)
 {
-  n_groups <- length(obs_dat)
-  number_of_errors <- sum(sapply(1:n_groups, function(g) sum(aug_dat$E[[g]] == 1)))
-  number_of_recorded_dates <- sum(sapply(1:n_groups, function(g) sum(!(aug_dat$E[[g]] %in% -1))))
+  number_of_errors <- sum(unlist(aug_dat$E) == 1)
+  number_of_recorded_dates <- sum(unlist(aug_dat$E) != -1)
   return(c(number_of_errors, number_of_recorded_dates))
 }
 # system.time(compute_n_errors(aug_dat, obs_dat))

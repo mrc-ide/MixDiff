@@ -132,7 +132,17 @@ RunMCMC <- function(obs_dat,
                             range_dates) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
-            if(tmp$accept==1) curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
+            if(tmp$accept==1) 
+            {
+              curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
+              
+              # if accepted move, update zeta
+              tmp <- move_zeta_gibbs(curr_aug_dat,
+                                     curr_theta, 
+                                     obs_dat, 
+                                     hyperpriors) 
+              curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
+            }
           }
         }
       }

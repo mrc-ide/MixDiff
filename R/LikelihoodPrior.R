@@ -5,10 +5,10 @@
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
-  LL <- vector()
+  LL <- matrix(NA, length(indiv_idx), length(date_idx))
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
   indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 0
-  no_error <- which(indicator_no_error)
+  no_error <- which(indicator_no_error, arr.ind = TRUE)
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
   # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
@@ -29,19 +29,17 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
 LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
-  LL <- sum (sapply(1:length(obs_dat), function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]),range_dates)) ) ) ) )
+  LL <- sum(unlist(lapply(1:length(obs_dat), function(g) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, 1:ncol(aug_dat$D[[g]]), 1:nrow(obs_dat[[g]]),range_dates)) ) ))
   return(LL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
 
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
-  res <- vector()
-  indicator_missing <- aug_dat$E[[group_idx]][indiv_idx,date_idx] == -1
-  missing <- which(indicator_missing)
-  non_missing <- which(!indicator_missing)
-  res[non_missing] <- log(theta$zeta)*as.numeric(aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx]) + log(1-theta$zeta)*(1-as.numeric(aug_dat$E[[group_idx]][indiv_idx[non_missing],date_idx]))
-  res[missing] <- 0
+  res <- matrix(0, length(indiv_idx), length(date_idx))
+  non_missing <- which(aug_dat$E[[group_idx]][indiv_idx,date_idx] != -1, arr.ind = TRUE)
+  tmp <- aug_dat$E[[group_idx]][indiv_idx,date_idx][non_missing]
+  res[non_missing] <- log(theta$zeta)*tmp + log(1-theta$zeta)*(1-tmp)
   return(res)
 }
 
@@ -67,7 +65,7 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 
 #LL_error_term_slow<-function(aug_dat, theta, obs_dat)
 #{
-#  LL <- sum (sapply(1:n_groups, function(g) sum (sapply(1:ncol(aug_dat$D[[g]]), function(j) sum(LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j, 1:nrow(obs_dat[[g]]))) ) ) ) )
+#  LL <- sum (sapply(1:n_groups, function(g) sum ((LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, 1:ncol(aug_dat$D[[g]]), 1:nrow(obs_dat[[g]]))) ) ) ) 
 #  return(LL)
 #}
 # system.time(LL_error_term_slow(aug_dat, theta, obs_dat))

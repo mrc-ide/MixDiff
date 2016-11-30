@@ -67,7 +67,6 @@ RunMCMC <- function(obs_dat,
   ### define parameters to be used for initialisation of the chain ###
   ###############################################
   
-  index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
   theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
   
   ###############################################

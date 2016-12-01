@@ -32,7 +32,7 @@ tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
 E <- tmp$E
 obs_dat <- tmp$obs_dat
 
-aug_dat <- list(D=D$true_dat)
+aug_dat <- list(D=D$true_dat, E=tmp$E)
 
 ####################################
 ### saving this somewhere ###

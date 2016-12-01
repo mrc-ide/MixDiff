@@ -51,7 +51,7 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 
 MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
-                       chain_properties=list(n_iter = 5000, burnin = 1000, record_every=10))
+                       chain_properties=list(n_iter = 550000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -142,6 +142,33 @@ cor_mu_CV <- compute_correlations_mu_CV(MCMCres)
 pdf(paste0(where_to_load_from,"/PosteriorDistrPlots_",ext,".pdf"), width=14, height=7)
 MCMCres_summary <- get_param_posterior_estimates(MCMCres, theta_true=theta_true, cex.axis=0.8)
 dev.off()
+
+
+###############################################
+### Investigating issue with estimation of mean delay from onset to hosp in group 3 ###
+###############################################
+
+### checking the actual 'true' simulated data
+
+par(mfrow=c(1,3))
+hist(aug_dat_true$D[[3]][,2] - aug_dat_true$D[[3]][,1])
+summary(aug_dat_true$D[[3]][,2] - aug_dat_true$D[[3]][,1])
+hist(aug_dat_true$D[[3]][,3] - aug_dat_true$D[[3]][,2])
+summary(aug_dat_true$D[[3]][,3] - aug_dat_true$D[[3]][,2])
+hist(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1])
+summary(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1])
+
+### comparing the posterior distribution of true aug_dat and parameters to posterior reached by MCMC chain
+
+# posterior of true aug data and true parameters
+lposterior_total(aug_dat_true, theta_true, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+
+# posterior of current aug data and true parameters
+lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_true, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+
+# highest posterior reached by MCMC chain
+max(MCMCres$logpost_chain)
+
 
 ###############################################
 ### TO DO ###

@@ -60,11 +60,11 @@ move_Di <- function(i, group_idx, date_idx,
   
   x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
   which_delay <- x[2]
-  from_idx <- sapply(1:nrow(x), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
-  from_value <- sapply(1:nrow(x), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
+  from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
+  from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
   
   # if several delays involved, choose one at random
-  tmp <- sample(1:length(from_idx), 1)
+  tmp <- sample(seq_len(length(from_idx)), 1)
   from_idx <- from_idx[tmp]
   from_value <- from_value[tmp]
   param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
@@ -198,9 +198,9 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
   {
     ratio_post <- lprior_params_delay(what, proposed_theta, hyperpriors) - lprior_params_delay(what, curr_theta, hyperpriors) 
   }
-  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, 1:nrow(obs_dat[[group_idx]]), delay_idx,  index_dates) # same for proposed and curent par values so no need to recompute twice
-  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), index_dates, Delta)) - 
-    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), index_dates, Delta)) 
+  Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, seq_len(nrow(obs_dat[[group_idx]])), delay_idx,  index_dates) # same for proposed and curent par values so no need to recompute twice
+  ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, seq_len(nrow(obs_dat[[group_idx]])), index_dates, Delta)) - 
+    sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, seq_len(nrow(obs_dat[[group_idx]])), index_dates, Delta)) 
   
   ### note that ratio_post should be the same as: 
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors, index_dates) - 

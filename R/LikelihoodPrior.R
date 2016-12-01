@@ -29,7 +29,7 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
 LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
-  LL <- sum(unlist(lapply(1:length(obs_dat), function(g) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, 1:ncol(aug_dat$D[[g]]), 1:nrow(obs_dat[[g]]),range_dates)) ) ))
+  LL <- sum(unlist(lapply(seq_len(length(obs_dat)), function(g) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, seq_len(ncol(aug_dat$D[[g]])), seq_len(nrow(obs_dat[[g]])), range_dates)) ) ))
   return(LL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
@@ -65,7 +65,7 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 
 #LL_error_term_slow<-function(aug_dat, theta, obs_dat)
 #{
-#  LL <- sum (sapply(1:n_groups, function(g) sum ((LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, 1:ncol(aug_dat$D[[g]]), 1:nrow(obs_dat[[g]]))) ) ) ) 
+#  LL <- sum (sapply(seq_len(n_groups), function(g) sum ((LL_error_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, seq_len(ncol(aug_dat$D[[g]])), seq_len(nrow(obs_dat[[g]]))) ) ) ) )
 #  return(LL)
 #}
 # system.time(LL_error_term_slow(aug_dat, theta, obs_dat))
@@ -106,7 +106,7 @@ LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, gro
 LL_delays_term<-function(aug_dat, theta, obs_dat, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index_dates)
-  LL <- sum (sapply(1:length(obs_dat), function(g) sum (sapply(2:ncol(aug_dat$D[[g]]), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, 1:nrow(obs_dat[[g]]), index_dates, Delta[[g]][1:nrow(obs_dat[[g]]), j-1])) ) ) ) )
+  LL <- sum (sapply(seq_len(length(obs_dat)), function(g) sum (sapply(seq(2, ncol(aug_dat$D[[g]]), 1), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, seq_len(nrow(obs_dat[[g]])), index_dates, Delta[[g]][seq_len(nrow(obs_dat[[g]])), j-1])) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)

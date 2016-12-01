@@ -55,11 +55,11 @@
 simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE, remove_allNA_indiv=FALSE)
 {
   D <- list() 
-  for(g in 1:length(theta$mu))
+  for(g in seq_len(length(theta$mu)) )
   {
     D[[g]] <- matrix(NA, n_per_group[g], length(theta$mu[[g]])+1)
-    D[[g]][,1] <- sample(range_dates[1]:range_dates[2], n_per_group[g], replace = TRUE)
-    for(j in 1:ncol(index_dates[[g]]))
+    D[[g]][,1] <- sample(seq(range_dates[1],range_dates[2],1), n_per_group[g], replace = TRUE)
+    for(j in seq_len(ncol(index_dates[[g]])) )
     {
       params <- find_params_gamma(theta$mu[[g]][j], CV=theta$CV[[g]][j])
       delay <- rgamma(n_per_group[g], shape=params[1], scale=params[2])
@@ -120,14 +120,14 @@ simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=FALSE)
 {
   E <- D
   obs_dat <- D
-  for(g in 1:length(D))
+  for(g in seq_len(length(D)) )
   {
-    for(j in 1:ncol(D[[g]]))
+    for(j in seq_len(ncol(D[[g]])) )
     {
       E[[g]][,j] <- sample(c(-1, 1, 0), nrow(D[[g]]), replace=TRUE, prob=c(theta$prop_missing_data, (1-theta$prop_missing_data)*theta$zeta, (1-theta$prop_missing_data)*(1-theta$zeta)))
       obs_dat[[g]][E[[g]][,j]==-1,j]  <- NA
       obs_dat[[g]][E[[g]][,j]==0,j]  <- D[[g]][E[[g]][,j]==0,j]
-      obs_dat[[g]][E[[g]][,j]==1,j]  <- sample(range_dates[1]:range_dates[2], sum(E[[g]][,j]==1), replace = TRUE) # need to update if change error model
+      obs_dat[[g]][E[[g]][,j]==1,j]  <- sample(seq(range_dates[1], range_dates[2], 1), sum(E[[g]][,j]==1), replace = TRUE) # need to update if change error model
     }
     if(remove_allNA_indiv)
     {

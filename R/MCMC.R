@@ -126,7 +126,7 @@ RunMCMC <- function(obs_dat,
       {
         for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
-          to_update <- sample(1:nrow(obs_dat[[g]]), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
+          to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(length(n_10_to_update)))
           {
@@ -255,7 +255,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
   
-  iterations <- 1:length(MCMCres$theta_chain)
+  iterations <- seq_len(length(MCMCres$theta_chain))
   if(!is.null(theta_true)) x_coord_simul <- max(iterations)*1.05
   
   # looking at the logposterior chain 
@@ -278,7 +278,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   par(xpd=TRUE)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
   par(xpd=FALSE)
-  for(j in 2:(n_dates[group_idx]-1))
+  for(j in seq(2,(n_dates[group_idx]-1),1))
   {
     mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
     lines(mu, col=j)
@@ -286,7 +286,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
     par(xpd=FALSE)
   }
-  legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+  legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
   group_idx <- 3 ##########################
   j <- 1
   mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
@@ -294,7 +294,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   par(xpd=TRUE)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
   par(xpd=FALSE)
-  for(j in 2:(n_dates[group_idx]-1))
+  for(j in seq(2,(n_dates[group_idx]-1), 1))
   {
     mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
     lines(mu, col=j)
@@ -302,7 +302,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
     par(xpd=FALSE)
   }
-  legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+  legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
   group_idx <- 4 ##########################
   j <- 1
   mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
@@ -310,7 +310,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   par(xpd=TRUE)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
   par(xpd=FALSE)
-  for(j in 2:(n_dates[group_idx]-1))
+  for(j in seq(2,(n_dates[group_idx]-1), 1))
   {
     mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
     lines(mu, col=j)
@@ -318,7 +318,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
     par(xpd=FALSE)
   }
-  legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+  legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
   
   # looking at zeta
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta )
@@ -343,7 +343,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   par(xpd=TRUE)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
-  for(j in 2:(n_dates[group_idx]-1))
+  for(j in seq(2,(n_dates[group_idx]-1), 1))
   {
     CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
     lines(CV, col=j)
@@ -351,7 +351,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
     par(xpd=FALSE)
   }
-  legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+  legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
   group_idx <- 3 ##########################
   j <- 1
   CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
@@ -359,7 +359,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   par(xpd=TRUE)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
-  for(j in 2:(n_dates[group_idx]-1))
+  for(j in seq(2,(n_dates[group_idx]-1),1))
   {
     CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
     lines(CV, col=j)
@@ -367,7 +367,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
     par(xpd=FALSE)
   }
-  legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+  legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
   group_idx <- 4 ##########################
   j <- 1
   CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
@@ -375,7 +375,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   par(xpd=TRUE)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
   par(xpd=FALSE)
-  for(j in 2:(n_dates[group_idx]-1))
+  for(j in seq(2,(n_dates[group_idx]-1), 1))
   {
     CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
     lines(CV, col=j)
@@ -383,7 +383,7 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
     par(xpd=FALSE)
   }
-  legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=1:n_dates[group_idx])
+  legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
 }
 
 
@@ -402,14 +402,14 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
   n_groups <- length(n_dates)
   n_indiv_per_group <- sapply(MCMCres$aug_dat_chain[[1]]$D, nrow )
   
-  iterations <- 1:length(MCMCres$theta_chain)
+  iterations <- seq_len(length(MCMCres$theta_chain))
   if(!is.null(aug_dat_true)) x_coord_simul <- max(iterations)*1.05
   
   par(mfrow=c(4, 5),mar=c(5, 6, 1, 1))
   group_idx <- 1 ##########################
   # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(1:n_indiv_per_group[group_idx], 5)
-  for(i in 1:length(indiv_to_plot)) 
+  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
+  for(i in seq_len(length(indiv_to_plot)) )
   {
     j <- 1
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
@@ -417,7 +417,7 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     par(xpd=TRUE)
     if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
     par(xpd=FALSE)
-    for(j in 1:(n_dates[group_idx]))
+    for(j in seq_len(n_dates[group_idx]))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
@@ -425,12 +425,12 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
       if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
       par(xpd=FALSE)
     }
-    legend("topright", c("Onset","Report"), lty=1, col=1:n_dates[group_idx])
+    legend("topright", c("Onset","Report"), lty=1, col=seq_len(n_dates[group_idx]))
   }
   group_idx <- 2 ##########################
   # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(1:n_indiv_per_group[group_idx], 5)
-  for(i in 1:length(indiv_to_plot)) 
+  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
+  for(i in seq_len(length(indiv_to_plot)) )
   {
     j <- 1
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
@@ -438,7 +438,7 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     par(xpd=TRUE)
     if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
     par(xpd=FALSE)
-    for(j in 2:(n_dates[group_idx]))
+    for(j in seq(2, (n_dates[group_idx]), 1))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
@@ -446,12 +446,12 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
       if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
       par(xpd=FALSE)
     }
-    legend("topright", c("Onset","Death","Report"), lty=1, col=1:n_dates[group_idx])
+    legend("topright", c("Onset","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
   }
   group_idx <- 3 ##########################
   # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(1:n_indiv_per_group[group_idx], 5)
-  for(i in 1:length(indiv_to_plot)) 
+  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
+  for(i in seq_len(length(indiv_to_plot)) )
   {
     j <- 1
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
@@ -459,7 +459,7 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     par(xpd=TRUE)
     if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
     par(xpd=FALSE)
-    for(j in 2:(n_dates[group_idx]))
+    for(j in seq(2, (n_dates[group_idx]), 1))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
@@ -467,12 +467,12 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
       if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
       par(xpd=FALSE)
     }
-    legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=1:n_dates[group_idx])
+    legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
   }
   group_idx <- 4 ##########################
   # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(1:n_indiv_per_group[group_idx], 5)
-  for(i in 1:length(indiv_to_plot)) 
+  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
+  for(i in seq_len(length(indiv_to_plot)) )
   {
     j <- 1
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
@@ -480,7 +480,7 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     par(xpd=TRUE)
     if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
     par(xpd=FALSE)
-    for(j in 2:(n_dates[group_idx]))
+    for(j in seq(2,(n_dates[group_idx]), 1))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
@@ -488,7 +488,7 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
       if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
       par(xpd=FALSE)
     }
-    legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=1:n_dates[group_idx])
+    legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
   }
 }
 
@@ -511,7 +511,7 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
   
-  iterations <- 1:length(MCMCres$theta_chain)
+  iterations <- seq_len(length(MCMCres$theta_chain) )
   
   group_idx <- 1
   mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]])
@@ -519,10 +519,10 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
   if(plot) plot(mu, CV, type="l")
   cor_mu_CV[[group_idx]] <- cor.test(mu, CV)
   
-  for(group_idx in 2:n_groups)
+  for(group_idx in seq(2, n_groups, 1))
   {
     cor_mu_CV[[group_idx]] <- list()
-    for(j in 1:(n_dates[[group_idx]]-1))
+    for(j in seq_len(n_dates[[group_idx]]-1))
     {
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
@@ -572,7 +572,7 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   n_groups <- length(n_dates)
   n_indiv_per_group <- sapply(MCMCres$aug_dat_chain[[1]]$D, nrow )
   
-  iterations <- 1:length(MCMCres$theta_chain)
+  iterations <- seq_len(length(MCMCres$theta_chain))
   output <- list()
   
   # looking at the logposterior chain 
@@ -588,44 +588,44 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   
   # looking at mean delay 
   group_idx <- 1 ##########################
-  mu <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
+  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(mu, ylab="mean delays\n(non hospitalised-alive group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels="Onset-Report", tick=FALSE, cex.axis=cex.axis)
+    boxplot(mu, ylab="mean delays\n(non hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels="Onset-Report", tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   group_idx <- 2 ##########################
-  mu <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
+  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(mu, ylab="mean delays\n(non hospitalised-dead group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels=c("Onset-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
+    boxplot(mu, ylab="mean delays\n(non hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   group_idx <- 3 ##########################
-  mu <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
+  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(mu, ylab="mean delays\n(hospitalised-alive group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
+    boxplot(mu, ylab="mean delays\n(hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   group_idx <- 4 ##########################
-  mu <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
+  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(mu, ylab="mean delays\n(hospitalised-dead group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
+    boxplot(mu, ylab="mean delays\n(hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   
   # looking at zeta
@@ -640,44 +640,44 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   
   # looking at CV delay 
   group_idx <- 1 ##########################
-  CV <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
+  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(CV, ylab="CV delays\n(non hospitalised-alive group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels="Onset-Report", tick=FALSE, cex.axis=cex.axis)
+    boxplot(CV, ylab="CV delays\n(non hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels="Onset-Report", tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   group_idx <- 2 ##########################
-  CV <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
+  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(CV, ylab="CV delays\n(non hospitalised-dead group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels=c("Onset-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
+    boxplot(CV, ylab="CV delays\n(non hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   group_idx <- 3 ##########################
-  CV <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
+  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(CV, ylab="CV delays\n(hospitalised-alive group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
+    boxplot(CV, ylab="CV delays\n(hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   group_idx <- 4 ##########################
-  CV <- lapply(1:(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(1:(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
+  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
   if(plot)
   {
-    boxplot(CV, ylab="CV delays\n(hospitalised-dead group)", main="", border=1:(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=1:(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
+    boxplot(CV, ylab="CV delays\n(hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
-    if(!is.null(theta_true)) points(1:(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=1:(n_dates[group_idx]-1))
+    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   
   return(output)

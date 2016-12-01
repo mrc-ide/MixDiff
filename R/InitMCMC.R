@@ -2,15 +2,31 @@
 ### define augmented data to be used for initialisation of the chain ###
 ###############################################
 
+are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
+{
+  return (date2-date1<mindelay | date2-date1>maxdelay)
+}
+
 ### D contains the unobserved true dates ###
 
 #' Initialises augmented data based on observed data (for the MCMC)
 #' 
 #' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
 #' @param index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
+#' @param MCMC_settings A list of settings to be used for initialising the augmented data for the MCMC, see details.
 #' @details \code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
 #' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
 #' Each column specifies a rule saying that the origin date must be before the destination date.  
+#' \code{MCMC_settings} should be a list containing:
+#' \itemize{
+#'  \item{\code{init_options}}{: A list of the following elements:
+#'  \itemize{
+#'  \item{\code{mindelay}}{: The minimum delay, below which dates are considered incompatile with one another at the initialisation stage of the MCMC.}
+#'  \item{\code{maxdelay}}{: The maximum delay, above which dates are considered incompatile with one another at the initialisation stage of the MCMC.  }
+#'  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
+#'  }
+#'  }
+#' }
 #' @return A list with two elements: 
 #' \itemize{
 #'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules specified in \code{index_dates_order}}
@@ -40,8 +56,9 @@
 #' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data ###
 #' index_dates_order <- index_dates
-#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order)
-initialise_aug_data <- function(obs_dat, index_dates_order)
+#' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order, MCMC_settings)
+initialise_aug_data <- function(obs_dat, index_dates_order, MCMC_settings)
 {
   n_groups <- length(obs_dat)
   D <- list()
@@ -57,10 +74,11 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
       {
         if(!any(is.na(D[[g]][e,index_dates_order[[g]][,j]])))
         {
-          if(D[[g]][e,index_dates_order[[g]][1,j]] > D[[g]][e,index_dates_order[[g]][2,j]]) # there is a problem if the dates are in the wrong order
+          # there is a problem if the dates have too short or too long delay
+          if(are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )
           {
             # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
-            tmp <- table(as.vector(index_dates_order[[g]][,sapply(1:ncol(index_dates_order[[g]]), function(j) D[[g]][e,index_dates_order[[g]][1,j]] > D[[g]][e,index_dates_order[[g]][2,j]] )]))
+            tmp <- table(as.vector(index_dates_order[[g]][,sapply(1:ncol(index_dates_order[[g]]), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
             if(any(tmp>1))
             {
               must_be_wrong <- which.max(tmp)[1]
@@ -75,7 +93,7 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
             while(!(must_be_wrong %in% index_dates_order[[g]][,j]))
             {
               # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
-              tmp <- table(as.vector(index_dates_order[[g]][,sapply(1:ncol(index_dates_order[[g]]), function(j) D[[g]][e,index_dates_order[[g]][1,j]] > D[[g]][e,index_dates_order[[g]][2,j]] )]))
+              tmp <- table(as.vector(index_dates_order[[g]][,sapply(1:ncol(index_dates_order[[g]]), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
               if(any(tmp>1))
               {
                 must_be_wrong <- which.max(tmp)[1]
@@ -199,7 +217,8 @@ initialise_aug_data <- function(obs_dat, index_dates_order)
 #' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data first ###
 #' index_dates_order <- index_dates
-#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order)
+#' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order, MCMC_settings)
 #' ### Now initialise parameters based on the augmented data above ###
 #' theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values

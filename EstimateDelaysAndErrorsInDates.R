@@ -51,7 +51,9 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 
 MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
-                       chain_properties=list(n_iter = 550000, burnin = 50000, record_every=100))
+                       init_options=list(mindelay=0, maxdelay=100),
+                       #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
+                       chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -182,7 +184,6 @@ max(MCMCres$logpost_chain)
 # keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
-# currently initialisation of augmented data can still start in stupid place, where order of dates is ok but delays are too large, so make sure this is not the case
 # everywhere replace 1:n by seq_len(n) 
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?

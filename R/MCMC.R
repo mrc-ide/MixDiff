@@ -16,6 +16,13 @@
 #'  \item{\code{sdlog_CV}}{: The standard deviation to be used for proposing moves of the CV of delays.}
 #'  }
 #'  }
+#'  \item{\code{init_options}}{: A list of the following elements:
+#'  \itemize{
+#'  \item{\code{mindelay}}{: The minimum delay, below which dates are considered incompatile with one another at the initialisation stage of the MCMC.}
+#'  \item{\code{maxdelay}}{: The maximum delay, above which dates are considered incompatile with one another at the initialisation stage of the MCMC.  }
+#'  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
+#'  }
+#'  }
 #'  \item{\code{chain_properties}}{: A list of the following elements:
 #'  \itemize{
 #'  \item{\code{n_iter}}{: The total number of iteration of MCMC to run.}
@@ -61,7 +68,7 @@ RunMCMC <- function(obs_dat,
   ### define augmented data to be used for initialisation of the chain ###
   ###############################################
   
-  aug_dat <- initialise_aug_data(obs_dat, index_dates_order)
+  aug_dat <- initialise_aug_data(obs_dat, index_dates_order, MCMC_settings)
   
   ###############################################
   ### define parameters to be used for initialisation of the chain ###

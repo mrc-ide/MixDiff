@@ -132,10 +132,11 @@ plot_aug_dat_chains(MCMCres, aug_dat_true)
 dev.off()
 
 ###############################################
-### Correlations ###
+### Correlations and autocorrelation ###
 ###############################################
 
 cor_mu_CV <- compute_correlations_mu_CV(MCMCres)
+autocorr <- compute_autocorr(MCMCres)
 
 ###############################################
 ### Get and plot posterior estimates ###
@@ -184,6 +185,7 @@ max(MCMCres$logpost_chain)
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
+# do we indeed want to update zeta after each D_i move? maybe not useful? 
 
 # Marc: 
 # finish writing

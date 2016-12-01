@@ -226,7 +226,7 @@ RunMCMC <- function(obs_dat,
     zeta_moves=1)
   
   ###############################################
-  ### Return lisst of outputs of interest ###
+  ### Return list of outputs of interest ###
   ###############################################
   
   res <- list(theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob)
@@ -403,7 +403,12 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
   n_indiv_per_group <- sapply(MCMCres$aug_dat_chain[[1]]$D, nrow )
   
   iterations <- seq_len(length(MCMCres$theta_chain))
-  if(!is.null(aug_dat_true)) x_coord_simul <- max(iterations)*1.05
+  if(!is.null(aug_dat_true)) 
+  {
+    x_coord_simul <- max(iterations)*c(1.05, 1.07, 1.09)
+    pch_types <- c(18, 21, 13)
+    cex <- 1.5
+  }
   
   par(mfrow=c(4, 5),mar=c(5, 6, 1, 1))
   group_idx <- 1 ##########################
@@ -415,14 +420,22 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
     plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
     par(xpd=TRUE)
-    if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
+    if(!is.null(aug_dat_true))
+    {
+      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+    }
     par(xpd=FALSE)
     for(j in seq_len(n_dates[group_idx]))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
       par(xpd=TRUE)
-      if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
+      if(!is.null(aug_dat_true)) 
+      {
+        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+      }
       par(xpd=FALSE)
     }
     legend("topright", c("Onset","Report"), lty=1, col=seq_len(n_dates[group_idx]))
@@ -436,14 +449,22 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
     plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
     par(xpd=TRUE)
-    if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
+    if(!is.null(aug_dat_true))
+    {
+      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+    }
     par(xpd=FALSE)
     for(j in seq(2, (n_dates[group_idx]), 1))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
       par(xpd=TRUE)
-      if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
+      if(!is.null(aug_dat_true))
+      {
+        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+      }
       par(xpd=FALSE)
     }
     legend("topright", c("Onset","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
@@ -457,14 +478,22 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
     plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
     par(xpd=TRUE)
-    if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
+    if(!is.null(aug_dat_true))
+    {
+      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+    }
     par(xpd=FALSE)
     for(j in seq(2, (n_dates[group_idx]), 1))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
       par(xpd=TRUE)
-      if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
+      if(!is.null(aug_dat_true))
+      {
+        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+      }
       par(xpd=FALSE)
     }
     legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
@@ -478,14 +507,22 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
     plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
     par(xpd=TRUE)
-    if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j])
+    if(!is.null(aug_dat_true))
+    {
+      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+    }
     par(xpd=FALSE)
     for(j in seq(2,(n_dates[group_idx]), 1))
     {
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
       lines(date, col=j)
       par(xpd=TRUE)
-      if(!is.null(aug_dat_true)) points(x_coord_simul,aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j)
+      if(!is.null(aug_dat_true))
+      {
+        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+      }
       par(xpd=FALSE)
     }
     legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
@@ -532,6 +569,47 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
   }
   
   return(cor_mu_CV)
+}
+
+#' Compute autocorrelation for each parameter of the MCMC chains 
+#' 
+#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @return A list of results of autocorrelation results (obtained from the function \code{\link{acf}}). 
+#' @import graphics
+#' @import stats
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+compute_autocorr <- function(MCMCres)
+{
+  autocorr <- list()
+  autocorr$mu <- list()
+  autocorr$CV <- list()
+  
+  par(mfrow=c(4, 5),mar=c(4, 4, 4, 0.5))
+  
+  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_groups <- length(n_dates)
+  
+  iterations <- seq_len(length(MCMCres$theta_chain) )
+  
+  for(group_idx in seq(1, n_groups, 1))
+  {
+    autocorr$mu[[group_idx]] <- list()
+    autocorr$CV[[group_idx]] <- list()
+    for(j in seq_len(n_dates[[group_idx]]-1))
+    {
+      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
+      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
+      autocorr$mu[[group_idx]][[j]] <- acf(mu, main=sprintf("Mu, group %d, delay %d", group_idx, j))
+      autocorr$CV[[group_idx]][[j]] <- acf(CV, main=sprintf("CV, group %d, delay %d", group_idx, j))
+    }
+  }
+  
+  zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
+  autocorr$zeta <- acf(zeta, main="zeta")
+  
+  return(autocorr)
 }
 
 

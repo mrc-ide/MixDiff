@@ -142,9 +142,9 @@ compute_delta_group_delay_and_indiv<-function(D, group_idx, indiv_idx, delay_idx
 #' Delays <- compute_delta(D$true_dat, index_dates)
 compute_delta <- function(D, index_dates)
 {
-  Delta <- lapply(1:length(D), function(g){
+  Delta <- lapply(seq_len(length(D)), function(g){
     m <- matrix(NA, nrow(D[[g]]), ncol(D[[g]])-1)
-    for(j in 1: ncol(m))
+    for(j in seq_len( ncol(m)) )
     {
       m[,j] <- D[[g]][,index_dates[[g]][,j][2]] - D[[g]][,index_dates[[g]][,j][1]]
     }
@@ -188,9 +188,9 @@ find_range <- function(obs_dat)
 {
   min_date <- min(obs_dat[[1]][,1], na.rm=TRUE)
   max_date <- max(obs_dat[[1]][,1], na.rm=TRUE)
-  for(g in 1:length(obs_dat))
+  for(g in seq_len(length(obs_dat)) )
   {
-    for(j in 1:ncol(obs_dat[[g]]))
+    for(j in seq_len(ncol(obs_dat[[g]])) )
     {
       min_date_tmp <- min(obs_dat[[g]][,j], na.rm=TRUE)
       min_date <- min(c(min_date, min_date_tmp), na.rm=TRUE)

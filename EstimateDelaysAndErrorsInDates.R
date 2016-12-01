@@ -179,12 +179,9 @@ max(MCMCres$logpost_chain)
 # Anne: 
 # check the MCMC, 
 # try to speed up if possible
-# considering only calculating the likelihood for some iterations (e.g. after burnin and thinning), posthoc? 
-# should we update zeta after each D_i move, or after all D_i in a group move? 
 # keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
-# everywhere replace 1:n by seq_len(n) 
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
 

@@ -67,11 +67,11 @@ move_Di <- function(i, group_idx, date_idx,
   tmp <- sample(seq_len(length(from_idx)), 1)
   which_delay <- which_delay[tmp]
   from_idx <- from_idx[tmp]
-  from_value <- from_value[tmp]
+  from_value <- from_value[,tmp]
   param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-  sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
+  sample_delay <- round(rgamma(length(i), shape=param_delay[1], scale=param_delay[2]))
   if(date_idx<from_idx)
   {
     proposed_aug_dat_value <- from_value - sample_delay
@@ -87,10 +87,10 @@ move_Di <- function(i, group_idx, date_idx,
   # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
   missing <- which(is.na(obs_dat[[group_idx]][i,date_idx]))
   proposed_aug_dat$E[[group_idx]][i,date_idx][missing] <- -1 # y_i missing
-  erroneous <- which(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
-  proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 0 # y_i observed without error
-  non_erroneous <- which(!is.na(obs_dat[[group_idx]][i,date_idx]) & proposed_aug_dat$D[[group_idx]][i,date_idx]!=obs_dat[[group_idx]][i,date_idx] )
-  proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 1 # y_i observed with error
+  non_erroneous <- which(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
+  proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 0 # y_i observed without error
+  erroneous <- which(!is.na(obs_dat[[group_idx]][i,date_idx]) & proposed_aug_dat$D[[group_idx]][i,date_idx]!=obs_dat[[group_idx]][i,date_idx] )
+  proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 1 # y_i observed with error
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx

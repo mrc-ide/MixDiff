@@ -1,5 +1,11 @@
 ###############################################
+###############################################
 ### move functions ###
+###############################################
+###############################################
+
+###############################################
+### Move augmented dates D ###
 ###############################################
 
 #' Performs one iteration of an MCMC move for the augmented data
@@ -140,6 +146,10 @@ move_Di <- function(i, group_idx, date_idx,
 # test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, hyperpriors) 
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
+
+###############################################
+### Move augmented indicator for whether date is correctly recorded E ###
+###############################################
 
 ### NOTE NOT SURE IF THIS WILL WORK IF i IS A VECTOR NEED TO CHECK ###
 #' Performs one iteration of an MCMC move for the augmented data representing the indicator of error in observations
@@ -397,6 +407,10 @@ move_Ei <- function(i, group_idx, date_idx,
   return(res)
 }
 
+###############################################
+### Move mean or CV of delay ###
+###############################################
+
 #' Performs one iteration of an MCMC move for either the parameter mu or the parameter CV (mean or CV of the various delays to be estimated)
 #' 
 #' @param what A string ("mu" or "CV") indicating which of the parameters to move
@@ -494,6 +508,10 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 # test_move_mu <- move_lognormal(what="mu", group_idx=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, hyperpriors)
 # test_move_mu$new_theta$mu[[1]][1] # new value
 # theta$mu[[1]][1] # old value
+
+###############################################
+### Move zeta (probability of erroneous recording of dates) ###
+###############################################
 
 #' Performs one iteration of an MCMC move for the parameter zeta (probability of a data being recorded erroneously, given it is recorded)
 #' 

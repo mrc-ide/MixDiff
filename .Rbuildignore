@@ -1,3 +1,4 @@
+R/MoveEi_temp.R
 ^.*\.Rproj$
 ^\.Rproj\.user$
 EbolaData$
@@ -8,3 +9,4 @@ MixDiff.Rmd
 MixDiff.html
 P_20160624_100437.jpg
 Rprof.out
+^R/MoveEi_temp\.R$

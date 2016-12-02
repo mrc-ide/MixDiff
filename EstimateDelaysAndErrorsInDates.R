@@ -53,7 +53,8 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
                        init_options=list(mindelay=0, maxdelay=100),
                        #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
-                       chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
+                       chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
+                       #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -83,8 +84,9 @@ MCMCres <- RunMCMC(obs_dat,
 })
 #Rprof(NULL)
 #summaryRprof()
-# 30 Nov --> n_iter = 500, burnin = 100, record_every=1 takes 13secs
-# 30 Nov --> n_iter = 50000, burnin = 10000, record_every=100 takes 978secs
+# 2 Dec --> n_iter = 5000, burnin = 500, record_every=10 takes 98secs
+# 2 Dec --> n_iter = 50000, burnin = 5000, record_every=50 takes 98secs
+
 
 ###############################################
 ### save results ###
@@ -146,7 +148,6 @@ pdf(paste0(where_to_load_from,"/PosteriorDistrPlots_",ext,".pdf"), width=14, hei
 MCMCres_summary <- get_param_posterior_estimates(MCMCres, theta_true=theta_true, cex.axis=0.8)
 dev.off()
 
-
 ###############################################
 ### Investigating issue with estimation of mean delay from onset to hosp in group 3 ###
 ###############################################
@@ -172,6 +173,15 @@ lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_t
 # highest posterior reached by MCMC chain
 max(MCMCres$logpost_chain)
 
+###############################################
+### Examining how well we reestimate the E (error/missingness in data) ###
+###############################################
+
+g <- 1
+j <- 1
+tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
+tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
+prob <- which(!tmp2)
 
 ###############################################
 ### TO DO ###
@@ -180,12 +190,14 @@ max(MCMCres$logpost_chain)
 # Anne: 
 # check the MCMC, 
 # try to speed up if possible
+# when moving Di, could update the observation term of the likelihood only if E has changed
 # keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
 # do we indeed want to update zeta after each D_i move? maybe not useful? 
+# suggest to add a move where if E=1, you move to E=0. 
 
 # Marc: 
 # finish writing

@@ -164,9 +164,10 @@ initialise_aug_data <- function(obs_dat, index_dates_order, MCMC_settings)
     E[[g]] <- matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]]))
     for(j in seq_len(ncol(obs_dat[[g]])) )
     {
-      E[[g]][!(D[[g]][,j] %in% obs_dat[[g]][,j]),j] <- 1 # error
-      E[[g]][D[[g]][,j] %in% obs_dat[[g]][,j],j] <- 0 # no error
-      E[[g]][is.na(obs_dat[[g]][,j]),j] <- -1 # missing value
+      error <- D[[g]][,j] != obs_dat[[g]][,j]
+      E[[g]][which(error),j] <- 1 # error
+      E[[g]][which(!error),j] <- 0 # no error
+      E[[g]][is.na(error)] <- -1 # missing value
     }
     names(E[[g]]) <- names(obs_dat[[g]])
   }

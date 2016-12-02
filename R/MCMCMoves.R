@@ -59,24 +59,25 @@ move_Di <- function(i, group_idx, date_idx,
   # which delays is this particular date involved in?
   
   x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
-  which_delay <- x[2]
+  which_delay <- x[,2]
   from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
   from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
   
   # if several delays involved, choose one at random
   tmp <- sample(seq_len(length(from_idx)), 1)
+  which_delay <- which_delay[tmp]
   from_idx <- from_idx[tmp]
   from_value <- from_value[tmp]
   param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-  sample_delay <- rgamma(1, shape=param_delay[1], scale=param_delay[2])
+  sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
   if(date_idx<from_idx)
   {
-    proposed_aug_dat_value <- from_value - round(sample_delay)
+    proposed_aug_dat_value <- from_value - sample_delay
   }else
   {
-    proposed_aug_dat_value <- from_value + round(sample_delay)
+    proposed_aug_dat_value <- from_value + sample_delay
   }
   
   proposed_aug_dat <- curr_aug_dat
@@ -95,8 +96,12 @@ move_Di <- function(i, group_idx, date_idx,
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
     LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
-  ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
-    LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+  different_E <- proposed_aug_dat$E[[group_idx]][i,date_idx]!=curr_aug_dat$E[[group_idx]][i,date_idx]
+  if(any(different_E)) # only need to look at the error term if some of the E have changed
+  {
+    ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
+      LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+  }
   for(d in delay_idx)
     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
     LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
@@ -132,6 +137,7 @@ move_Di <- function(i, group_idx, date_idx,
 # test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, hyperpriors) 
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
+
 
 #' Performs one iteration of an MCMC move for either the parameter mu or the parameter CV (mean or CV of the various delays to be estimated)
 #' 

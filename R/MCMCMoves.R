@@ -513,8 +513,8 @@ swap_Eis <- function(group_idx,
   #############################
   #############################
   
-  #### THIS PART NEEDS TO BE CHANGED ###
-  #### need to propose both dates as we do now, AND THEN compute difference in lieklihood ####
+  #### THIS PART NEEDS TO BE EDITED ###
+  #### NEED TO CHECK WHETHER NEED CORRECTION FACTOR OR NOT ####
   
   
   ## Are there only two recorded dates here, one with error and one without? ##
@@ -549,11 +549,34 @@ swap_Eis <- function(group_idx,
                                                                                        index_dates,
                                                                                        range_dates)
     
-    ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-     lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+    delay_idx <- which(index_dates[[group_idx]]==date_idx_E1_to_E0, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
+    delay_idx <- c(delay_idx, which(index_dates[[group_idx]]==date_idx_E0_to_E1, arr.ind=TRUE)[,2])
+    delay_idx <- unique(delay_idx)
     
-    ### FIND A SIMPLER VERSION ratio_post
-    ### AND CHECK IF THIS MOVE IS SYMMETRIC? 
+    ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) - 
+      LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) 
+    ratio_post <- ratio_post +  LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) - 
+      LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) 
+    
+    ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i) - 
+        LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)
+    ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i) - 
+      LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i)
+    
+    for(d in delay_idx)
+    {
+      ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
+      LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
+
+    }
+    
+    ratio_post <- sum(ratio_post)
+    
+    ### should be the same as: 
+    #ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
+    # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+    
+    ### CHECK IF THIS MOVE IS SYMMETRIC? 
     
     p_accept <- ratio_post_long ### DO WE NEED A CORRECTION FACTOR? 
     

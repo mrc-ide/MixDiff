@@ -49,10 +49,11 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 ### MCMC settings ###
 ###############################################
 
-MCMC_settings <- list( moves_switch=list(D_on = TRUE, mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
-                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
+MCMC_settings <- list( moves_switch=list(D_on = TRUE,E_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10, move_E_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
                        init_options=list(mindelay=0, maxdelay=100),
-                       chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
+                       chain_properties=list(n_iter = 1000, burnin = 100, record_every=2))
+                       #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
                        #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
                       #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
@@ -227,13 +228,11 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # question for Rich: should all functions used in tests be "public"?
 # do we indeed want to update zeta after each D_i move? maybe not useful? 
 # could add a move where if there are only 2 RECORDED dates for an individual, we change from E=(0, 1() to E=(1, 0), i.e. we change which one is wrong and which one is true
-# MCMC.R line 159 need to change MCMC_settings$moves_switch$D_on to MCMC_settings$moves_switch$E_on --> need to update MCMC_settings everywhere
-# MCMC.R line 166: same for move_D_by_groups_of_size which should be move_E_by_groups_of_size, need to update this
-# MCMCMoves.R line 189 don't hardcode this - and consider what value to use? 
 # MCMCMoves.R many bits of code repeated between MoveDi and MoveEi and within MoveEi, need to tidy that up
 # currently underestimating zeta --> check that the errors we are not detecting are 
 # -- either the "small ones", 
 # -- or the ones for which other associated dates are missing hence we can't really say anything...
+# check that MoveEi works if i is a vector
 
 # Marc: 
 # finish writing

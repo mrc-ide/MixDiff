@@ -32,7 +32,7 @@
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 #' 
 #' The function performs the move as follows, using a Metropolis algorithm. 
-#' For the date to be moved, a new value is drawn from the marginal posterior of one of the delays this dates is involved in.
+#' For the date to be moved, a new value is drawn from the marginal posterior of one of the delays this date is involved in.
 #' If the date is involved in several delays, one of the delays is randomly selected. 
 #' The element E indicating whether the observed date is missing, recorded correctly or recorded with error, is adjusted accordingly given the proposed value of D. 
 #' The new augmented data is then accepted with probability given by the ratio of the posterior values at the new augmented data and the old augmented data. 
@@ -168,7 +168,12 @@ move_Di <- function(i, group_idx, date_idx,
 #' 
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 #' 
-#' The function performs the move as follows, using a Metropolis-Hastings algorithm. NEED TO EXPLAIN BETTER
+#' The function performs the move as follows, using a Metropolis-Hastings algorithm. 
+#' If E=-1 nothing happens.
+#' If E=1, we propose a move to E=0 and hence D=the observed data. 
+#' If E=0, we propose a move to E=1. D is then moved as follows: a new value is drawn from the marginal posterior of one of the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
+#' If the date is involved in several delays, one of the delays is randomly selected. 
+#' This move is not symmetrical so we use a correction factor in computing the probability of acceptance in the Metropolis Hastings which accounts for the asymetry. 
 #' @return A list of two elements:
 #'  \itemize{
 #'  \item{\code{new_aug_dat}}{: Same as \code{curr_aug_dat} but where the relevant indicators of errors in dates have been updated}
@@ -185,133 +190,44 @@ move_Ei <- function(i, group_idx, date_idx,
                     index_dates,
                     range_dates=NULL) 
 {
-  ### ### ### ### ### ### 
-  prob_move_error <- 0.5 ### NEED TO BE ADDED TO MCMCSETTINGS
-  ### ### ### ### ### ### 
-  
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
-  # draw whether to stay where you are in terms of E or move to 1-E
   curr_E_value <- curr_aug_dat$E[[group_idx]][i,date_idx]
   proposed_aug_dat <- curr_aug_dat
   
   if(curr_E_value!=-1) # if data not missing
   {
-    
-    tmp <- (runif(1))
-    if(tmp<prob_move_error) # moving
-    {
-      new_E_value <- 1-curr_E_value
-    }else
-    {
-      new_E_value <- curr_E_value
-    }
+    new_E_value <- 1-curr_E_value
     proposed_aug_dat$E[[group_idx]][i,date_idx] <- new_E_value
     
-    if(curr_E_value==new_E_value)
+    if(curr_E_value==0)# moving from E=0 to E=1
     {
-      if(curr_E_value==0) # was in a place with no error and staying there
+      # which delays is this particular date involved in?
+      
+      x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
+      which_delay <- x[,2]
+      from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
+      from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
+      
+      # if several delays involved, choose one at random
+      tmp <- sample(seq_len(length(from_idx)), 1)
+      which_delay <- which_delay[tmp]
+      from_idx <- from_idx[tmp]
+      from_value <- from_value[tmp]
+      param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
+      
+      curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
+      
+      sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
+      if(date_idx<from_idx)
       {
-        res <- list(new_aug_dat=curr_aug_dat, accept=0)
-      }else if(curr_E_value==1)# was in a place with error and moving to another place with error
+        proposed_aug_dat_value <- from_value - sample_delay
+      }else
       {
-        # which delays is this particular date involved in?
-        
-        x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
-        which_delay <- x[,2]
-        from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
-        from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
-        
-        # if several delays involved, choose one at random
-        tmp <- sample(seq_len(length(from_idx)), 1)
-        which_delay <- which_delay[tmp]
-        from_idx <- from_idx[tmp]
-        from_value <- from_value[tmp]
-        param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
-        
-        curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-        
-        sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
-        if(date_idx<from_idx)
-        {
-          proposed_aug_dat_value <- from_value - sample_delay
-        }else
-        {
-          proposed_aug_dat_value <- from_value + sample_delay
-        }
-        while(proposed_aug_dat_value==obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
-        {
-          sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
-          if(date_idx<from_idx)
-          {
-            proposed_aug_dat_value <- from_value - sample_delay
-          }else
-          {
-            proposed_aug_dat_value <- from_value + sample_delay
-          }
-        }
-        
-        proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
-        
-        # calculates probability of acceptance
-        delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-        ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
-        ### no need for error term error as we haven't moved E
-        #ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
-        #  LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
-        for(d in delay_idx)
-          ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
-          LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
-        
-        ratio_post <- sum(ratio_post)
-        
-        ### note that ratio_post should be the same as: 
-        # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-        # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
-        
-        # no correction needed as this move is symetrical
-        p_accept <- ratio_post 
-        if(p_accept>0) {p_accept <- 0}
-        
-        # accept/reject step
-        tmp <- log(runif(1))
-        if(tmp<p_accept) # accepting with a certain probability
-        {
-          new_aug_dat <- proposed_aug_dat
-          accept <- 1
-        }else # reject
-        {
-          new_aug_dat <- curr_aug_dat
-          accept <- 0
-        }	
-        
-        # return a list of size 2 where 
-        #		the first value is the new augmented data set in the chain
-        #		the second value is 1 if the proposed value was accepted, 0 otherwise
-        res <- list(new_aug_dat=new_aug_dat, accept=accept)
-        
+        proposed_aug_dat_value <- from_value + sample_delay
       }
-    }else 
-    {
-      if(curr_E_value==0)# moving from E=0 to E=1
+      while(proposed_aug_dat_value==obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
       {
-        # which delays is this particular date involved in?
-        
-        x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
-        which_delay <- x[,2]
-        from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
-        from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
-        
-        # if several delays involved, choose one at random
-        tmp <- sample(seq_len(length(from_idx)), 1)
-        which_delay <- which_delay[tmp]
-        from_idx <- from_idx[tmp]
-        from_value <- from_value[tmp]
-        param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
-        
-        curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-        
         sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
         if(date_idx<from_idx)
         {
@@ -320,128 +236,43 @@ move_Ei <- function(i, group_idx, date_idx,
         {
           proposed_aug_dat_value <- from_value + sample_delay
         }
-        while(proposed_aug_dat_value==obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
-        {
-          sample_delay <- round(rgamma(1, shape=param_delay[1], scale=param_delay[2]))
-          if(date_idx<from_idx)
-          {
-            proposed_aug_dat_value <- from_value - sample_delay
-          }else
-          {
-            proposed_aug_dat_value <- from_value + sample_delay
-          }
-        }
-        
-        proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
-        
-        # calculates probability of acceptance
-        delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-        ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
-        ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
-          LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
-        for(d in delay_idx)
-          ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
-          LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
-        
-        ratio_post <- sum(ratio_post)
-        
-        ### note that ratio_post should be the same as: 
-        # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-        # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
-        
-        if(!is.infinite(ratio_post))
-        {
-          # this move is NOT symetrical --> correction needed
-          x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
-          which_delay <- x[,2]
-          from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
-          from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
-          
-          find_correction_factor <- function(e)
-          {
-            if(date_idx<from_idx[e])
-            {
-              delay <- from_value[e] - proposed_aug_dat_value
-              forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i,date_idx]
-            }else
-            {
-              delay <- proposed_aug_dat_value - from_value[e]
-              forbidden_delay <- obs_dat[[group_idx]][i,date_idx] - from_value[e]
-            }
-            
-            param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay[e]], CV=theta$CV[[group_idx]][which_delay][e])
-            K <- diff(pgamma(delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])) / (1 - diff(pgamma(forbidden_delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])))
-            return(K)
-          }
-          K <- mean(sapply(1:length(which_delay), find_correction_factor))
-          
-          #log_p_move_from_old_to_new <- log(prob_move_error) + log(K)
-          #log_p_move_from_new_to_old <- log(prob_move_error)
-          logcorrection <- - log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
-        }else
-        {
-          logcorrection <- 0
-        }
-        p_accept <- ratio_post + logcorrection
-        if(p_accept>0) {p_accept <- 0}
-        
-        # accept/reject step
-        tmp <- log(runif(1))
-        if(tmp<p_accept) # accepting with a certain probability
-        {
-          new_aug_dat <- proposed_aug_dat
-          accept <- 1
-        }else # reject
-        {
-          new_aug_dat <- curr_aug_dat
-          accept <- 0
-        }	
-        
-        # return a list of size 2 where 
-        #		the first value is the new augmented data set in the chain
-        #		the second value is 1 if the proposed value was accepted, 0 otherwise
-        res <- list(new_aug_dat=new_aug_dat, accept=accept)
-        
-      }else if(curr_E_value==1)# moving from E=1 to E=0
+      }
+      
+      proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
+      
+      # calculates probability of acceptance
+      delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
+      ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
+        LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+      ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
+        LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+      for(d in delay_idx)
+        ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
+        LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
+      
+      ratio_post <- sum(ratio_post)
+      
+      ### note that ratio_post should be the same as: 
+      # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
+      # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+      
+      if(!is.infinite(ratio_post))
       {
-        curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-        
-        proposed_aug_dat_value <- obs_dat[[group_idx]][i,date_idx]
-        
-        proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
-        
-        # calculates probability of acceptance
-        delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-        ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
-        ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
-          LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
-        for(d in delay_idx)
-          ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
-          LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
-        
-        ratio_post <- sum(ratio_post)
-        
-        ### note that ratio_post should be the same as: 
-        # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-        # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
-        
         # this move is NOT symetrical --> correction needed
         x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
         which_delay <- x[,2]
         from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
         from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
         
-        find_correction_factor_2 <- function(e)
+        find_correction_factor <- function(e)
         {
           if(date_idx<from_idx[e])
           {
-            delay <- from_value[e] - curr_aug_dat_value
+            delay <- from_value[e] - proposed_aug_dat_value
             forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i,date_idx]
           }else
           {
-            delay <- curr_aug_dat_value - from_value[e]
+            delay <- proposed_aug_dat_value - from_value[e]
             forbidden_delay <- obs_dat[[group_idx]][i,date_idx] - from_value[e]
           }
           
@@ -449,46 +280,112 @@ move_Ei <- function(i, group_idx, date_idx,
           K <- diff(pgamma(delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])) / (1 - diff(pgamma(forbidden_delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])))
           return(K)
         }
-        K <- mean(sapply(1:length(which_delay), find_correction_factor_2))
+        K <- mean(sapply(1:length(which_delay), find_correction_factor))
         
-        #log_p_move_from_old_to_new <- log(prob_move_error) 
-        #log_p_move_from_new_to_old <- log(prob_move_error) + log(K)
-        logcorrection <- + log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
-        p_accept <- ratio_post + logcorrection
-        if(p_accept>0) {p_accept <- 0}
-        
-        # accept/reject step
-        tmp <- log(runif(1))
-        if(tmp<p_accept) # accepting with a certain probability
-        {
-          new_aug_dat <- proposed_aug_dat
-          accept <- 1
-        }else # reject
-        {
-          new_aug_dat <- curr_aug_dat
-          accept <- 0
-        }	
-        
-        # return a list of size 2 where 
-        #		the first value is the new augmented data set in the chain
-        #		the second value is 1 if the proposed value was accepted, 0 otherwise
-        res <- list(new_aug_dat=new_aug_dat, accept=accept)
+        #log_p_move_from_old_to_new <- log(prob_move_error) + log(K)
+        #log_p_move_from_new_to_old <- log(prob_move_error)
+        logcorrection <- - log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
+      }else
+      {
+        logcorrection <- 0
       }
+      p_accept <- ratio_post + logcorrection
+      if(p_accept>0) {p_accept <- 0}
+      
+      # accept/reject step
+      tmp <- log(runif(1))
+      if(tmp<p_accept) # accepting with a certain probability
+      {
+        new_aug_dat <- proposed_aug_dat
+        accept <- 1
+      }else # reject
+      {
+        new_aug_dat <- curr_aug_dat
+        accept <- 0
+      }	
+      
+      # return a list of size 2 where 
+      #		the first value is the new augmented data set in the chain
+      #		the second value is 1 if the proposed value was accepted, 0 otherwise
+      res <- list(new_aug_dat=new_aug_dat, accept=accept)
+      
+    }else if(curr_E_value==1)# moving from E=1 to E=0
+    {
+      curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
+      
+      proposed_aug_dat_value <- obs_dat[[group_idx]][i,date_idx]
+      
+      proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
+      
+      # calculates probability of acceptance
+      delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
+      ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
+        LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+      ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
+        LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+      for(d in delay_idx)
+        ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
+        LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)
+      
+      ratio_post <- sum(ratio_post)
+      
+      ### note that ratio_post should be the same as: 
+      # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
+      # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+      
+      # this move is NOT symetrical --> correction needed
+      x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
+      which_delay <- x[,2]
+      from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
+      from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
+      
+      find_correction_factor_2 <- function(e)
+      {
+        if(date_idx<from_idx[e])
+        {
+          delay <- from_value[e] - curr_aug_dat_value
+          forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i,date_idx]
+        }else
+        {
+          delay <- curr_aug_dat_value - from_value[e]
+          forbidden_delay <- obs_dat[[group_idx]][i,date_idx] - from_value[e]
+        }
+        
+        param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay[e]], CV=theta$CV[[group_idx]][which_delay][e])
+        K <- diff(pgamma(delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])) / (1 - diff(pgamma(forbidden_delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])))
+        return(K)
+      }
+      K <- mean(sapply(1:length(which_delay), find_correction_factor_2))
+      
+      #log_p_move_from_old_to_new <- log(prob_move_error) 
+      #log_p_move_from_new_to_old <- log(prob_move_error) + log(K)
+      logcorrection <- + log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
+      p_accept <- ratio_post + logcorrection
+      if(p_accept>0) {p_accept <- 0}
+      
+      # accept/reject step
+      tmp <- log(runif(1))
+      if(tmp<p_accept) # accepting with a certain probability
+      {
+        new_aug_dat <- proposed_aug_dat
+        accept <- 1
+      }else # reject
+      {
+        new_aug_dat <- curr_aug_dat
+        accept <- 0
+      }	
+      
+      # return a list of size 2 where 
+      #		the first value is the new augmented data set in the chain
+      #		the second value is 1 if the proposed value was accepted, 0 otherwise
+      res <- list(new_aug_dat=new_aug_dat, accept=accept)
     }
-    
-  }else # if data missing just move the D_i
+  }else # if E=-1, can't move. 
   {
-    res <- move_Di(i, group_idx, date_idx, 
-                   curr_aug_dat,
-                   theta, 
-                   obs_dat, 
-                   hyperpriors, 
-                   index_dates,
-                   range_dates) 
+    res <- list(curr_aug_dat=curr_aug_dat, accept=0)
   }
-  
+
   return(res)
-  
 }
 
 #' Performs one iteration of an MCMC move for either the parameter mu or the parameter CV (mean or CV of the various delays to be estimated)

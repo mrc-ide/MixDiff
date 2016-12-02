@@ -7,11 +7,13 @@
 #' @param index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 #' @details \code{MCMC_settings} should be a list containing:
 #' \itemize{
-#'  \item{\code{moves_switch}}{: A list of booleans (D_on , mu_on, CV_on, zeta_on) stating whether each parameter/augmented data should be moved in the procedure or not.}
+#'  \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on, zeta_on) stating whether each parameter/augmented data should be moved in the procedure or not.}
 #'  \item{\code{moves_options}}{: A list of the following elements:
 #'  \itemize{
 #'  \item{\code{fraction_Di_to_update}}{: The fraction of augmented dates to be updated at each iteration of the MCMC.}
-#'  \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be updates simultaneously in each group.}
+#'  \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be updated simultaneously in each group.}
+#'  \item{\code{fraction_Ei_to_update}}{: The fraction of indicators of whether observed dates are erroneous to be updated at each iteration of the MCMC.}
+#'  \item{\code{move_E_by_groups_of_size}}{: The number of indicators of whether observed dates are erroneous to be updated simultaneously in each group.}
 #'  \item{\code{sdlog_mu}}{: The standard deviation to be used for proposing moves of the mean delays.}
 #'  \item{\code{sdlog_CV}}{: The standard deviation to be used for proposing moves of the CV of delays.}
 #'  }
@@ -46,10 +48,14 @@
 #' \code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
 #' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
 #' Each column specifies a rule saying that the origin date must be before the destination date.  
-#' @return A list of two elements:
+#' @return A list of the following elements:
 #'  \itemize{
-#'  \item{\code{new_aug_dat}}{: Same as \code{curr_aug_dat} but where the relevant dates have been updated}
-#'  \item{\code{accept}}{: A scalar with value 1 if the move was accepted and 0 otherwise}
+#'  
+#'  theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob
+#'  \item{\code{theta_chain}}{: a list of parameters, at each recorded step of the MCMC chain}
+#'  \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded step of the MCMC chain}
+#'  \item{\code{logpost_chain}}{: a vector of values of the log posterior at each recorded step of the MCMC chain}
+#'  \item{\code{accept_prob}}{: A list of the proababilities of acceptance for each parameter across all MCMC iterations}
 #' }
 #' @export
 #' @examples
@@ -97,6 +103,9 @@ RunMCMC <- function(obs_dat,
   
   n_accepted_D_moves <- 0
   n_proposed_D_moves <- 0
+  
+  n_accepted_E_moves <- 0
+  n_proposed_E_moves <- 0
   
   n_accepted_mu_moves <- 0
   n_proposed_mu_moves <- 0
@@ -156,25 +165,25 @@ RunMCMC <- function(obs_dat,
     }
     
     # move some of the E_i
-    if(MCMC_settings$moves_switch$D_on) ### NEED TO REPLACE BY E_on
+    if(MCMC_settings$moves_switch$E_on) ### NEED TO REPLACE BY E_on
     {
       for(g in seq_len(n_groups))
       {
-        for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
+        for(j in seq_len(ncol(curr_aug_dat$E[[g]])))
         {
-          to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
-          n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
+          to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Ei_to_update)) # proposing moves for only a certain fraction of dates
+          n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_E_by_groups_of_size)
           for(i in seq_len(n_10_to_update))
           {
-            tmp <- move_Ei (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j,
+            tmp <- move_Ei (to_update[MCMC_settings$moves_options$move_E_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_E_by_groups_of_size))], g, j,
                             curr_aug_dat,
                             curr_theta,
                             obs_dat,
                             hyperpriors,
                             index_dates,
                             range_dates)
-            n_proposed_D_moves <- n_proposed_D_moves + 1
-            n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
+            n_proposed_E_moves <- n_proposed_E_moves + 1
+            n_accepted_E_moves <- n_accepted_E_moves + tmp$accept
             if(tmp$accept==1)
             {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
@@ -257,6 +266,7 @@ RunMCMC <- function(obs_dat,
   
   accept_prob <- list(
     D_moves=n_accepted_D_moves / n_proposed_D_moves,
+    E_moves=n_accepted_E_moves / n_proposed_E_moves,
     mu_moves=n_accepted_mu_moves / n_proposed_mu_moves,
     CV_moves=n_accepted_CV_moves / n_proposed_CV_moves,
     zeta_moves=1)

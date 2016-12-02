@@ -194,19 +194,20 @@ for(g in 1:4)
 # or they started by 0 and became 1 and are now stuck in 1
 ### --> need to write some new moves to tackles these two issues
 
-g <- 1
-j <- 1
+g <- 4
+j <- 4
 tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
 tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
 prob <- which(!tmp2)
 
-prob_i <- prob[3]
-hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j]))
-hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][prob_i, j]))
+prob_i <- prob[1]
+sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j])
+table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][prob_i, j]))
 obs_dat[[g]][prob_i, j]
 obs_dat[[g]][prob_i, ]
 aug_dat_true$E[[g]][prob_i,]
 aug_dat_true$D[[g]][prob_i,]
+obs_dat[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$E[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 
@@ -219,15 +220,20 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # Anne: 
 # check the MCMC, 
 # try to speed up if possible
-# when moving Di, could update the observation term of the likelihood only if E has changed
 # keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain
 # in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
 # do we indeed want to update zeta after each D_i move? maybe not useful? 
-# suggest to add a move where if E=1, you move to E=0. 
-# could add a move where if thre are only 2 dates for an individual, we change from E=(0, 1() to E=(1, 0), i.e. we change which one is wrong and which one is true
+# could add a move where if there are only 2 RECORDED dates for an individual, we change from E=(0, 1() to E=(1, 0), i.e. we change which one is wrong and which one is true
+# MCMC.R line 159 need to change MCMC_settings$moves_switch$D_on to MCMC_settings$moves_switch$E_on --> need to update MCMC_settings everywhere
+# MCMC.R line 166: same for move_D_by_groups_of_size which should be move_E_by_groups_of_size, need to update this
+# MCMCMoves.R line 189 don't hardcode this - and consider what value to use? 
+# MCMCMoves.R many bits of code repeated between MoveDi and MoveEi and within MoveEi, need to tidy that up
+# currently underestimating zeta --> check that the errors we are not detecting are 
+# -- either the "small ones", 
+# -- or the ones for which other associated dates are missing hence we can't really say anything...
 
 # Marc: 
 # finish writing

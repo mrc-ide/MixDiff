@@ -13,7 +13,6 @@
 #'  \item{\code{fraction_Di_to_update}}{: The fraction of augmented dates to be updated at each iteration of the MCMC.}
 #'  \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be updated simultaneously in each group.}
 #'  \item{\code{fraction_Ei_to_update}}{: The fraction of indicators of whether observed dates are erroneous to be updated at each iteration of the MCMC.}
-#'  \item{\code{move_E_by_groups_of_size}}{: The number of indicators of whether observed dates are erroneous to be updated simultaneously in each group.}
 #'  \item{\code{sdlog_mu}}{: The standard deviation to be used for proposing moves of the mean delays.}
 #'  \item{\code{sdlog_CV}}{: The standard deviation to be used for proposing moves of the CV of delays.}
 #'  }
@@ -136,8 +135,8 @@ RunMCMC <- function(obs_dat,
         for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
-          n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
-          for(i in seq_len(n_10_to_update))
+          n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
+          for(i in seq_len(n_groups_to_update))
           {
             tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
@@ -172,10 +171,10 @@ RunMCMC <- function(obs_dat,
         for(j in seq_len(ncol(curr_aug_dat$E[[g]])))
         {
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Ei_to_update)) # proposing moves for only a certain fraction of dates
-          n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_E_by_groups_of_size)
-          for(i in seq_len(n_10_to_update))
+          n_groups_to_update <- length(to_update) 
+          for(i in seq_len(n_groups_to_update))
           {
-            tmp <- move_Ei (to_update[MCMC_settings$moves_options$move_E_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_E_by_groups_of_size))], g, j,
+            tmp <- move_Ei (to_update[i], g, j,
                             curr_aug_dat,
                             curr_theta,
                             obs_dat,

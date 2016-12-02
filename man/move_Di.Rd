@@ -56,7 +56,7 @@ The number of columns of index_dates[[k]] should match the length of theta$mu[[k
 If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 
 The function performs the move as follows, using a Metropolis algorithm. 
-For the date to be moved, a new value is drawn from the marginal posterior of one of the delays this dates is involved in.
+For the date to be moved, a new value is drawn from the marginal posterior of one of the delays this date is involved in.
 If the date is involved in several delays, one of the delays is randomly selected. 
 The element E indicating whether the observed date is missing, recorded correctly or recorded with error, is adjusted accordingly given the proposed value of D. 
 The new augmented data is then accepted with probability given by the ratio of the posterior values at the new augmented data and the old augmented data.

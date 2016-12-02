@@ -50,7 +50,7 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 ###############################################
 
 MCMC_settings <- list( moves_switch=list(D_on = TRUE,E_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
-                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10, move_E_by_groups_of_size = 1, sdlog_mu = 0.15, sdlog_CV = 0.25), 
+                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10, sdlog_mu = 0.15, sdlog_CV = 0.25), 
                        init_options=list(mindelay=0, maxdelay=100),
                        chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
                        #chain_properties=list(n_iter = 1000, burnin = 100, record_every=2))
@@ -233,7 +233,6 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # currently underestimating zeta --> check that the errors we are not detecting are 
 # -- either the "small ones", 
 # -- or the ones for which other associated dates are missing hence we can't really say anything...
-# check that MoveEi works if i is a vector
 
 # Marc: 
 # finish writing

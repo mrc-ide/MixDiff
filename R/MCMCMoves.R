@@ -4,7 +4,7 @@
 
 #' Performs one iteration of an MCMC move for the augmented data
 #' 
-#' @param i The index of the individual for whom augmented data should be moved
+#' @param i The index of the individual(s) for whom augmented data should be moved
 #' @param group_idx The index of the group for whom augmented data should be moved
 #' @param date_idx The index of the date which should be moved
 #' @param curr_aug_dat The current augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
@@ -64,10 +64,13 @@ move_Di <- function(i, group_idx, date_idx,
   from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
   
   # if several delays involved, choose one at random
-  tmp <- sample(seq_len(length(from_idx)), 1)
-  which_delay <- which_delay[tmp]
-  from_idx <- from_idx[tmp]
-  from_value <- from_value[,tmp]
+  if(length(from_idx)>1)
+  {
+    tmp <- sample(seq_len(length(from_idx)), 1)
+    which_delay <- which_delay[tmp]
+    from_idx <- from_idx[tmp]
+    if(length(i)>1) from_value <- from_value[,tmp] else from_value <- from_value[tmp]
+  }
   param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay], CV=theta$CV[[group_idx]][which_delay])
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
@@ -190,6 +193,12 @@ move_Ei <- function(i, group_idx, date_idx,
                     index_dates,
                     range_dates=NULL) 
 {
+  if(length(i)>1) 
+  {
+    i <- i[1]
+    warning("In move_Ei, i should be a numeric, not a vector. Using i[1] instead.")
+  }
+  
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
   curr_E_value <- curr_aug_dat$E[[group_idx]][i,date_idx]
@@ -282,8 +291,8 @@ move_Ei <- function(i, group_idx, date_idx,
         }
         K <- mean(sapply(1:length(which_delay), find_correction_factor))
         
-        #log_p_move_from_old_to_new <- log(prob_move_error) + log(K)
-        #log_p_move_from_new_to_old <- log(prob_move_error)
+        #log_p_move_from_old_to_new <- log(1) + log(K)
+        #log_p_move_from_new_to_old <- log(1)
         logcorrection <- - log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
       }else
       {
@@ -357,8 +366,8 @@ move_Ei <- function(i, group_idx, date_idx,
       }
       K <- mean(sapply(1:length(which_delay), find_correction_factor_2))
       
-      #log_p_move_from_old_to_new <- log(prob_move_error) 
-      #log_p_move_from_new_to_old <- log(prob_move_error) + log(K)
+      #log_p_move_from_old_to_new <- log(1) 
+      #log_p_move_from_new_to_old <- log(1) + log(K)
       logcorrection <- + log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
       p_accept <- ratio_post + logcorrection
       if(p_accept>0) {p_accept <- 0}
@@ -384,7 +393,7 @@ move_Ei <- function(i, group_idx, date_idx,
   {
     res <- list(curr_aug_dat=curr_aug_dat, accept=0)
   }
-
+  
   return(res)
 }
 

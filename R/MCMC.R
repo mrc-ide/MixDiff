@@ -128,7 +128,7 @@ RunMCMC <- function(obs_dat,
         {
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
-          for(i in seq_len(length(n_10_to_update)))
+          for(i in seq_len(n_10_to_update))
           {
             tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
@@ -155,6 +155,42 @@ RunMCMC <- function(obs_dat,
       }
     }
     
+    # move some of the E_i
+    if(MCMC_settings$moves_switch$D_on) ### NEED TO REPLACE BY E_on
+    {
+      for(g in seq_len(n_groups))
+      {
+        for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
+        {
+          to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
+          n_10_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
+          for(i in seq_len(n_10_to_update))
+          {
+            tmp <- move_Ei (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j,
+                            curr_aug_dat,
+                            curr_theta,
+                            obs_dat,
+                            hyperpriors,
+                            index_dates,
+                            range_dates)
+            n_proposed_D_moves <- n_proposed_D_moves + 1
+            n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
+            if(tmp$accept==1)
+            {
+              curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
+
+              # if accepted move, update zeta
+              tmp <- move_zeta_gibbs(curr_aug_dat,
+                                     curr_theta,
+                                     obs_dat,
+                                     hyperpriors)
+              curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
+            }
+          }
+        }
+      }
+    }
+
     # move zeta using Gibbs sampler
     if(MCMC_settings$moves_switch$zeta_on)
     {

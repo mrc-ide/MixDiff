@@ -49,14 +49,14 @@ index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbin
 ### MCMC settings ###
 ###############################################
 
-MCMC_settings <- list( moves_switch=list(D_on = TRUE,E_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10, sdlog_mu = 0.15, sdlog_CV = 0.25), 
                        init_options=list(mindelay=0, maxdelay=100),
-                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
-                       #chain_properties=list(n_iter = 1000, burnin = 100, record_every=2))
-                       #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
-                       #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
-                      #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
+                       #chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
+                       chain_properties=list(n_iter = 1000, burnin = 250, record_every=2))
+#chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
+#chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
+#chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
@@ -191,29 +191,51 @@ for(g in 1:4)
   abline(h=table(aug_dat_true$E[[g]])[3], col="red")
 }
 
-### Often the rongly inferred E are 
-# either swapped (0, 1) vs (1, 0) 
-# or they started by 0 and became 1 and are now stuck in 1
-### --> need to write some new moves to tackles these two issues
+### define inferred E as wrong if support for true E < 1/4 
 
+find_problematic_Es <- function(g, j)
+{
+  tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
+  ### definition using the mode posterior -- sesems a bit restrictive 
+  #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
+  ### definition using threshold 1/4 posterior support
+  threshold_posterior_support <- 1/4
+  tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))>threshold_posterior_support ))
+  prob <- which(!tmp2)
+  return(prob)
+}
+
+prob <- lapply(seq_len(length(index_dates)), function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), function(j) find_problematic_Es(g, j)))
+
+prob[[1]]
+
+prob[[2]]
+g <- 2
+j <- 1
+
+prob[[3]]
+g <- 3
+j <- 3
+
+prob[[4]]
 g <- 4
-j <- 4
-tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
-tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
-prob <- which(!tmp2)
+j <- 2
 
-prob_i <- prob[1]
+prob_i <- prob[[g]][[j]][1]
 sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j])
+table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j]))
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][prob_i, j]))
+hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][prob_i, j]))
 obs_dat[[g]][prob_i, j]
 obs_dat[[g]][prob_i, ]
 aug_dat_true$E[[g]][prob_i,]
 aug_dat_true$D[[g]][prob_i,]
-obs_dat[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$E[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 
-###
+
+### Some of the remaining issues are becuase the observation is erroneous but the error is too small to be detected, we can't do anything about this.
+### Some of the remaining issues could be solved by more complicated swapping. 
 
 ###############################################
 ### TO DO ###

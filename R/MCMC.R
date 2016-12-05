@@ -106,6 +106,9 @@ RunMCMC <- function(obs_dat,
   n_accepted_E_moves <- 0
   n_proposed_E_moves <- 0
   
+  n_accepted_swapE_moves <- 0 
+  n_proposed_swapE_moves <- 0 
+  
   n_accepted_mu_moves <- 0
   n_proposed_mu_moves <- 0
   
@@ -164,7 +167,7 @@ RunMCMC <- function(obs_dat,
     }
     
     # move some of the E_i
-    if(MCMC_settings$moves_switch$E_on) ### NEED TO REPLACE BY E_on
+    if(MCMC_settings$moves_switch$E_on) 
     {
       for(g in seq_len(n_groups))
       {
@@ -186,7 +189,7 @@ RunMCMC <- function(obs_dat,
             if(tmp$accept==1)
             {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-
+              
               # if accepted move, update zeta
               tmp <- move_zeta_gibbs(curr_aug_dat,
                                      curr_theta,
@@ -198,7 +201,39 @@ RunMCMC <- function(obs_dat,
         }
       }
     }
-
+    
+    # swap the E_is that can be swapped (i.e. where exactly one is =1 and exactly one is =0)
+    if(MCMC_settings$moves_switch$swapE_on) 
+    {
+      for(g in seq_len(n_groups))
+      {
+        candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
+        for(i in candidates_for_swap)
+        {
+          tmp <- swap_Ei(i, g,  
+                  curr_aug_dat,
+                  curr_theta, 
+                  obs_dat, 
+                  hyperpriors, 
+                  index_dates,
+                  range_dates)
+          n_proposed_swapE_moves <- n_proposed_swapE_moves + 1
+          n_accepted_swapE_moves <- n_accepted_swapE_moves + tmp$accept
+          if(tmp$accept==1)
+          {
+            curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
+            
+            # if accepted move, update zeta
+            tmp <- move_zeta_gibbs(curr_aug_dat,
+                                   curr_theta,
+                                   obs_dat,
+                                   hyperpriors)
+            curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
+          }
+        }
+      }
+    }
+    
     # move zeta using Gibbs sampler
     if(MCMC_settings$moves_switch$zeta_on)
     {

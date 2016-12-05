@@ -8,7 +8,7 @@ move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat, hyperpriors,
   index_dates, range_dates = NULL)
 }
 \arguments{
-\item{i}{The index of the individual for whom augmented data should be moved}
+\item{i}{The index of the individual(s) for whom augmented data should be moved}
 
 \item{group_idx}{The index of the group for whom augmented data should be moved}
 

@@ -250,11 +250,6 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
 # do we indeed want to update zeta after each D_i move? maybe not useful? 
-# could add a move where if there are only 2 RECORDED dates for an individual, we change from E=(0, 1() to E=(1, 0), i.e. we change which one is wrong and which one is true
-# MCMCMoves.R many bits of code repeated between MoveDi and MoveEi and within MoveEi, need to tidy that up
-# currently underestimating zeta --> check that the errors we are not detecting are 
-# -- either the "small ones", 
-# -- or the ones for which other associated dates are missing hence we can't really say anything...
 
 # Marc: 
 # finish writing

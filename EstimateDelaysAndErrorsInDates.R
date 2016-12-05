@@ -207,19 +207,13 @@ find_problematic_Es <- function(g, j)
 
 prob <- lapply(seq_len(length(index_dates)), function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), function(j) find_problematic_Es(g, j)))
 
-prob[[1]]
-
-prob[[2]]
-g <- 2
-j <- 1
-
-prob[[3]]
-g <- 3
-j <- 3
-
+prob
 prob[[4]]
+
 g <- 4
-j <- 2
+#j <- 2
+j <- 4
+
 
 prob_i <- prob[[g]][[j]][1]
 sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j])
@@ -234,8 +228,7 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$E[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 
 
-### Some of the remaining issues are becuase the observation is erroneous but the error is too small to be detected, we can't do anything about this.
-### Some of the remaining issues could be solved by more complicated swapping. 
+### All of the remaining issues seem to be because the observation is erroneous but the error is too small to be detected, we can't do anything about this.
 
 ###############################################
 ### TO DO ###

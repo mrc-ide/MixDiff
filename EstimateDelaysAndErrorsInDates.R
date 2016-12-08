@@ -10,7 +10,7 @@ rm(list=ls())
 ### if needed, compile documentation, then check, build and install the package ###
 ###############################################
 
-roxygen2::roxygenise()
+devtools::document()
 devtools::check()
 devtools::build()
 devtools::install()

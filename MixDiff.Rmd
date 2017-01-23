@@ -133,7 +133,7 @@ TO DESCRIBE
 4. Code pour le shiny app (Marc)
 
 * Steps toward publication
-1. Check double entry data by Pierre's HPRU post-doc (Anne)
+1. Check double entry data by Pierre's HPRU post-doc [Sarah Chilsom] (Anne)
 2. Retrieve original uncleaned ebola dataset (Anne)
 3. Think about alternative (Marc)
 4. Think of sexy graphs and useful for the SI (both)

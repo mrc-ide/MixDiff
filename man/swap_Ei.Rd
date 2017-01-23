@@ -10,7 +10,7 @@ swap_Ei(i, group_idx, curr_aug_dat, theta, obs_dat, hyperpriors, index_dates,
 \arguments{
 \item{i}{The index of the individual for whom augmented data should be moved}
 
-\item{group_idx}{The index of the group for whom augmented data should be moved. This should be an individual which only has two recorded dates, and for whom in curr_aug_dat one of the two recorded dates is erroneous and one is not.}
+\item{group_idx}{The index of the group for whom augmented data should be moved. This should be an individual and for whom in curr_aug_dat there is at least one correctly recorded date and one erroneously recorded dates.}
 
 \item{curr_aug_dat}{The current augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}.}
 
@@ -54,9 +54,9 @@ The number of columns of index_dates[[k]] should match the length of theta$mu[[k
 If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 
 The function performs the move as follows, using a Metropolis-Hastings algorithm. 
-It proposes to swap the two indicators of errors in dates, e.g. from (0, 1) to (1, 0) or vice versa. 
-For the date where we propose a move from E=1 to E=0, we automatically move D=the observed data. 
-For the date where we propose a move from E=0 to E=1, D is then moved as follows: a new value is drawn from the marginal posterior of one of the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
+It proposes to swap the indicators of errors in dates, e.g. 0 becomes 1 and 1 becomes 0.
+For the dates where we propose a move from E=1 to E=0, we automatically move D=the corresponding observed data. 
+For the dates where we propose a move from E=0 to E=1, D is then moved as follows: a new value is drawn from the marginal posterior of one of the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
 If the date is involved in several delays, one of the delays is randomly selected. 
 This move is not symmetrical so we use a correction factor in computing the probability of acceptance in the Metropolis Hastings which accounts for the asymetry.
 }

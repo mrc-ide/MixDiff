@@ -12,11 +12,11 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #' Initialises augmented data based on observed data (for the MCMC)
 #' 
 #' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param MCMC_settings A list of settings to be used for initialising the augmented data for the MCMC, see details.
-#' @details \code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
-#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
-#' Each column specifies a rule saying that the origin date must be before the destination date.  
+#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 #' \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{init_options}}{: A list of the following elements:
@@ -29,7 +29,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #' }
 #' @return A list with two elements: 
 #' \itemize{
-#'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules specified in \code{index_dates_order}}
+#'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules inherent to \code{index_dates}}
 #'  \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
 #' }
 #' @import stats
@@ -55,11 +55,11 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 #' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data ###
-#' index_dates_order <- index_dates
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order, MCMC_settings)
-initialise_aug_data <- function(obs_dat, index_dates_order, MCMC_settings)
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
+initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
 {
+  index_dates_order <- compute_index_dates_order(index_dates)
   n_groups <- length(obs_dat)
   D <- list()
   for(g in seq_len(n_groups) )
@@ -217,9 +217,8 @@ initialise_aug_data <- function(obs_dat, index_dates_order, MCMC_settings)
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 #' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data first ###
-#' index_dates_order <- index_dates
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order, MCMC_settings)
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 #' ### Now initialise parameters based on the augmented data above ###
 #' theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values

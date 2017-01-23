@@ -4,7 +4,7 @@
 \alias{RunMCMC}
 \title{Runs the MCMC estimation procedure.}
 \usage{
-RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates, index_dates_order)
+RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
@@ -14,8 +14,6 @@ RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates, index_dates_order)
 \item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
-
-\item{index_dates_order}{A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates}
 }
 \value{
 A list of the following elements:
@@ -69,11 +67,7 @@ Runs the MCMC estimation procedure.
 \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
 The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
 
-If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
-
-\code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
-For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
-Each column specifies a rule saying that the origin date must be before the destination date.
+If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
 }
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###

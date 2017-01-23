@@ -38,12 +38,10 @@ if(!USE_SIMULATED_DATA)
 }
 
 ###############################################
-### define index_dates andindex_dates_order  ###
+### define index_dates ###
 ###############################################
 
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
-### NOTE THE FOLLOWING SHOULD BE AUTOMATICALLY CALCULATED FROM index_dates ###
-index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
 ###############################################
 ### MCMC settings ###
@@ -81,8 +79,7 @@ system.time({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
                      hyperparameters,
-                     index_dates,
-                     index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
+                     index_dates)
 })
 #Rprof(NULL)
 #summaryRprof()
@@ -239,7 +236,6 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # try to speed up if possible
 # keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain
-# in initMCMC.R: index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
 # do we indeed want to update zeta after each D_i move? maybe not useful? 

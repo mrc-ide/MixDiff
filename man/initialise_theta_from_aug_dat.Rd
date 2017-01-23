@@ -45,9 +45,8 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 ### Initialise augmented data first ###
-index_dates_order <- index_dates
 MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates_order, MCMC_settings)
+aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 ### Now initialise parameters based on the augmented data above ###
 theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 }

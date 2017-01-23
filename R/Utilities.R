@@ -201,3 +201,79 @@ find_range <- function(obs_dat)
   }
   return(c(min_date, max_date))
 }
+
+
+###############################################
+### compute rules on the order of dates based on index_dates object
+###############################################
+
+#' Compute rules on the order of dates based on index_dates object; see details
+#' 
+#' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
+#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
+#' This function is used to find appropriate starting points for the MCMC, i.e. when choosing initial values for the missing dates, this allows making sure the chosen value is consistent with the ordering of dates in that group, and hence will not generate a null likelihood. 
+#' 
+#' @return A list of same lenght as index_dates, containing indications on ordering of dates for each group. More specifically, each element of \code{index_dates_order} is a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
+#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+#' Each column specifies a rule saying that the origin date must be before the destination date.  
+#' This is computed from \code{index_dates} assuming all delays specified in \code{index_dates} have to be positive, and using transitivity rules to derive potential additional rules of positivity. 
+#' In the example below, in group 3, \code{index_dates} indicates that the delay between dates 1 and 2, and the delay between dates 2 and 3, are positive. Hence by transitivity, the delay between date 1 and 3 has to be positive as well, as seen in the output of the function in that example. 
+#' @export
+#' @examples
+#' index_dates <- list(matrix(c(1, 2), nrow=2), 
+#'                        cbind(c(1, 2), c(1, 3)), 
+#'                        cbind(c(1, 2), c(2, 3), c(1, 4)), 
+#'                        cbind(c(1, 2), c(2, 3), c(1, 4)) )
+#' index_dates_order <- compute_index_dates_order(index_dates)
+compute_index_dates_order <- function(index_dates)
+{
+  index_dates_order <- index_dates
+  
+  number_cols_added_at_this_round <- 0
+  for(e in 1:length(index_dates))
+  {
+    tmp <- index_dates_order[[e]]
+    link <- tmp[2,tmp[2,] %in% tmp[1,]]
+    for(k in link)
+    {
+      for(i in which(tmp[2,]==k))
+      {
+        for(j in which(tmp[1,]==k))
+        {
+          if(!any(sapply(1:ncol(tmp), function(e) all(tmp[,e] == c(tmp[1,i],tmp[2,j])) ))) # this means the rule obtained by transitivity is not yet present --> needs to be added
+          {
+            index_dates_order[[e]] <- cbind(index_dates_order[[e]], c(tmp[1,i],tmp[2,j]) )
+            number_cols_added_at_this_round <- number_cols_added_at_this_round + 1
+          }
+        }
+      }
+    }
+  }
+  while(number_cols_added_at_this_round>0)
+  {
+    number_cols_added_at_this_round <- 0
+    for(e in 1:length(index_dates))
+    {
+      tmp <- index_dates_order[[e]]
+      link <- tmp[2,tmp[2,] %in% tmp[1,]]
+      for(k in link)
+      {
+        for(i in which(tmp[2,]==k))
+        {
+          for(j in which(tmp[1,]==k))
+          {
+            if(!any(sapply(1:ncol(tmp), function(e) all(tmp[,e] == c(tmp[1,i],tmp[2,j])) ))) # this means the rule obtained by transitivity is not yet present --> needs to be added
+            {
+              index_dates_order[[e]] <- cbind(index_dates_order[[e]], c(tmp[1,i],tmp[2,j]) )
+              number_cols_added_at_this_round <- number_cols_added_at_this_round + 1
+            }
+          }
+        }
+      }
+    }
+  }
+  return(index_dates_order)
+}

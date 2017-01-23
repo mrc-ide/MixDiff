@@ -4,7 +4,6 @@
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see details.
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
-#' @param index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 #' @details \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on, zeta_on) stating whether each parameter/augmented data should be moved in the procedure or not.}
@@ -44,9 +43,6 @@
 #' 
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 #' 
-#' \code{index_dates_order} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates_order} should be a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
-#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
-#' Each column specifies a rule saying that the origin date must be before the destination date.  
 #' @return A list of the following elements:
 #'  \itemize{
 #'  
@@ -62,8 +58,7 @@
 RunMCMC <- function(obs_dat, 
                     MCMC_settings,
                     hyperparameters,
-                    index_dates,
-                    index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
+                    index_dates)
 {
   
   n_dates <- sapply(obs_dat, ncol )
@@ -73,7 +68,7 @@ RunMCMC <- function(obs_dat,
   ### define augmented data to be used for initialisation of the chain ###
   ###############################################
   
-  aug_dat <- initialise_aug_data(obs_dat, index_dates_order, MCMC_settings)
+  aug_dat <- initialise_aug_data(obs_dat, compute_index_dates_order(index_dates), MCMC_settings)
   
   ###############################################
   ### define parameters to be used for initialisation of the chain ###

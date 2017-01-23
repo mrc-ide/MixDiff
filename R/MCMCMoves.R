@@ -16,7 +16,7 @@
 #' @param curr_aug_dat The current augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
 #' @param theta List of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param hyperpriors A list of hyperpriors: see details.
+#' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
 #' @details \code{theta} should be a list containing:
@@ -25,7 +25,7 @@
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
-#' \code{hyperpriors} should be a list containing:
+#' \code{hyperparameters} should be a list containing:
 #' \itemize{
 #'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
 #'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -54,7 +54,7 @@ move_Di <- function(i, group_idx, date_idx,
                     curr_aug_dat,
                     theta, 
                     obs_dat, 
-                    hyperpriors, 
+                    hyperparameters, 
                     index_dates,
                     range_dates=NULL) 
 {
@@ -118,8 +118,8 @@ move_Di <- function(i, group_idx, date_idx,
   ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
   # no correction needed as this move is symetrical
   p_accept <- ratio_post 
@@ -143,7 +143,7 @@ move_Di <- function(i, group_idx, date_idx,
   return(list(new_aug_dat=new_aug_dat,accept=accept))
   
 }
-# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, hyperpriors) 
+# test_move_Di <- move_Di(i=1, group_idx=1, date_idx=1, curr_aug_dat = aug_dat, theta, obs_dat, hyperparameters) 
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
 
@@ -155,7 +155,7 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                        curr_aug_dat,
                                        theta, 
                                        obs_dat, 
-                                       hyperpriors, 
+                                       hyperparameters, 
                                        index_dates,
                                        range_dates=NULL)
 {
@@ -210,7 +210,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                                 curr_aug_dat, proposed_aug_dat,
                                                 theta, 
                                                 obs_dat, 
-                                                hyperpriors, 
+                                                hyperparameters, 
                                                 index_dates,
                                                 range_dates=NULL)
 {
@@ -230,8 +230,8 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
   ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
   # this move is NOT symetrical --> correction needed
   x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
@@ -268,7 +268,7 @@ propose_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
                                        curr_aug_dat,
                                        theta, 
                                        obs_dat, 
-                                       hyperpriors, 
+                                       hyperparameters, 
                                        index_dates,
                                        range_dates)
 {
@@ -284,7 +284,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
                                                 curr_aug_dat, proposed_aug_dat,
                                                 theta, 
                                                 obs_dat, 
-                                                hyperpriors, 
+                                                hyperparameters, 
                                                 index_dates,
                                                 range_dates)
 {
@@ -304,8 +304,8 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
   ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+  # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
   # this move is NOT symetrical --> correction needed
   x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
@@ -346,7 +346,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
 #' @param curr_aug_dat The current augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
 #' @param theta List of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param hyperpriors A list of hyperpriors: see details.
+#' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
 #' @details \code{theta} should be a list containing:
@@ -355,7 +355,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
-#' \code{hyperpriors} should be a list containing:
+#' \code{hyperparameters} should be a list containing:
 #' \itemize{
 #'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
 #'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -385,7 +385,7 @@ move_Ei <- function(i, group_idx, date_idx,
                     curr_aug_dat,
                     theta, 
                     obs_dat, 
-                    hyperpriors, 
+                    hyperparameters, 
                     index_dates,
                     range_dates=NULL) 
 {
@@ -412,7 +412,7 @@ move_Ei <- function(i, group_idx, date_idx,
                                                                                 curr_aug_dat,
                                                                                 theta, 
                                                                                 obs_dat, 
-                                                                                hyperpriors, 
+                                                                                hyperparameters, 
                                                                                 index_dates,
                                                                                 range_dates)
       
@@ -420,7 +420,7 @@ move_Ei <- function(i, group_idx, date_idx,
                                                  curr_aug_dat, proposed_aug_dat,
                                                  theta, 
                                                  obs_dat, 
-                                                 hyperpriors, 
+                                                 hyperparameters, 
                                                  index_dates,
                                                  range_dates)
       if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp) 
@@ -449,7 +449,7 @@ move_Ei <- function(i, group_idx, date_idx,
                                                                                 curr_aug_dat,
                                                                                 theta, 
                                                                                 obs_dat, 
-                                                                                hyperpriors, 
+                                                                                hyperparameters, 
                                                                                 index_dates,
                                                                                 range_dates)
       
@@ -457,7 +457,7 @@ move_Ei <- function(i, group_idx, date_idx,
                                                  curr_aug_dat, proposed_aug_dat,
                                                  theta, 
                                                  obs_dat, 
-                                                 hyperpriors, 
+                                                 hyperparameters, 
                                                  index_dates,
                                                  range_dates)
       if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp)
@@ -512,7 +512,7 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 #' @param curr_aug_dat The current augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
 #' @param theta List of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param hyperpriors A list of hyperpriors: see details.
+#' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
 #' @details \code{theta} should be a list containing:
@@ -521,7 +521,7 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
-#' \code{hyperpriors} should be a list containing:
+#' \code{hyperparameters} should be a list containing:
 #' \itemize{
 #'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
 #'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -551,7 +551,7 @@ swap_Ei <- function(i, group_idx,
                     curr_aug_dat,
                     theta, 
                     obs_dat, 
-                    hyperpriors, 
+                    hyperparameters, 
                     index_dates,
                     range_dates=NULL) 
 {
@@ -570,7 +570,7 @@ swap_Ei <- function(i, group_idx,
                                                                                                   curr_aug_dat,
                                                                                                   theta, 
                                                                                                   obs_dat, 
-                                                                                                  hyperpriors, 
+                                                                                                  hyperparameters, 
                                                                                                   index_dates,
                                                                                                   range_dates)
   
@@ -580,7 +580,7 @@ swap_Ei <- function(i, group_idx,
                                                                                      proposed_aug_dat_intermediate,
                                                                                      theta, 
                                                                                      obs_dat, 
-                                                                                     hyperpriors, 
+                                                                                     hyperparameters, 
                                                                                      index_dates,
                                                                                      range_dates)
   
@@ -606,20 +606,20 @@ swap_Ei <- function(i, group_idx,
   }
   
   ### should be the same as: 
-  #ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+  #ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
   # This is not a symetric move so need a correction factor
   
   logcorrection_move_from_E1_to_E0 <- sum(sapply(seq_len(length(date_idx_E1_to_E0)), function(e) compute_p_accept_move_from_E1_to_E0(i, group_idx, date_idx_E1_to_E0[e], 
                                                                                                                                      curr_aug_dat, proposed_aug_dat_intermediate, 
                                                                                                                                      theta, obs_dat, 
-                                                                                                                                     hyperpriors, index_dates, range_dates)[2]))
+                                                                                                                                     hyperparameters, index_dates, range_dates)[2]))
   
   logcorrection_move_from_E0_to_E1 <- sum(sapply(seq_len(length(date_idx_E0_to_E1)), function(e) compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx_E0_to_E1[e], 
                                                                                                                                      proposed_aug_dat_intermediate, proposed_aug_dat, 
                                                                                                                                      theta, obs_dat, 
-                                                                                                                                     hyperpriors, index_dates, range_dates)[2]))
+                                                                                                                                     hyperparameters, index_dates, range_dates)[2]))
   
   p_accept <- ratio_post + logcorrection_move_from_E1_to_E0 + logcorrection_move_from_E0_to_E1
   if(p_accept>0) p_accept <- 0
@@ -658,7 +658,7 @@ swap_Ei <- function(i, group_idx,
 #' @param aug_dat The augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
 #' @param curr_theta The current list of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param hyperpriors A list of hyperpriors: see details.
+#' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @details \code{curr_theta} should be a list containing:
 #' \itemize{
@@ -666,7 +666,7 @@ swap_Ei <- function(i, group_idx,
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
-#' \code{hyperpriors} should be a list containing:
+#' \code{hyperparameters} should be a list containing:
 #' \itemize{
 #'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
 #'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -694,7 +694,7 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
                            aug_dat,
                            curr_theta, 
                            obs_dat, 
-                           hyperpriors,
+                           hyperparameters,
                            index_dates) 
 {
   what <- match.arg(what)
@@ -709,18 +709,18 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
   # calculates probability of acceptance
   if(what=="mu")
   {
-    ratio_post <- lprior_params_delay(what, proposed_theta, hyperpriors) - lprior_params_delay(what, curr_theta, hyperpriors) 
+    ratio_post <- lprior_params_delay(what, proposed_theta, hyperparameters) - lprior_params_delay(what, curr_theta, hyperparameters) 
   }else if(what=="CV")
   {
-    ratio_post <- lprior_params_delay(what, proposed_theta, hyperpriors) - lprior_params_delay(what, curr_theta, hyperpriors) 
+    ratio_post <- lprior_params_delay(what, proposed_theta, hyperparameters) - lprior_params_delay(what, curr_theta, hyperparameters) 
   }
   Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, seq_len(nrow(obs_dat[[group_idx]])), delay_idx,  index_dates) # same for proposed and curent par values so no need to recompute twice
   ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, proposed_theta, obs_dat, group_idx, delay_idx, seq_len(nrow(obs_dat[[group_idx]])), index_dates, Delta)) - 
     sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, seq_len(nrow(obs_dat[[group_idx]])), index_dates, Delta)) 
   
   ### note that ratio_post should be the same as: 
-  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors, index_dates) - 
-  # lposterior_total(aug_dat, curr_theta, obs_dat, hyperpriors, index_dates)
+  # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperparameters, index_dates) - 
+  # lposterior_total(aug_dat, curr_theta, obs_dat, hyperparameters, index_dates)
   
   correction <- log(proposed_param_value) - log(curr_param_value) # correction for lognormal distribution
   p_accept <- ratio_post + correction # things are additive here as on log scale
@@ -744,7 +744,7 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
   return(list(new_theta=new_theta,accept=accept))
   
 }
-# test_move_mu <- move_lognormal(what="mu", group_idx=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, hyperpriors)
+# test_move_mu <- move_lognormal(what="mu", group_idx=1, delay_idx=1, sdlog=0.1, aug_dat, curr_theta = theta, obs_dat, hyperparameters)
 # test_move_mu$new_theta$mu[[1]][1] # new value
 # theta$mu[[1]][1] # old value
 
@@ -757,14 +757,14 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 #' @param aug_dat The augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}. 
 #' @param curr_theta The current list of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param hyperpriors A list of hyperpriors: see details.
+#' @param hyperparameters A list of hyperparameters: see details.
 #' @details \code{curr_theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
-#' \code{hyperpriors} should be a list containing:
+#' \code{hyperparameters} should be a list containing:
 #' \itemize{
 #'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
 #'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -775,8 +775,8 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 #' The function performs the move, using a Gibbs sampler. 
 #' A new value of parameter zeta is drawn from its marginal posterior distribution, that is a beta distribution with parameters: 
 #' \itemize{
-#'  \item{\code{first shape parameter}}{: Equal to \code{hyperpriors$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
-#'  \item{\code{second shape parameter}}{: Equal to \code{hyperpriors$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}
+#'  \item{\code{first shape parameter}}{: Equal to \code{hyperparameters$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
+#'  \item{\code{second shape parameter}}{: Equal to \code{hyperparameters$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}
 #' }
 #' @return A list of two elements:
 #'  \itemize{
@@ -789,14 +789,14 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 move_zeta_gibbs <- function(aug_dat,
                             curr_theta, 
                             obs_dat, 
-                            hyperpriors) 
+                            hyperparameters) 
 {
   tmp <- compute_n_errors(aug_dat, obs_dat)
   number_of_errors <- tmp[1]
   number_of_recorded_dates <- tmp[2]
   
   # drawing from the marginal posterior distribution directly
-  new_zeta <- rbeta(1, shape1=hyperpriors$shape1_prob_error + number_of_errors, shape2 = hyperpriors$shape2_prob_error + number_of_recorded_dates-number_of_errors)
+  new_zeta <- rbeta(1, shape1=hyperparameters$shape1_prob_error + number_of_errors, shape2 = hyperparameters$shape2_prob_error + number_of_recorded_dates-number_of_errors)
   
   # therefore accept automatically 
   new_theta <- curr_theta
@@ -809,6 +809,6 @@ move_zeta_gibbs <- function(aug_dat,
   return(list(new_theta=new_theta,accept=accept))
   
 }
-# test_move_zeta_gibbs <- move_zeta_gibbs(aug_dat, curr_theta = theta, obs_dat, hyperpriors)
+# test_move_zeta_gibbs <- move_zeta_gibbs(aug_dat, curr_theta = theta, obs_dat, hyperparameters)
 # test_move_zeta_gibbs$new_theta$zeta # new value
 # theta$zeta # old value

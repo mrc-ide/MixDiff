@@ -4,14 +4,14 @@
 \alias{RunMCMC}
 \title{Runs the MCMC estimation procedure.}
 \usage{
-RunMCMC(obs_dat, MCMC_settings, hyperpriors, index_dates, index_dates_order)
+RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates, index_dates_order)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
 \item{MCMC_settings}{A list of settings to be used for running the MCMC, see details.}
 
-\item{hyperpriors}{A list of hyperpriors: see details.}
+\item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
@@ -59,7 +59,7 @@ Runs the MCMC estimation procedure.
  }
  }
 }
-\code{hyperpriors} should be a list containing:
+\code{hyperparameters} should be a list containing:
 \itemize{
  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}

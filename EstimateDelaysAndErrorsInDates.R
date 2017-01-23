@@ -64,7 +64,7 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
 ### prior parameters  ###
 ###############################################
 
-hyperpriors <- list(
+hyperparameters <- list(
   shape1_prob_error=3, 
   shape2_prob_error=12, 
   mean_mean_delay=100, 
@@ -80,7 +80,7 @@ system.time({
   #profvis::profvis({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
-                     hyperpriors,
+                     hyperparameters,
                      index_dates,
                      index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
 })
@@ -166,10 +166,10 @@ summary(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1])
 ### comparing the posterior distribution of true aug_dat and parameters to posterior reached by MCMC chain
 
 # posterior of true aug data and true parameters
-lposterior_total(aug_dat_true, theta_true, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+lposterior_total(aug_dat_true, theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 
 # posterior of current aug data and true parameters
-lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_true, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 
 # highest posterior reached by MCMC chain
 max(MCMCres$logpost_chain)

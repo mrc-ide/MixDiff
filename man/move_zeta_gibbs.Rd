@@ -4,7 +4,7 @@
 \alias{move_zeta_gibbs}
 \title{Performs one iteration of an MCMC move for the parameter zeta (probability of a data being recorded erroneously, given it is recorded)}
 \usage{
-move_zeta_gibbs(aug_dat, curr_theta, obs_dat, hyperpriors)
+move_zeta_gibbs(aug_dat, curr_theta, obs_dat, hyperparameters)
 }
 \arguments{
 \item{aug_dat}{The augmented data; a list of observed data, in the format returned by \code{\link{simul_true_data}}.}
@@ -13,7 +13,7 @@ move_zeta_gibbs(aug_dat, curr_theta, obs_dat, hyperpriors)
 
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
-\item{hyperpriors}{A list of hyperpriors: see details.}
+\item{hyperparameters}{A list of hyperparameters: see details.}
 }
 \value{
 A list of two elements:
@@ -32,7 +32,7 @@ Performs one iteration of an MCMC move for the parameter zeta (probability of a 
  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 }
-\code{hyperpriors} should be a list containing:
+\code{hyperparameters} should be a list containing:
 \itemize{
  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -43,8 +43,8 @@ Performs one iteration of an MCMC move for the parameter zeta (probability of a 
 The function performs the move, using a Gibbs sampler. 
 A new value of parameter zeta is drawn from its marginal posterior distribution, that is a beta distribution with parameters: 
 \itemize{
- \item{\code{first shape parameter}}{: Equal to \code{hyperpriors$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
- \item{\code{second shape parameter}}{: Equal to \code{hyperpriors$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}
+ \item{\code{first shape parameter}}{: Equal to \code{hyperparameters$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
+ \item{\code{second shape parameter}}{: Equal to \code{hyperparameters$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}
 }
 }
 \examples{

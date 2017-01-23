@@ -4,7 +4,7 @@
 \alias{move_Di}
 \title{Performs one iteration of an MCMC move for the augmented data}
 \usage{
-move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat, hyperpriors,
+move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat, hyperparameters,
   index_dates, range_dates = NULL)
 }
 \arguments{
@@ -20,7 +20,7 @@ move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat, hyperpriors,
 
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
-\item{hyperpriors}{A list of hyperpriors: see details.}
+\item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
@@ -43,7 +43,7 @@ Performs one iteration of an MCMC move for the augmented data
  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 }
-\code{hyperpriors} should be a list containing:
+\code{hyperparameters} should be a list containing:
 \itemize{
  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}

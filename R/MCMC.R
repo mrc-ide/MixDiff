@@ -2,7 +2,7 @@
 #' 
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see details.
-#' @param hyperpriors A list of hyperpriors: see details.
+#' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param index_dates_order A list containing indications on ordering of dates, see details. #### CONSIDER CALCULATING THIS AUTOMATICALLY FROM index_dates
 #' @details \code{MCMC_settings} should be a list containing:
@@ -32,7 +32,7 @@
 #'  }
 #'  }
 #' }
-#' \code{hyperpriors} should be a list containing:
+#' \code{hyperparameters} should be a list containing:
 #' \itemize{
 #'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
 #'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -61,7 +61,7 @@
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 RunMCMC <- function(obs_dat, 
                     MCMC_settings,
-                    hyperpriors,
+                    hyperparameters,
                     index_dates,
                     index_dates_order) ### CHANGE THIS SO index_dates_order is computed automatically from index_dates
 {
@@ -98,7 +98,7 @@ RunMCMC <- function(obs_dat,
   aug_dat_chain[[1]] <- curr_aug_dat
   
   logpost_chain <- rep(NA, (MCMC_settings$chain_properties$n_iter - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every)
-  logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperpriors, index_dates, range_dates)
+  logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates)
   
   n_accepted_D_moves <- 0
   n_proposed_D_moves <- 0
@@ -145,7 +145,7 @@ RunMCMC <- function(obs_dat,
                             curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
-                            hyperpriors, 
+                            hyperparameters, 
                             index_dates,
                             range_dates) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
@@ -158,7 +158,7 @@ RunMCMC <- function(obs_dat,
               tmp <- move_zeta_gibbs(curr_aug_dat,
                                      curr_theta, 
                                      obs_dat, 
-                                     hyperpriors) 
+                                     hyperparameters) 
               curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
@@ -181,7 +181,7 @@ RunMCMC <- function(obs_dat,
                             curr_aug_dat,
                             curr_theta,
                             obs_dat,
-                            hyperpriors,
+                            hyperparameters,
                             index_dates,
                             range_dates)
             n_proposed_E_moves <- n_proposed_E_moves + 1
@@ -194,7 +194,7 @@ RunMCMC <- function(obs_dat,
               tmp <- move_zeta_gibbs(curr_aug_dat,
                                      curr_theta,
                                      obs_dat,
-                                     hyperpriors)
+                                     hyperparameters)
               curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
@@ -214,7 +214,7 @@ RunMCMC <- function(obs_dat,
                   curr_aug_dat,
                   curr_theta, 
                   obs_dat, 
-                  hyperpriors, 
+                  hyperparameters, 
                   index_dates,
                   range_dates)
           n_proposed_swapE_moves <- n_proposed_swapE_moves + 1
@@ -227,7 +227,7 @@ RunMCMC <- function(obs_dat,
             tmp <- move_zeta_gibbs(curr_aug_dat,
                                    curr_theta,
                                    obs_dat,
-                                   hyperpriors)
+                                   hyperparameters)
             curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
           }
         }
@@ -240,7 +240,7 @@ RunMCMC <- function(obs_dat,
       tmp <- move_zeta_gibbs(curr_aug_dat,
                              curr_theta, 
                              obs_dat, 
-                             hyperpriors) 
+                             hyperparameters) 
       curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
     }
     
@@ -255,7 +255,7 @@ RunMCMC <- function(obs_dat,
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
-                                hyperpriors,
+                                hyperparameters,
                                 index_dates)
           n_proposed_mu_moves <- n_proposed_mu_moves + 1
           n_accepted_mu_moves <- n_accepted_mu_moves + tmp$accept
@@ -275,7 +275,7 @@ RunMCMC <- function(obs_dat,
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
-                                hyperpriors,
+                                hyperparameters,
                                 index_dates)
           n_proposed_CV_moves <- n_proposed_CV_moves + 1
           n_accepted_CV_moves <- n_accepted_CV_moves + tmp$accept
@@ -290,7 +290,7 @@ RunMCMC <- function(obs_dat,
       idx <- (k - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every+1
       theta_chain[[idx]] <- curr_theta
       aug_dat_chain[[idx]] <- curr_aug_dat
-      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperpriors, index_dates, range_dates) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
+      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
     }
   }
   

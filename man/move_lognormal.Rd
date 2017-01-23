@@ -5,7 +5,7 @@
 \title{Performs one iteration of an MCMC move for either the parameter mu or the parameter CV (mean or CV of the various delays to be estimated)}
 \usage{
 move_lognormal(what = c("mu", "CV"), group_idx, delay_idx, sdlog, aug_dat,
-  curr_theta, obs_dat, hyperpriors, index_dates)
+  curr_theta, obs_dat, hyperparameters, index_dates)
 }
 \arguments{
 \item{what}{A string ("mu" or "CV") indicating which of the parameters to move}
@@ -22,7 +22,7 @@ move_lognormal(what = c("mu", "CV"), group_idx, delay_idx, sdlog, aug_dat,
 
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
-\item{hyperpriors}{A list of hyperpriors: see details.}
+\item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 }
@@ -43,7 +43,7 @@ Performs one iteration of an MCMC move for either the parameter mu or the parame
  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 }
-\code{hyperpriors} should be a list containing:
+\code{hyperparameters} should be a list containing:
 \itemize{
  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}

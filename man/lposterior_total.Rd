@@ -4,7 +4,7 @@
 \alias{lposterior_total}
 \title{Compute the log joint posterior distribution of augmented data and parameters given observed data}
 \usage{
-lposterior_total(aug_dat, theta, obs_dat, hyperpriors, index_dates,
+lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates,
   range_dates = NULL)
 }
 \arguments{
@@ -14,7 +14,7 @@ lposterior_total(aug_dat, theta, obs_dat, hyperpriors, index_dates,
 
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
-\item{hyperpriors}{A list of hyperpriors: see details.}
+\item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
@@ -33,7 +33,7 @@ Compute the log joint posterior distribution of augmented data and parameters gi
  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 }
-\code{hyperpriors} should be a list containing:
+\code{hyperparameters} should be a list containing:
 \itemize{
  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
@@ -67,15 +67,15 @@ D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
 obs_dat <- observed_D$obs_dat
 true_aug_dat <- list(D=D$true_dat, E=observed_D$E)
-### Define hyperpriors ###
-hyperpriors <- list(shape1_prob_error=3, shape2_prob_error=12, 
+### Define hyperparameters ###
+hyperparameters <- list(shape1_prob_error=3, shape2_prob_error=12, 
                      mean_mean_delay=100, mean_CV_delay=100)
 ### Compute log posterior distribution for that data
-lposterior_total(true_aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 ### Now use initalised augmented data 
 ### and check that posterior value for this is lower than for true data:
 MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
-lposterior_total(aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=NULL)
+lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 }
 

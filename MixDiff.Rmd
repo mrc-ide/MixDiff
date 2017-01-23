@@ -83,4 +83,59 @@ Independant metropolis algorithm for dates $D$, where for each date $D$ we propo
 
 TO DESCRIBE
 
+## Error model
+
+* We assume that the data entries are correct typewise, i.e. they are actual date (so "45/10/2012" is not an option)
+
+* We model the potential error generation by a multinomial with five probabilities corresponding to:
+1. Internal swap (transposition), the data entry person (DEP) swap the two figures of the month or day (e.g. 12 instead of 21), probability $\epsilon_{w}$
+2. External swap (transposition), day and month subfields are swapped, probability $\epsilon_{b}$
+3. Neighbouring typo (transcription), DEP mistype one digit for one nearby on the keyboard, +/- 1 position on the keyboard - to start with, probability $\epsilon_{n}$
+4. Random typo (transcription), DEP replace one digit by a non neighbour one while the date remain valid, probability $\epsilon_{R}$
+5. Unspecified error, any other error not defined above, probability $1- \sum\limits_{X=\{w, b, n, r\}} \epsilon_{X}$
+
+## Website
+
+* Think about a reward -> "unlock" a donation to MSF?
+* Frame the whole operation as the "Typing challenge"
+* Promotional film, kickstarter style
+* Maria Piggin? public involvement? LSHTM media people? ask about potential for tweet etc of how to reach the maximum amount of people
+* Short question about ID and how to grab from the browser information (e.g. keyboard?)
+* Option tick for email in order to give feedback
+* We will have 5 possible ways of proposing a date
+1. Plain writing e.g. "Thursday 24th June 2014"
+2. American way e.g. June 24th 2014
+3. Month of calendar (image) with a date circle in rate
+4. Relative day, e.g, "last Monday"
+5. Use image database of handwriting training set to generate a "handwritten" data in the right format (reading error)
+* Timer to perturbate people?
+* First entry should not be too challenging,
+* We should store the response entry and the proposed things to read, we can do regression to see if particular entries are associate with particular error (or simply more errors)
+
+# Plan d'attaque
+
+* Small amendments of current code
+1. Change hyperprior to hyperparameters everywhere (Anne)
+2. Explorer simulations en parallele (Anne)
+3. More flexibility in the proposal for the different delays and in acceptance rate recording (both)
+4. Adaptive proposal? (both)
+5. Speed up using profiling (both)
+6. Compute index_dates_order AUTOMATICALLY FROM index_dates (Anne)
+7. Write some code to restart from last point of the chain (Anne)
+8. Where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D (Anne)
+9. do we indeed want to update zeta after each D_i move? maybe not useful? (both -> but Marc to look at run MCMC)
+
+* More substantial changes
+1. Mettre sur papier le model d'erreur (both & today)
+2. Design (sur papier) l'interface pour collecte de data error (both & today)
+3. Voir pour l'hebergement (Anne)
+4. Code pour le shiny app (Marc)
+
+* Steps toward publication
+1. Check double entry data by Pierre's HPRU post-doc (Anne)
+2. Retrieve original uncleaned ebola dataset (Anne)
+3. Think about alternative (Marc)
+4. Think of sexy graphs and useful for the SI (both)
+
+
 

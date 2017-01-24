@@ -122,7 +122,7 @@ TO DESCRIBE
 5. Write some code to restart from last point of the chain (Anne)
 6. Where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D (Anne)
 7. do we indeed want to update zeta after each D_i move? maybe not useful? (both -> but Marc to look at run MCMC)
-8. wait for Rich to generate an R package on reading the MNIST data, this way we can call this pakcage rather than have the functions copied in our code directly (both)
+8. see with Rich how to remove box around each number in function plot_handwritten_date (Anne)
 
 * More substantial changes
 1. Mettre sur papier le model d'erreur (both & today)

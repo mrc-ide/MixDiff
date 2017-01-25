@@ -43,7 +43,7 @@ plot_handwritten_date <- function(date=as.Date("01/01/2017", format="%d/%m/%Y"),
   # do the plotting
   for(idx in date_idx)
   {
-    plot(chosen_image_unique[[match(idx, date_idx_unique)]], axes=FALSE)
+    plot(chosen_image_unique[[match(idx, date_idx_unique)]], box=FALSE)
   }
   
 }

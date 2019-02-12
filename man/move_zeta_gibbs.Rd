@@ -50,4 +50,3 @@ A new value of parameter zeta is drawn from its marginal posterior distribution,
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

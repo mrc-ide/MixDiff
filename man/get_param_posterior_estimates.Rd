@@ -45,4 +45,3 @@ Computes posterior estimates of parameters from the MCMC chain
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

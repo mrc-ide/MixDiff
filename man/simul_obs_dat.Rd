@@ -57,4 +57,3 @@ observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=T
 nrow(D$true_dat[[1]])
 nrow(observed_D$obs_dat[[1]])
 }
-

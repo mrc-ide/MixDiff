@@ -62,4 +62,3 @@ observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=T
 MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 }
-

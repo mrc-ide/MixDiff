@@ -20,4 +20,3 @@ Convert date to integer corresponding to number of days from a given origin
 \examples{
 date_to_int(as.Date("1970-01-01"))
 }
-

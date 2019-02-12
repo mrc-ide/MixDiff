@@ -41,4 +41,3 @@ D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 ### Compute the corresponding delays ###
 Delays <- compute_delta(D$true_dat, index_dates)
 }
-

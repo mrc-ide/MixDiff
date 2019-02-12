@@ -18,4 +18,3 @@ Compute autocorrelation for each parameter of the MCMC chains
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

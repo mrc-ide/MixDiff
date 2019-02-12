@@ -20,4 +20,3 @@ Compute correlation between the MCMC chains of mean and CV of each delay
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

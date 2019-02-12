@@ -126,12 +126,15 @@ RunMCMC <- function(obs_dat,
     }
     
     # move some of the D_i
+    #print("Move some D_i")
     if(MCMC_settings$moves_switch$D_on)
     {
       for(g in seq_len(n_groups))
       {
+        #print(g)
         for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
+          #print(j)
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(n_groups_to_update))
@@ -162,12 +165,15 @@ RunMCMC <- function(obs_dat,
     }
     
     # move some of the E_i
+    #print("Move some E_i")
     if(MCMC_settings$moves_switch$E_on) 
     {
       for(g in seq_len(n_groups))
       {
+        #print(g)
         for(j in seq_len(ncol(curr_aug_dat$E[[g]])))
         {
+          #print(j)
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Ei_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- length(to_update) 
           for(i in seq_len(n_groups_to_update))
@@ -198,13 +204,17 @@ RunMCMC <- function(obs_dat,
     }
     
     # swap the E_is that can be swapped (i.e. where exactly one is =1 and exactly one is =0)
+    #print("Swap some E_i")
     if(MCMC_settings$moves_switch$swapE_on) 
     {
       for(g in seq_len(n_groups))
       {
+        #print(g)
         candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
+        #print(candidates_for_swap)
         for(i in candidates_for_swap)
         {
+          #print(i)
           tmp <- swap_Ei(i, g,  
                   curr_aug_dat,
                   curr_theta, 
@@ -230,6 +240,7 @@ RunMCMC <- function(obs_dat,
     }
     
     # move zeta using Gibbs sampler
+    #print("Move zeta")
     if(MCMC_settings$moves_switch$zeta_on)
     {
       tmp <- move_zeta_gibbs(curr_aug_dat,
@@ -240,12 +251,15 @@ RunMCMC <- function(obs_dat,
     }
     
     # move mu
+    #print("Move mu")
     if(MCMC_settings$moves_switch$mu_on)
     {
       for(g in seq_len(n_groups))
       {
+        #print(g)
         for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
+          #print(j)
           tmp <- move_lognormal(what="mu", g, j-1, MCMC_settings$moves_options$sdlog_mu, 
                                 curr_aug_dat,
                                 curr_theta, 
@@ -260,12 +274,15 @@ RunMCMC <- function(obs_dat,
     }
     
     # move CV
+    #print("Move cv")
     if(MCMC_settings$moves_switch$CV_on)
     {
       for(g in seq_len(n_groups))
       {
+        #print(g)
         for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
+          #print(j)
           tmp <- move_lognormal(what="CV", g, j-1, MCMC_settings$moves_options$sdlog_CV, 
                                 curr_aug_dat,
                                 curr_theta, 

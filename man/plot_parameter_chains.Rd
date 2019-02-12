@@ -25,4 +25,3 @@ Plots the MCMC chains of parameters
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

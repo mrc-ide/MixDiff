@@ -25,4 +25,3 @@ sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
 mean(sample_gamma) # compare to 0.1
 sd(sample_gamma) # compare to 0.05
 }
-

@@ -37,4 +37,3 @@ find_range(D$true_dat)
 ### Compare with range specified in the first place ### 
 range_dates
 }
-

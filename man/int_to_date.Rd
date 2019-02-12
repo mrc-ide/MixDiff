@@ -20,4 +20,3 @@ Convert integer to date, based on a given origin from which the integer counts t
 \examples{
 int_to_date(365)
 }
-

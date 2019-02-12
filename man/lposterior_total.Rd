@@ -78,4 +78,3 @@ MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 }
-

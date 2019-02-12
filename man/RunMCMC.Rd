@@ -72,4 +72,3 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3),
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

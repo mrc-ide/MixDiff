@@ -23,4 +23,3 @@ sample_beta <- rbeta(1000, param_beta[1], param_beta[2])
 mean(sample_beta) # compare to 0.1
 var(sample_beta) # compare to 0.05
 }
-

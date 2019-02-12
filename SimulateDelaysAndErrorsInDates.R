@@ -38,7 +38,7 @@ aug_dat <- list(D=D$true_dat, E=tmp$E)
 ### saving this somewhere ###
 ####################################
 
-name_place_to_save <- "1" # in the future find a way to automatically generate a random folder name
+name_place_to_save <- "2" # in the future find a way to automatically generate a random folder name
 
 where_to_save <- paste0("./SimulatedData/",name_place_to_save)
 if(!dir.exists("./SimulatedData/")) dir.create("./SimulatedData/")

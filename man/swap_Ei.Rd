@@ -63,4 +63,3 @@ This move is not symmetrical so we use a correction factor in computing the prob
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

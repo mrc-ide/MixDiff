@@ -50,4 +50,3 @@ aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 ### Now initialise parameters based on the augmented data above ###
 theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
 }
-

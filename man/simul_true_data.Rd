@@ -69,4 +69,3 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 ### Perform the simulation ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 }
-

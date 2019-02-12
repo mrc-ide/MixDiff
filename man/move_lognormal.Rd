@@ -4,8 +4,8 @@
 \alias{move_lognormal}
 \title{Performs one iteration of an MCMC move for either the parameter mu or the parameter CV (mean or CV of the various delays to be estimated)}
 \usage{
-move_lognormal(what = c("mu", "CV"), group_idx, delay_idx, sdlog, aug_dat,
-  curr_theta, obs_dat, hyperparameters, index_dates)
+move_lognormal(what = c("mu", "CV"), group_idx, delay_idx, sdlog,
+  aug_dat, curr_theta, obs_dat, hyperparameters, index_dates)
 }
 \arguments{
 \item{what}{A string ("mu" or "CV") indicating which of the parameters to move}
@@ -63,4 +63,3 @@ The new parameter set is then accepted with probability given by the ratio of th
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

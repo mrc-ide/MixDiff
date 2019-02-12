@@ -20,4 +20,3 @@ Plots the MCMC chains of augmented data
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 }
-

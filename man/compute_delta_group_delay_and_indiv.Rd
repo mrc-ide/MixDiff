@@ -48,4 +48,3 @@ D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 ### Compute the first delay for first individual in first group ###
 compute_delta_group_delay_and_indiv(D$true_dat, group_idx=1, indiv_idx=1, delay_idx=1, index_dates)
 }
-

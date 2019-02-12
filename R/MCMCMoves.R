@@ -584,26 +584,36 @@ swap_Ei <- function(i, group_idx,
                                                                                      index_dates,
                                                                                      range_dates)
   
-  delay_idx <- which(index_dates[[group_idx]]==date_idx_E1_to_E0, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-  delay_idx <- c(delay_idx, which(index_dates[[group_idx]]==date_idx_E0_to_E1, arr.ind=TRUE)[,2])
+  delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% date_idx_E1_to_E0, nrow = nrow(index_dates[[group_idx]] )))>0)
+  delay_idx <- c(delay_idx, which(colSums(matrix(index_dates[[group_idx]] %in% date_idx_E0_to_E1, nrow = nrow(index_dates[[group_idx]] )))>0))
   delay_idx <- sort(unique(delay_idx))
   
-  ratio_post <- sum(LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates)) - 
-    sum(LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) )
-  ratio_post <- ratio_post +  sum(LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates)) - 
-    sum(LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) )
+  ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) - 
+                          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
+    sum(LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) - 
+          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) )
+  ## should be the same as:
+  # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
   
-  ratio_post <- ratio_post + sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)) - 
-    sum(LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i))
-  ratio_post <- ratio_post + sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i)) - 
-    sum(LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i))
+  ratio_post_error <- sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i) - 
+                            LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)) + 
+    sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i) - 
+          LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i))
+  ## should be the same as:
+  # LL_error_term(proposed_aug_dat, theta, obs_dat) - LL_error_term(curr_aug_dat, theta, obs_dat)
+  ## LL_error_term_slow(proposed_aug_dat, theta, obs_dat) - LL_error_term_slow(curr_aug_dat, theta, obs_dat)
   
+  ratio_post_delay <- 0
   for(d in delay_idx)
   {
-    ratio_post <- ratio_post + sum(LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates)) - 
-      sum(LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
+    ratio_post_delay <- ratio_post_delay + sum(LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
+      LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
     
   }
+    ## should be the same as:
+  # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) - LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
+  
+  ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
   
   ### should be the same as: 
   #ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 

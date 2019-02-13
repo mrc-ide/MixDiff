@@ -83,15 +83,17 @@ DiscrGamma <- function (k, mu, CV=NULL, sigma=mu*CV, log=TRUE)
   if (sigma < 0) {
     stop("sigma must be >=0.")
   }
-  a <- (mu/sigma)^2
-  #b <- sigma^2/mu
-  scale <- mu/(sigma^2)
+  shape <- (mu/sigma)^2
+  rate <- mu/(sigma^2)
   
-  res <- (k + 1) * pgamma(k + 1, a, scale) + (k - 1) * pgamma(k - 1, a, scale) - 2 * k * pgamma(k, a, scale)
+  res <- (k + 1) * pgamma(k + 1, shape, rate) + (k - 1) * pgamma(k - 1, shape, rate) - 2 * k * pgamma(k, shape, rate)
   
-  res <- res + (a / scale) * (2 * pgamma(k, a + 1, scale) - pgamma(k - 1, a + 1, scale) - pgamma(k + 1, a + 1, scale))
+  res <- res + (shape / rate) * (2 * pgamma(k, shape + 1, rate) - pgamma(k - 1, shape + 1, rate) - pgamma(k + 1, shape + 1, rate))
   
-  res <-pmax(0, res)
+  res <- pmax(0, res)
+  
+  ### This would be much faster but doesn't give exactly the same result:
+  ### res <- distcrete("gamma", 1, shape, rate, w = 1)$d(k)
   return(if(log) log(res) else res)
   return()
 }

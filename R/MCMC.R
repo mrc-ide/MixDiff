@@ -139,6 +139,7 @@ RunMCMC <- function(obs_dat,
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(n_groups_to_update))
           {
+            #print(i)
             tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
                             curr_theta, 

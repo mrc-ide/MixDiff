@@ -84,13 +84,13 @@ hyperparameters <- list(
 
 set.seed(1)
 #Rprof()
-#system.time({
+system.time({
 #  profvis::profvis({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
                      hyperparameters,
                      index_dates)
-#})
+})
 #Rprof(NULL)
 #summaryRprof()
 # 2 Dec --> n_iter = 5000, burnin = 500, record_every=10 takes 596secs

@@ -74,18 +74,7 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 # discretised Gamma distribution - see Cori et al. AJE 2013
 ####################################
 
-DiscrGamma <- function(k, mu, CV = NULL, sigma = mu*CV, log=TRUE, exact = TRUE) ### at the moment we always use the default value for exact
-{
-  if(exact)
-  {
-    return( DiscrGamma_exact(k = k, mu = mu, CV = CV, sigma = sigma, log=log) )
-  }else
-  {
-    return( DiscrGamma_approx(k = k, mu = mu, CV = CV, sigma = sigma, log=log) )
-  }
-}
-
-DiscrGamma_exact <- function (k, mu, CV = NULL, sigma = mu*CV, log=TRUE) 
+DiscrGamma <- function (k, mu, CV = NULL, sigma = mu*CV, log=TRUE) 
 {
   if (!is.null(CV)) {
     if(CV < 0)
@@ -122,28 +111,26 @@ DiscrGamma_approx <- function (k, mu, CV = NULL, sigma=mu*CV, log=TRUE)
   return(if(log) log(res) else res)
 }
 
-
-
-LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL, exact = TRUE)
+LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, indiv_idx, delay_idx, index_dates)
-  LL <- DiscrGamma(Delta, mu=theta$mu[[group_idx]][delay_idx], CV=theta$CV[[group_idx]][delay_idx], log=TRUE, exact = exact)
+  LL <- DiscrGamma(Delta, mu=theta$mu[[group_idx]][delay_idx], CV=theta$CV[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 
-LL_delays_term<-function(aug_dat, theta, obs_dat, index_dates, Delta=NULL, exact = TRUE)
+LL_delays_term<-function(aug_dat, theta, obs_dat, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta(aug_dat$D, index_dates)
-  LL <- sum (sapply(seq_len(length(obs_dat)), function(g) sum (sapply(seq(2, ncol(aug_dat$D[[g]]), 1), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, seq_len(nrow(obs_dat[[g]])), index_dates, Delta[[g]][seq_len(nrow(obs_dat[[g]])), j-1], exact = exact)) ) ) ) )
+  LL <- sum (sapply(seq_len(length(obs_dat)), function(g) sum (sapply(seq(2, ncol(aug_dat$D[[g]]), 1), function(j) sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, j-1, seq_len(nrow(obs_dat[[g]])), index_dates, Delta[[g]][seq_len(nrow(obs_dat[[g]])), j-1])) ) ) ) )
   return(LL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)
 
-LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates=NULL, exact = TRUE)
+LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates=NULL)
 {
   res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates) + 
     LL_error_term(aug_dat, theta, obs_dat) + 
-    LL_delays_term(aug_dat, theta, obs_dat, index_dates, exact = exact)
+    LL_delays_term(aug_dat, theta, obs_dat, index_dates)
   return(res)
 }
 # LL_total(aug_dat, theta, obs_dat)
@@ -248,9 +235,9 @@ lprior_total <- function(theta, hyperparameters)
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 #' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 #' lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
-lposterior_total <- function(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL, exact = TRUE)
+lposterior_total <- function(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 {
-  res <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates, exact = exact) + lprior_total(theta, hyperparameters)
+  res <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates) + lprior_total(theta, hyperparameters)
   return(res)
 }
 #lposterior_total(aug_dat, theta, obs_dat, hyperparameters=list(shape1_prob_error=3, shape2_prob_error=12, mean_mean_delay=100, mean_CV_delay=100))

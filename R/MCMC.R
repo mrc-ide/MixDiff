@@ -12,8 +12,8 @@
 #'  \item{\code{fraction_Di_to_update}}{: The fraction of augmented dates to be updated at each iteration of the MCMC.}
 #'  \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be updated simultaneously in each group.}
 #'  \item{\code{fraction_Ei_to_update}}{: The fraction of indicators of whether observed dates are erroneous to be updated at each iteration of the MCMC.}
-#'  \item{\code{sdlog_mu}}{: The standard deviation to be used for proposing moves of the mean delays.}
-#'  \item{\code{sdlog_CV}}{: The standard deviation to be used for proposing moves of the CV of delays.}
+#'  \item{\code{sdlog_mu}}{: The standard deviations to be used for proposing moves of the mean delays. This should be a list of length \code{n_groups=length(obs_dat)}. Each element in the list should be a vector with length given by the numbers of delays to be considered in this group.}
+#'  \item{\code{sdlog_CV}}{: The standard deviations to be used for proposing moves of the CV of delays. This should be a list of length \code{n_groups=length(obs_dat)}. Each element in the list should be a vector with length given by the numbers of delays to be considered in this group.}
 #'  }
 #'  }
 #'  \item{\code{init_options}}{: A list of the following elements:
@@ -68,6 +68,12 @@ RunMCMC <- function(obs_dat,
   ### define augmented data to be used for initialisation of the chain ###
   ###############################################
   
+  check_MCMC_settings(MCMC_settings, index_dates)
+  
+  ###############################################
+  ### define augmented data to be used for initialisation of the chain ###
+  ###############################################
+  
   aug_dat <- initialise_aug_data(obs_dat, compute_index_dates_order(index_dates), MCMC_settings)
   
   ###############################################
@@ -104,11 +110,11 @@ RunMCMC <- function(obs_dat,
   n_accepted_swapE_moves <- 0 
   n_proposed_swapE_moves <- 0 
   
-  n_accepted_mu_moves <- 0
-  n_proposed_mu_moves <- 0
+  n_accepted_mu_moves <- lapply(seq_len(n_groups), function(g) rep(0, ncol(index_dates[[g]]) ))
+  n_proposed_mu_moves <- n_accepted_mu_moves
   
-  n_accepted_CV_moves <- 0
-  n_proposed_CV_moves <- 0
+  n_accepted_CV_moves <- n_accepted_mu_moves
+  n_proposed_CV_moves <- n_accepted_mu_moves
   
   ###############################################
   ### Run the MCMC ###
@@ -261,14 +267,14 @@ RunMCMC <- function(obs_dat,
         for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
           #print(j)
-          tmp <- move_lognormal(what="mu", g, j-1, MCMC_settings$moves_options$sdlog_mu, 
+          tmp <- move_lognormal(what="mu", g, j-1, MCMC_settings$moves_options$sdlog_mu[[g]][[j-1]], 
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
                                 hyperparameters,
                                 index_dates)
-          n_proposed_mu_moves <- n_proposed_mu_moves + 1
-          n_accepted_mu_moves <- n_accepted_mu_moves + tmp$accept
+          n_proposed_mu_moves[[g]][j-1] <- n_proposed_mu_moves[[g]][j-1] + 1
+          n_accepted_mu_moves[[g]][j-1] <- n_accepted_mu_moves[[g]][j-1] + tmp$accept
           if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
         }
       }
@@ -284,14 +290,14 @@ RunMCMC <- function(obs_dat,
         for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
           #print(j)
-          tmp <- move_lognormal(what="CV", g, j-1, MCMC_settings$moves_options$sdlog_CV, 
+          tmp <- move_lognormal(what="CV", g, j-1, MCMC_settings$moves_options$sdlog_CV[[g]][[j-1]], 
                                 curr_aug_dat,
                                 curr_theta, 
                                 obs_dat, 
                                 hyperparameters,
                                 index_dates)
-          n_proposed_CV_moves <- n_proposed_CV_moves + 1
-          n_accepted_CV_moves <- n_accepted_CV_moves + tmp$accept
+          n_proposed_CV_moves[[g]][j-1] <- n_proposed_CV_moves[[g]][j-1] + 1
+          n_accepted_CV_moves[[g]][j-1] <- n_accepted_CV_moves[[g]][j-1] + tmp$accept
           if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
         }
       }
@@ -314,8 +320,8 @@ RunMCMC <- function(obs_dat,
   accept_prob <- list(
     D_moves=n_accepted_D_moves / n_proposed_D_moves,
     E_moves=n_accepted_E_moves / n_proposed_E_moves,
-    mu_moves=n_accepted_mu_moves / n_proposed_mu_moves,
-    CV_moves=n_accepted_CV_moves / n_proposed_CV_moves,
+    mu_moves=lapply(seq_len(n_groups), function(g) n_accepted_mu_moves[[g]] / n_proposed_mu_moves[[g]]),
+    CV_moves=lapply(seq_len(n_groups), function(g) n_accepted_CV_moves[[g]] / n_proposed_CV_moves[[g]]),
     zeta_moves=1)
   
   ###############################################

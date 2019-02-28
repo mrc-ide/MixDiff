@@ -115,13 +115,10 @@ TO DESCRIBE
 # Plan d'attaque
 
 * Essential
-1. Allow different sd for proposal for different delay means and sds - Anne
 2. Adaptive sd for proposals - independently or jointly?  - Anne (& Marc if jointly)
 3. Speed up - put some code in C - Anne - Marc
 4. Coder le model d'erreur & Write a likelihood based on recorded date and a proposed date - Marc
 5. Retrieve original uncleaned ebola dataset - Anne
-6. Try to speed up DistrGamma by vectorising lines (Anne)
-7. Have an option to use exact DistrGamma or approximate which is faster (Anne)
 8. How many of the typo challenge errors are still true dates? (Marc)
 9. Preprocessing tool ? To capture wrong separators and clear m/d swap. If not a date, can we propose another date and increase the prior on the error / decrease the belief in that date? Marc
 10. Marc to review code - does it run, is it understandable? 
@@ -134,4 +131,7 @@ TO DESCRIBE
 4. do we indeed want to update zeta after each D_i move? maybe not useful? (Anne)
 5. Write some tests for the R package
 
-
+* Done
+1. Have an option to use exact DistrGamma or approximate which is faster (Anne) --> did this but in the end the exact one seems faster so removed from code
+2. Try to speed up DistrGamma by vectorising lines (Anne) --> tried but wasn't faster so removed
+1. Allow different sd for proposal for different delay means and sds - Anne - DONE

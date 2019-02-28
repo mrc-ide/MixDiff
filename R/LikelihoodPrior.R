@@ -95,21 +95,21 @@ DiscrGamma <- function (k, mu, CV = NULL, sigma = mu*CV, log=TRUE)
   return(if(log) log(res) else res)
 }
 
-DiscrGamma_approx <- function (k, mu, CV = NULL, sigma=mu*CV, log=TRUE) 
-{
-  if (!is.null(CV)) {
-    if(CV < 0)
-      stop("CV must be >=0.")
-  }
-  if (sigma < 0) {
-    stop("sigma must be >=0.")
-  }
-  shape <- (mu/sigma)^2
-  rate <- mu/(sigma^2)
-  
-  res <- distcrete::distcrete("gamma", 1, shape, rate, w = 0.5)$d(k)
-  return(if(log) log(res) else res)
-}
+# DiscrGamma_approx <- function (k, mu, CV = NULL, sigma=mu*CV, log=TRUE) 
+# {
+#   if (!is.null(CV)) {
+#     if(CV < 0)
+#       stop("CV must be >=0.")
+#   }
+#   if (sigma < 0) {
+#     stop("sigma must be >=0.")
+#   }
+#   shape <- (mu/sigma)^2
+#   rate <- mu/(sigma^2)
+#   
+#   res <- distcrete::distcrete("gamma", 1, shape, rate, w = 0.5)$d(k)
+#   return(if(log) log(res) else res)
+# }
 
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {

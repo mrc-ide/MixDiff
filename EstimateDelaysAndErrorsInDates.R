@@ -1,5 +1,14 @@
 ###############################################
 ###############################################
+# TO DO:
+# apply to Ebola data BEFORE cleaning dates, i.e check that format is fine but not that order etc makes sense before applying.
+# also: idea to apply to only the early cases as we are not accounting for changes in distributions over time (e.g. prompter hospitalisation later on)
+###############################################
+###############################################
+
+
+###############################################
+###############################################
 ### parameter estimation using MCMC ###
 ###############################################
 ###############################################
@@ -14,12 +23,13 @@ rm(list=ls())
 #devtools::check()
 #devtools::build()
 #devtools::install()
+#library(MixDiff)
 
 ###############################################
 ### read in data ###
 ###############################################
 
-USE_SIMULATED_DATA <- TRUE
+USE_SIMULATED_DATA <- FALSE # TRUE
 
 if(!USE_SIMULATED_DATA)
 {
@@ -50,8 +60,8 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
                        moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10, sdlog_mu = 0.15, sdlog_CV = 0.25), 
                        init_options=list(mindelay=0, maxdelay=100),
-                       #chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
-                       chain_properties=list(n_iter = 500, burnin = 250, record_every=2))
+                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
+                       #chain_properties=list(n_iter = 500, burnin = 250, record_every=2))
 #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
@@ -75,12 +85,12 @@ hyperparameters <- list(
 set.seed(1)
 #Rprof()
 #system.time({
-  profvis::profvis({
+#  profvis::profvis({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
                      hyperparameters,
                      index_dates)
-})
+#})
 #Rprof(NULL)
 #summaryRprof()
 # 2 Dec --> n_iter = 5000, burnin = 500, record_every=10 takes 596secs
@@ -232,7 +242,7 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 ###############################################
 
 # Anne: 
-# check the MCMC, 
+# check the MCMC, [DO WE RECOVER PRIOR IF WE REMOVE LIKELIHOOD?]
 # try to speed up if possible
 # keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
 # write some code to start from last point in the chain

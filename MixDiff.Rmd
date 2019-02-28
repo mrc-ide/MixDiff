@@ -114,14 +114,16 @@ TO DESCRIBE
 
 # Plan d'attaque
 
-* Small amendments of current code
+* Essential
+1. Allow different sd for proposal for different delay means and sds
+2. Adaptive sd for proposals - independently or jointly? 
+3. Speed up - put some code in C
+
+* Non essential
 1. Explorer simulations en parallele (Anne)
-2. More flexibility in the proposal for the different delays and in acceptance rate recording (both)
-3. Adaptive proposal? (both)
-4. Speed up using profiling (both)
-5. Write some code to restart from last point of the chain (Anne)
-6. Where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D (Anne)
-7. do we indeed want to update zeta after each D_i move? maybe not useful? (both -> but Marc to look at run MCMC)
+2. Write some code to restart from last point of the chain (Anne)
+3. ??? Where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D (Anne)
+4. do we indeed want to update zeta after each D_i move? maybe not useful? 
 
 * More substantial changes
 1. Coder le model d'erreur (both)

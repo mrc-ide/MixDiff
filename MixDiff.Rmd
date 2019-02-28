@@ -126,7 +126,7 @@ TO DESCRIBE
 
 * Non essential
 1. Explorer simulations en parallele (Anne)
-2. Write some code to restart from last point of the chain (Anne)
+2. Write some code to restart from last point of the chain (Anne) use MCMCres$theta_chain[[length(MCMCres$theta_chain)]] & MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]
 3. ??? Where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D (Anne)
 5. Write some tests for the R package
 

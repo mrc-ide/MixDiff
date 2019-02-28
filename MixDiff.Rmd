@@ -128,10 +128,10 @@ TO DESCRIBE
 1. Explorer simulations en parallele (Anne)
 2. Write some code to restart from last point of the chain (Anne)
 3. ??? Where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D (Anne)
-4. do we indeed want to update zeta after each D_i move? maybe not useful? (Anne)
 5. Write some tests for the R package
 
 * Done
 1. Have an option to use exact DistrGamma or approximate which is faster (Anne) --> did this but in the end the exact one seems faster so removed from code
 2. Try to speed up DistrGamma by vectorising lines (Anne) --> tried but wasn't faster so removed
-1. Allow different sd for proposal for different delay means and sds - Anne - DONE
+3. Allow different sd for proposal for different delay means and sds - Anne - DONE
+4. do we indeed want to update zeta after each D_i move? maybe not useful? (Anne) - Indeed I commented this out as didn't make any difference (but didn't make much difference computing time-wise!)

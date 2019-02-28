@@ -160,11 +160,11 @@ RunMCMC <- function(obs_dat,
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
               
               # if accepted move, update zeta
-              tmp <- move_zeta_gibbs(curr_aug_dat,
-                                     curr_theta, 
-                                     obs_dat, 
-                                     hyperparameters) 
-              curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
+              # tmp <- move_zeta_gibbs(curr_aug_dat,
+              #                        curr_theta, 
+              #                        obs_dat, 
+              #                        hyperparameters) 
+              # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
         }
@@ -199,11 +199,11 @@ RunMCMC <- function(obs_dat,
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
               
               # if accepted move, update zeta
-              tmp <- move_zeta_gibbs(curr_aug_dat,
-                                     curr_theta,
-                                     obs_dat,
-                                     hyperparameters)
-              curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
+              # tmp <- move_zeta_gibbs(curr_aug_dat,
+              #                        curr_theta,
+              #                        obs_dat,
+              #                        hyperparameters)
+              # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
         }
@@ -236,11 +236,11 @@ RunMCMC <- function(obs_dat,
             curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
             
             # if accepted move, update zeta
-            tmp <- move_zeta_gibbs(curr_aug_dat,
-                                   curr_theta,
-                                   obs_dat,
-                                   hyperparameters)
-            curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
+            # tmp <- move_zeta_gibbs(curr_aug_dat,
+            #                        curr_theta,
+            #                        obs_dat,
+            #                        hyperparameters)
+            # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
           }
         }
       }

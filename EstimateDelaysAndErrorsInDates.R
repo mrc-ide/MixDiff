@@ -29,7 +29,7 @@ rm(list=ls())
 ### read in data ###
 ###############################################
 
-USE_SIMULATED_DATA <- FALSE # TRUE
+USE_SIMULATED_DATA <- TRUE
 
 if(!USE_SIMULATED_DATA)
 {

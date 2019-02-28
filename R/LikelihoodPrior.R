@@ -86,6 +86,7 @@ DiscrGamma <- function (k, mu, CV=NULL, sigma=mu*CV, log=TRUE)
   shape <- (mu/sigma)^2
   rate <- mu/(sigma^2)
   
+  ### PERHAPS OPPORTUNITY TO SPEED THIS UP BY VECTORISING pgamma for each line
   res <- (k + 1) * pgamma(k + 1, shape, rate) + (k - 1) * pgamma(k - 1, shape, rate) - 2 * k * pgamma(k, shape, rate)
   
   res <- res + (shape / rate) * (2 * pgamma(k, shape + 1, rate) - pgamma(k - 1, shape + 1, rate) - pgamma(k + 1, shape + 1, rate))

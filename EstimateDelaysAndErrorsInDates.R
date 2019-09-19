@@ -6,7 +6,6 @@
 ###############################################
 ###############################################
 
-
 ###############################################
 ###############################################
 ### parameter estimation using MCMC ###
@@ -19,11 +18,12 @@ rm(list=ls())
 ### if needed, compile documentation, then check, build and install the package ###
 ###############################################
 
+##devtools::install_github("mrc-ide/rmnist")
 #devtools::document()
 #devtools::check()
 #devtools::build()
 #devtools::install()
-#library(MixDiff)
+library(MixDiff)
 
 ###############################################
 ### read in data ###
@@ -42,7 +42,7 @@ if(!USE_SIMULATED_DATA)
   obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 } else
 {
-  name_place_to_load_simulated_data_from <- "2" # 1"
+  name_place_to_load_simulated_data_from <- "1" # "2"
   where_to_load_from <- paste0("./SimulatedData/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
 }
@@ -202,27 +202,55 @@ for(g in 1:4)
 
 ### define inferred E as wrong if support for true E < 1/4 
 
-find_problematic_Es <- function(g, j)
+posterior_support_for_erroneous_status_of_entry <- function(g, j)
 {
   tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
+  # remove missing entries to focus on true errors, not just missing data
+  tmp [tmp == -1] <- NA
   ### definition using the mode posterior -- sesems a bit restrictive 
-  #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
+  #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
+  # as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
   ### definition using threshold 1/4 posterior support
-  threshold_posterior_support <- 1/4
-  tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))>threshold_posterior_support ))
-  prob <- which(!tmp2)
+  tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
+    as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))))
+  prob <- tmp2
   return(prob)
 }
 
-prob <- lapply(seq_len(length(index_dates)), function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), function(j) find_problematic_Es(g, j)))
+find_problematic_Es <- function(g, j, threshold_posterior_support = 1/4)
+{
+  prob <- which(posterior_support_for_erroneous_status_of_entry(g,j) <= threshold_posterior_support)
+  return(prob)
+}
 
-prob
-prob[[4]]
+posterior_support <- lapply(seq_len(length(index_dates)), 
+                            function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
+                                               function(j) posterior_support_for_erroneous_status_of_entry(g, j)))
 
-g <- 4
-#j <- 2
-j <- 4
+posterior_support <- unlist(posterior_support)
 
+par(mfrow = c(2, 1))
+hist(posterior_support, col = "grey", breaks = seq(0, 1, 0.01))
+hist(posterior_support[posterior_support<0.95], col = "grey", breaks = seq(0, 1, 0.01))
+
+threshold_posterior_support <- 0.25
+abline(v = threshold_posterior_support, col = "red", lty = 2)
+
+# using threshold 1/4
+prob <- lapply(seq_len(length(index_dates)), 
+               function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
+                                  function(j) find_problematic_Es(g, j, 
+                                                                  threshold_posterior_support = threshold_posterior_support)))
+
+# using threshold 1/2
+# prob <- lapply(seq_len(length(index_dates)), 
+#                function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
+#                                   function(j) find_problematic_Es(g, j, threshold_posterior_support = 1/2)))
+#prob
+#prob[[4]]
+
+g <- 3
+j <- 3
 
 prob_i <- prob[[g]][[j]][1]
 sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j])
@@ -235,7 +263,6 @@ aug_dat_true$E[[g]][prob_i,]
 aug_dat_true$D[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$E[[g]][prob_i,]
 MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
-
 
 ### All of the remaining issues seem to be because the observation is erroneous but the error is too small to be detected, we can't do anything about this.
 
@@ -262,5 +289,32 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # outputs: proportion erroneous data - ... - nice graphs
 
 
+consensus_D <- aug_dat_true$D
+consensus_E <- aug_dat_true$E
+for(g in 1:length(consensus_D))
+{
+  for(i in 1:nrow(consensus_D[[g]]))
+  {
+    for(j in 1:ncol(consensus_D[[g]]))
+    {
+      consensus_D[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+      consensus_E[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+    }
+  }
+}
+
+
+par(mfrow = c(4, 2))
+for(g in 1:4)
+{
+  image(t(aug_dat_true$E[[g]]), col = c( "red", "forestgreen", "grey"))
+  image(t(consensus_E[[g]]), col = c( "red", "forestgreen", "grey"))
+}
+
+g <- 1
+plot(aug_dat_true$D[[g]], consensus_D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
+for(g in 2:4)
+  points(aug_dat_true$D[[g]], consensus_D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
+table(aug_dat_true$E[[g]] == consensus_E[[g]])['FALSE'] / sum(table(aug_dat_true$E[[g]] == consensus_E[[g]]))
 
 

@@ -62,9 +62,9 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                                           sdlog_mu = list(0.05, c(0.15, 0.15), c(0.15, 0.15, 0.15), c(0.25, 0.25, 0.25)), 
                                           sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))), 
                        init_options=list(mindelay=0, maxdelay=100),
-#                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
+                       #                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2))
-chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
+                       chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
@@ -87,7 +87,7 @@ hyperparameters <- list(
 set.seed(1)
 #Rprof()
 system.time({
-#  profvis::profvis({
+  #  profvis::profvis({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
                      hyperparameters,
@@ -219,9 +219,17 @@ posterior_support_for_erroneous_status_of_entry <- function(g, j)
   #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
   # as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
   ### definition using threshold 1/4 posterior support
-  tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
-    as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))))
-  prob <- tmp2
+  prob <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
+  {
+    if(all(is.na(tmp[i])))
+    {
+      res <- NA
+    } else if (any(tmp[i,] == 0)) 
+    {
+      res <- as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))) 
+    } else res <- 0
+    return(res)
+  })
   return(prob)
 }
 
@@ -231,11 +239,11 @@ find_problematic_Es <- function(g, j, threshold_posterior_support = 1/4)
   return(prob)
 }
 
-posterior_support <- lapply(seq_len(length(index_dates)), 
-                            function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
-                                               function(j) posterior_support_for_erroneous_status_of_entry(g, j)))
+posterior_support_list <- lapply(seq_len(length(index_dates)), 
+                                 function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
+                                                    function(j) posterior_support_for_erroneous_status_of_entry(g, j)))
 
-posterior_support <- unlist(posterior_support)
+posterior_support <- unlist(posterior_support_list)
 
 par(mfrow = c(2, 1))
 hist(posterior_support, col = "grey", breaks = seq(0, 1, 0.01))
@@ -344,22 +352,22 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
   
   for(g in 1:length(tmp))
   {
-  tab <- table(aug_dat_true_E_no_missing[[g]], consensus_E_no_missing[[g]])
-  n_true_neg <- tab["0", "0"]
-  n_true_pos <- tab["1", "1"]
-  n_false_pos <- tab["0", "1"]
-  n_false_neg <- tab["1", "0"]
-  
-  sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
-  specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
-  
-  false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
-                       (consensus_E_no_missing[[g]]  == 1), # and are detected as errors
-                     arr.ind = TRUE)
-  
-  false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
-                      (consensus_E_no_missing[[g]]  == 0), # and are NOT detected as errors
-                    arr.ind = TRUE)
+    tab <- table(aug_dat_true_E_no_missing[[g]], consensus_E_no_missing[[g]])
+    n_true_neg <- tab["0", "0"]
+    n_true_pos <- tab["1", "1"]
+    n_false_pos <- tab["0", "1"]
+    n_false_neg <- tab["1", "0"]
+    
+    sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
+    specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
+    
+    false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
+                              (consensus_E_no_missing[[g]]  == 1), # and are detected as errors
+                            arr.ind = TRUE)
+    
+    false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
+                              (consensus_E_no_missing[[g]]  == 0), # and are NOT detected as errors
+                            arr.ind = TRUE)
   }
   
   return(list(sensitivity = sensitivity,
@@ -368,9 +376,24 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
               false_neg = false_neg))
 }
 
-compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus_E)
+detec <- compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus_E)
 
+### specificity: where we've detected an error which did not exist, what was the reason? 
 
+false_pos <- detec$false_pos
+g <- 1
+lapply(1:length(detec$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
+
+i <- 38
+j <- 1
+aug_dat_true$D[[g]][i,]
+aug_dat_true$D[[g]][i,j]
+table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+aug_dat_true$E[[g]][i,]
+# -> so this case is interesting: 1 wrong, 1 true, 2 missing, and we never manage to swap the wrong and true because of the missing... 
+# -> will need to propose swaps of true/wrong where we update the missings accordingly !!!
+
+### sensitivity: where we've not detected an error, what was the reason? 
 
 
 

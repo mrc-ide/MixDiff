@@ -210,7 +210,7 @@ for(g in 1:4)
 
 ### define inferred E as wrong if support for true E < 1/4 
 
-posterior_support_for_erroneous_status_of_entry <- function(g, j)
+posterior_support_for_real_status_of_entry <- function(g, j)
 {
   tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
   # remove missing entries to focus on true errors, not just missing data
@@ -221,10 +221,10 @@ posterior_support_for_erroneous_status_of_entry <- function(g, j)
   ### definition using threshold 1/4 posterior support
   prob <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
   {
-    if(all(is.na(tmp[i])))
+    if(all(is.na(tmp[i,])))
     {
       res <- NA
-    } else if (any(tmp[i,] == 0)) 
+    } else if (any(tmp[i,] == as.character(aug_dat_true$E[[g]][i,j]))) 
     {
       res <- as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))) 
     } else res <- 0
@@ -235,13 +235,13 @@ posterior_support_for_erroneous_status_of_entry <- function(g, j)
 
 find_problematic_Es <- function(g, j, threshold_posterior_support = 1/4)
 {
-  prob <- which(posterior_support_for_erroneous_status_of_entry(g,j) <= threshold_posterior_support)
+  prob <- which(posterior_support_for_real_status_of_entry(g,j) <= threshold_posterior_support)
   return(prob)
 }
 
 posterior_support_list <- lapply(seq_len(length(index_dates)), 
                                  function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
-                                                    function(j) posterior_support_for_erroneous_status_of_entry(g, j)))
+                                                    function(j) posterior_support_for_real_status_of_entry(g, j)))
 
 posterior_support <- unlist(posterior_support_list)
 
@@ -381,19 +381,54 @@ detec <- compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus_
 ### specificity: where we've detected an error which did not exist, what was the reason? 
 
 false_pos <- detec$false_pos
-g <- 1
+# posterior support for erroneous entry
 lapply(1:length(detec$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
 
+# in group 1 mostly posterior support for error is not huge
+
+g <- 4
 i <- 38
 j <- 1
 aug_dat_true$D[[g]][i,]
 aug_dat_true$D[[g]][i,j]
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 aug_dat_true$E[[g]][i,]
+consensus_E[[g]][i,]
 # -> so this case is interesting: 1 wrong, 1 true, 2 missing, and we never manage to swap the wrong and true because of the missing... 
 # -> will need to propose swaps of true/wrong where we update the missings accordingly !!!
 
+i <- 5
+j <- 3 # 2
+aug_dat_true$D[[g]][i,]
+aug_dat_true$D[[g]][i,j]
+table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+aug_dat_true$E[[g]][i,]
+consensus_E[[g]][i,]
+# same as above
+# and of course this only happens in the last group because of having many dates recorded (you need at least three dates to get this issue)
+
 ### sensitivity: where we've not detected an error, what was the reason? 
 
+false_neg <- detec$false_neg
+# posterior support for correct entry
+lapply(1:length(detec$specificity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
 
+g <- 3
+i <- 40
+j = 3
+aug_dat_true$D[[g]][i,]
+aug_dat_true$D[[g]][i,j]
+table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+aug_dat_true$E[[g]][i,]
+consensus_E[[g]][i,]
+# same issue as before
+
+g <- 4
+i <- 38
+j <- 2
+aug_dat_true$D[[g]][i,]
+aug_dat_true$D[[g]][i,j]
+table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+aug_dat_true$E[[g]][i,]
+consensus_E[[g]][i,]
 

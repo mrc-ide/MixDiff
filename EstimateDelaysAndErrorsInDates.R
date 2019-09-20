@@ -62,9 +62,9 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                                           sdlog_mu = list(0.05, c(0.15, 0.15), c(0.15, 0.15, 0.15), c(0.25, 0.25, 0.25)), 
                                           sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))), 
                        init_options=list(mindelay=0, maxdelay=100),
-                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
+#                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2))
-#chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
+chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
 # for now moving all mus and CVs with the same sd, 
@@ -108,14 +108,22 @@ if(!USE_SIMULATED_DATA)
   ext <- date()
   ext <- gsub(" ","_",ext)
   ext <- gsub(":","",ext)
-  saveRDS(MCMCres, paste0("EbolaData/ResultsEstimation_EbolaData_",ext,".rds"))
+  ext2 <- paste0(ext, "_",
+                 MCMC_settings$chain_properties$n_iter, "iter_",
+                 MCMC_settings$chain_properties$burnin, "burnt_",
+                 MCMC_settings$chain_properties$record_every, "thin_")
+  saveRDS(MCMCres, paste0("EbolaData/ResultsEstimation_EbolaData_",ext2,".rds"))
 }else
 {
   # add time to name so that can keep track of several results if needed # could change this if want more specific naming of various runs
   ext <- date()
   ext <- gsub(" ","_",ext)
   ext <- gsub(":","",ext)
-  saveRDS(MCMCres, paste0(where_to_load_from,"/ResultsEstimation_SimulatedData_",ext,".rds"))
+  ext2 <- paste0(ext, "_",
+                 MCMC_settings$chain_properties$n_iter, "iter_",
+                 MCMC_settings$chain_properties$burnin, "burnt_",
+                 MCMC_settings$chain_properties$record_every, "thin_")
+  saveRDS(MCMCres, paste0(where_to_load_from,"/ResultsEstimation_SimulatedData_",ext2,".rds"))
 }
 
 ###############################################
@@ -316,5 +324,53 @@ plot(aug_dat_true$D[[g]], consensus_D[[g]], col = scales::alpha("grey", 0.5), pc
 for(g in 2:4)
   points(aug_dat_true$D[[g]], consensus_D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
 table(aug_dat_true$E[[g]] == consensus_E[[g]])['FALSE'] / sum(table(aug_dat_true$E[[g]] == consensus_E[[g]]))
+
+### Compute sensitivity and specificity of detecting errors in dates
+# remove missing dates from the denominator
+
+compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consensus_E)
+{
+  tmp <- aug_dat_true$E
+  aug_dat_true_E_no_missing <- tmp
+  consensus_E_no_missing <- consensus_E
+  for(g in 1:length(tmp))
+  {
+    aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
+    consensus_E_no_missing[[g]] [consensus_E[[g]] == -1] <- NA
+  }
+  
+  sensitivity <- specificity <- rep(NA, 4)
+  false_pos <- false_neg <- list()
+  
+  for(g in 1:length(tmp))
+  {
+  tab <- table(aug_dat_true_E_no_missing[[g]], consensus_E_no_missing[[g]])
+  n_true_neg <- tab["0", "0"]
+  n_true_pos <- tab["1", "1"]
+  n_false_pos <- tab["0", "1"]
+  n_false_neg <- tab["1", "0"]
+  
+  sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
+  specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
+  
+  false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
+                       (consensus_E_no_missing[[g]]  == 1), # and are detected as errors
+                     arr.ind = TRUE)
+  
+  false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
+                      (consensus_E_no_missing[[g]]  == 0), # and are NOT detected as errors
+                    arr.ind = TRUE)
+  }
+  
+  return(list(sensitivity = sensitivity,
+              specificity = specificity,
+              false_pos = false_pos,
+              false_neg = false_neg))
+}
+
+compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus_E)
+
+
+
 
 

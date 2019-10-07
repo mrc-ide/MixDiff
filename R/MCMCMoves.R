@@ -572,6 +572,11 @@ swap_Ei <- function(i, group_idx,
   date_idx_E0_to_E1 <- date_idx[curr_E_values==0] # currently correct date
   date_idx_E1_to_E0 <- date_idx[curr_E_values==1] # currently errouneous date
   
+  #if(group_idx == 4 & i == 38)
+  #{
+  #  browser()
+  #}
+  
   # debug
   #print("old state:")
   #print(curr_aug_dat$E[[group_idx]][i,])

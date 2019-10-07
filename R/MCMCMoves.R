@@ -497,6 +497,8 @@ move_Ei <- function(i, group_idx, date_idx,
 
 find_2Eis_to_swap <- function(group_idx, curr_aug_dat)
 {
+  # find indexes of individuals in group_idx who, according to curr_aug_dat
+  # have exactly one correctly recorded and one incorrectly recorded dates
   which(sapply(1:nrow(curr_aug_dat$E[[group_idx]]), function(i) 
     sum(curr_aug_dat$E[[group_idx]][i,]==1)==1 & 
       sum(curr_aug_dat$E[[group_idx]][i,]==0)==1))
@@ -504,7 +506,11 @@ find_2Eis_to_swap <- function(group_idx, curr_aug_dat)
 
 find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 {
-  which(sapply(1:nrow(curr_aug_dat$E[[group_idx]]), function(i) length(unique(curr_aug_dat$E[[group_idx]][i,curr_aug_dat$E[[group_idx]][i,]!=-1]))>1))
+  # find indexes of individuals in group_idx who, according to curr_aug_dat
+  # have at least one one correctly recorded and one incorrectly recorded dates
+  which(sapply(1:nrow(curr_aug_dat$E[[group_idx]]), function(i) 
+    length(unique(
+      curr_aug_dat$E[[group_idx]][i,curr_aug_dat$E[[group_idx]][i,]!=-1]))>1))
 }
 
 #' Performs one iteration of an MCMC move for the augmented data where the indicators of error in observations for one individual are swapped, i.e. the errors become non errors and vice versa. 

@@ -608,7 +608,8 @@ swap_Ei <- function(i, group_idx,
       infer_missing_dates(proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
                           group_idx, i, index_dates_order, 
-                          do_not_infer_from = date_idx_E0_to_E1)
+                          do_not_infer_from = date_idx_E0_to_E1, 
+                          theta)
     
     # 
     # 

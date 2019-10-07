@@ -299,7 +299,9 @@ check_MCMC_settings <- function(MCMC_settings, index_dates)
 
 
 infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order, 
-                                do_not_infer_from = NULL)
+                                do_not_infer_from = NULL, 
+                                theta = NULL, 
+                                tol = 1e-3)
 {
   D_proxy <- D
   if(is.null(E))
@@ -307,6 +309,7 @@ infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order,
     true_missing_dates <- which(is.na(D_proxy[[g]][e,]))
   } else 
   {
+    browser()
     true_missing_dates <- which(E[[g]][e,] == -1)
   }
   missing_dates <- union(true_missing_dates, do_not_infer_from)
@@ -331,7 +334,23 @@ infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order,
       x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
       if(length(x)==1)
       {
-        inferred <- can_be_inferred_from[[k]]$from_value[x]
+        which_delay <- which(paste(index_dates[[g]][1,], index_dates[[g]][2,], sep = "-") %in% 
+                               c(paste(missing_dates[k], x, sep = "-"), paste(x, missing_dates[k], sep = "-")))
+        param_delay <- find_params_gamma(theta$mu[[k]][which_delay], CV=theta$CV[[k]][which_delay])
+        delay_max <- ceiling(qgamma(1 - tol, shape=param_delay[1], scale=param_delay[2]))
+        prob_delay <- pgamma(0:(delay_max+1), shape=param_delay[1], scale=param_delay[2])
+        weights <- diff(prob_delay)
+        delays <- 0:(delay_max)
+        if(missing_dates[k] == index_dates[[g]][,which_delay][1])
+        {
+          multiply <- 1
+        } else
+        {
+          multiply <- - 1
+        }
+        tmp <- rmultinom(1, 1, weights)
+        inferred <- can_be_inferred_from[[k]]$from_value[x] + 
+          multiply * delays[tmp == 1]
       }else
       {
         if(all(can_be_inferred_from[[k]]$rule[x] == "before"))

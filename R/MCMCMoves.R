@@ -569,37 +569,53 @@ swap_Ei <- function(i, group_idx,
   date_idx <- which(all_E_values %in% c(0,1))
   curr_E_values <- all_E_values[date_idx]
   
-  date_idx_E0_to_E1 <- date_idx[curr_E_values==0]
-  date_idx_E1_to_E0 <- date_idx[curr_E_values==1]
+  date_idx_E0_to_E1 <- date_idx[curr_E_values==0] # currently correct date
+  date_idx_E1_to_E0 <- date_idx[curr_E_values==1] # currently errouneous date
   
   proposed_aug_dat_intermediate <- curr_aug_dat
   proposed_aug_dat_intermediate$E[[group_idx]][i,date_idx_E1_to_E0] <- 0
-  proposed_aug_dat_intermediate$D[[group_idx]][i,date_idx_E1_to_E0] <- propose_move_from_E1_to_E0(i, group_idx, date_idx_E1_to_E0, 
-                                                                                                  curr_aug_dat,
-                                                                                                  theta, 
-                                                                                                  obs_dat, 
-                                                                                                  hyperparameters, 
-                                                                                                  index_dates,
-                                                                                                  range_dates)
+  proposed_aug_dat_intermediate$D[[group_idx]][i,date_idx_E1_to_E0] <- 
+    propose_move_from_E1_to_E0(i, group_idx, date_idx_E1_to_E0, 
+                               curr_aug_dat,
+                               theta, 
+                               obs_dat, 
+                               hyperparameters, 
+                               index_dates,
+                               range_dates)
   
   proposed_aug_dat <- proposed_aug_dat_intermediate
   proposed_aug_dat$E[[group_idx]][i,date_idx_E0_to_E1] <- 1
-  proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1] <- propose_move_from_E0_to_E1(i, group_idx, date_idx_E0_to_E1, 
-                                                                                     proposed_aug_dat_intermediate,
-                                                                                     theta, 
-                                                                                     obs_dat, 
-                                                                                     hyperparameters, 
-                                                                                     index_dates,
-                                                                                     range_dates)
+  proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1] <- 
+    propose_move_from_E0_to_E1(i, group_idx, date_idx_E0_to_E1, 
+                               proposed_aug_dat_intermediate,
+                               theta, 
+                               obs_dat, 
+                               hyperparameters, 
+                               index_dates,
+                               range_dates)
   
-  delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% date_idx_E1_to_E0, nrow = nrow(index_dates[[group_idx]] )))>0)
-  delay_idx <- c(delay_idx, which(colSums(matrix(index_dates[[group_idx]] %in% date_idx_E0_to_E1, nrow = nrow(index_dates[[group_idx]] )))>0))
+  delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
+                                      date_idx_E1_to_E0, 
+                                    nrow = nrow(index_dates[[group_idx]] )))>0)
+  delay_idx <- c(delay_idx, 
+                 which(colSums(matrix(index_dates[[group_idx]] %in% 
+                                        date_idx_E0_to_E1, 
+                                      nrow = 
+                                        nrow(index_dates[[group_idx]] )))>0))
   delay_idx <- sort(unique(delay_idx))
   
-  ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) - 
-                          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
-    sum(LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) - 
-          LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i, range_dates=range_dates) )
+  ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(
+    proposed_aug_dat, theta, obs_dat, group_idx, 
+    date_idx_E1_to_E0, i, range_dates=range_dates) - 
+      LL_observation_term_by_group_delay_and_indiv(
+        curr_aug_dat, theta, obs_dat, group_idx, 
+        date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
+    sum(LL_observation_term_by_group_delay_and_indiv(
+      proposed_aug_dat, theta, obs_dat, group_idx, 
+      date_idx_E0_to_E1, i, range_dates=range_dates) - 
+        LL_observation_term_by_group_delay_and_indiv(
+          curr_aug_dat, theta, obs_dat, group_idx, 
+          date_idx_E0_to_E1, i, range_dates=range_dates) )
   ## should be the same as:
   # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
   

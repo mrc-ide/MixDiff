@@ -491,13 +491,15 @@ move_Ei <- function(i, group_idx, date_idx,
 ###############################################
 ### Swap Es 
 ### (when only 2 Es, related by a delay, are recorded, 
-### one with error and one iwthout error, 
+### one with error and one without error, 
 ### propose to swap the two) ###
 ###############################################
 
 find_2Eis_to_swap <- function(group_idx, curr_aug_dat)
 {
-  which(sapply(1:nrow(curr_aug_dat$E[[group_idx]]), function(i) sum(curr_aug_dat$E[[group_idx]][i,]==1)==1 & sum(curr_aug_dat$E[[group_idx]][i,]==0)==1))
+  which(sapply(1:nrow(curr_aug_dat$E[[group_idx]]), function(i) 
+    sum(curr_aug_dat$E[[group_idx]][i,]==1)==1 & 
+      sum(curr_aug_dat$E[[group_idx]][i,]==0)==1))
 }
 
 find_Eis_to_swap <- function(group_idx, curr_aug_dat)

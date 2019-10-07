@@ -161,7 +161,6 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
 {
   
   # which delays is this particular date involved in?
-  
   x <- lapply(seq_len(length(date_idx)), function(e) which(index_dates[[group_idx]] == date_idx[e], arr.ind = TRUE))
   which_delay <- lapply(seq_len(length(date_idx)), function(e) x[[e]][,2])
   from_idx <- lapply(seq_len(length(date_idx)), function(e) sapply(seq_len(nrow(x[[e]])), function(k) index_dates[[group_idx]][-x[[e]][k,1],x[[e]][k,2]] ))
@@ -561,7 +560,8 @@ swap_Ei <- function(i, group_idx,
                     obs_dat, 
                     hyperparameters, 
                     index_dates,
-                    range_dates=NULL) 
+                    range_dates=NULL, 
+                    index_dates_order = compute_index_dates_order(index_dates)) 
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
@@ -571,6 +571,11 @@ swap_Ei <- function(i, group_idx,
   
   date_idx_E0_to_E1 <- date_idx[curr_E_values==0] # currently correct date
   date_idx_E1_to_E0 <- date_idx[curr_E_values==1] # currently errouneous date
+  
+  # debug
+  #print("old state:")
+  #print(curr_aug_dat$E[[group_idx]][i,])
+  #print(curr_aug_dat$D[[group_idx]][i,])
   
   proposed_aug_dat_intermediate <- curr_aug_dat
   proposed_aug_dat_intermediate$E[[group_idx]][i,date_idx_E1_to_E0] <- 0
@@ -583,6 +588,62 @@ swap_Ei <- function(i, group_idx,
                                index_dates,
                                range_dates)
   
+  #print("intermediate state 1:")
+  #print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+  #print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+  
+  
+  ### The following code is to update D where E = -1 i.e. unrecorded dates
+  ### linked to the date we've just changed
+  missing_to_update <- which(
+    proposed_aug_dat_intermediate$E[[group_idx]][i,] == -1)
+  if(length(missing_to_update)>0)
+  {
+    proposed_aug_dat_intermediate$D <- 
+      infer_missing_dates(proposed_aug_dat_intermediate$D, 
+                          E = proposed_aug_dat_intermediate$E, 
+                          group_idx, i, index_dates_order, 
+                          do_not_infer_from = date_idx_E0_to_E1)
+    
+    # 
+    # 
+    # 
+    # # update proposed_aug_dat_intermediate$D
+    # #browser()
+    # x <- lapply(date_idx_E1_to_E0, function(e) which(index_dates[[group_idx]] == e, arr.ind = TRUE))
+    # rows <- x[[1]][,1]
+    # cols <- x[[1]][,2]
+    # new_rows <- 2-(rows-1) # changes 1 to 2 and 2 to 1
+    # in_relation_with_E1_to_E0 <- sapply(1:length(rows), function(e)
+    #   index_dates[[group_idx]][new_rows[e], cols[e]])
+    # missing_to_update <- intersect(missing_to_update, in_relation_with_E1_to_E0)
+    # if(length(missing_to_update)>0)
+    # {
+    #   for(ii in missing_to_update) 
+    #   {
+    #     idx_dates_vect <- paste(index_dates[[group_idx]][1,], 
+    #                             index_dates[[group_idx]][2,], sep = "-")
+    #     idx_delay <- which(
+    #       idx_dates_vect %in% paste(missing_to_update, date_idx_E1_to_E0, sep = "-") | 
+    #         idx_dates_vect %in% paste(date_idx_E1_to_E0, missing_to_update, sep = "-"))
+    #     if(ii == index_dates[[group_idx]][1,idx_delay]) 
+    #     {multiply <- -1} else {multiply <- 1}
+    #     param_delay <- find_params_gamma(theta$mu[[group_idx]][idx_delay], 
+    #                                      CV=theta$CV[[group_idx]][idx_delay])
+    #     sample_delay <- round(rgamma(1, 
+    #                                  shape=param_delay[1], scale=param_delay[2])) 
+    #     proposed_aug_dat_intermediate$D[[group_idx]][i,ii] <- 
+    #       proposed_aug_dat_intermediate$D[[group_idx]][i,date_idx_E1_to_E0] + 
+    #       multiply * sample_delay
+    #     
+    #   }
+    #
+    #print("intermediate state 2:")
+    #print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+    #print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+    # }
+  }
+  
   proposed_aug_dat <- proposed_aug_dat_intermediate
   proposed_aug_dat$E[[group_idx]][i,date_idx_E0_to_E1] <- 1
   proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1] <- 
@@ -593,6 +654,10 @@ swap_Ei <- function(i, group_idx,
                                hyperparameters, 
                                index_dates,
                                range_dates)
+  
+  #print("final proposed state:")
+  #print(proposed_aug_dat$E[[group_idx]][i,])
+  #print(proposed_aug_dat$D[[group_idx]][i,])
   
   delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
                                       date_idx_E1_to_E0, 
@@ -631,10 +696,10 @@ swap_Ei <- function(i, group_idx,
   for(d in delay_idx)
   {
     ratio_post_delay <- ratio_post_delay + sum(LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
-      LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
+                                                 LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
     
   }
-    ## should be the same as:
+  ## should be the same as:
   # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) - LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
   
   ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
@@ -664,10 +729,18 @@ swap_Ei <- function(i, group_idx,
   {
     new_aug_dat <- proposed_aug_dat
     accept <- 1
+    #if(group_idx == 4 && i == 9)
+    #{
+    #  print("accepted")
+    #}
   }else # reject
   {
     new_aug_dat <- curr_aug_dat
     accept <- 0
+    #if(group_idx == 4 && i == 9)
+    #{
+    #  print("rejected")
+    #}
   }	
   
   # return a list of size 2 where 

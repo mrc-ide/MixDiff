@@ -60,7 +60,6 @@ RunMCMC <- function(obs_dat,
                     hyperparameters,
                     index_dates)
 {
-  
   n_dates <- sapply(obs_dat, ncol )
   n_groups <- length(n_dates)
   

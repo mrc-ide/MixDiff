@@ -111,48 +111,8 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       }
       
       # now deal with missing dates
-      missing_dates <- which(is.na(D[[g]][e,]))
-      while(length(missing_dates)>0)
-      {
-        can_be_inferred_from <- lapply(missing_dates, function(i) {
-          x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
-          from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
-          from_value <- sapply(seq_len(nrow(x)), function(k) D[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
-          rule <- sapply(seq_len(nrow(x)), function(k) if(x[k,1]==1) "before" else "after"  )
-          return(list(rule=rule,from_idx=from_idx, from_value=from_value))
-        })
-        can_be_inferred <- which(sapply(seq_len(length(missing_dates)), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
-        for(k in can_be_inferred)
-        {
-          x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
-          if(length(x)==1)
-          {
-            inferred <- can_be_inferred_from[[k]]$from_value[x]
-          }else
-          {
-            if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
-            {
-              inferred <- min(can_be_inferred_from[[k]]$from_value[x])
-            }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
-            {
-              inferred <- max(can_be_inferred_from[[k]]$from_value[x])
-            }else
-            {
-              max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
-              min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
-              if(min_val>max_val)
-              {
-                stop("Incompatible data to infer from. ")
-              }else
-              {
-                inferred <- floor(median(c(min_val, max_val)))
-              }
-            }
-          }
-          D[[g]][e,missing_dates[k]] <- inferred
-        }
-        missing_dates <- which(is.na(D[[g]][e,]))
-      }
+      D <- infer_missing_dates(D, E = NULL, g, e, index_dates_order)
+      
     }
   }
   names(D) <- names(obs_dat)

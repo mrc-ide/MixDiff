@@ -296,3 +296,76 @@ check_MCMC_settings <- function(MCMC_settings, index_dates)
   if(!all(lengths(MCMC_settings$moves_options$sdlog_CV) == lengths(index_dates) / 2))
     stop("sdlog_CV does not have the correct structure")
 }
+
+
+infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order, 
+                                do_not_infer_from = NULL)
+{
+  D_proxy <- D
+  if(is.null(E))
+  {
+    true_missing_dates <- which(is.na(D_proxy[[g]][e,]))
+  } else 
+  {
+    true_missing_dates <- which(E[[g]][e,] == -1)
+  }
+  missing_dates <- union(true_missing_dates, do_not_infer_from)
+  other_missing_dates <- setdiff(missing_dates, true_missing_dates)
+  D_proxy[[g]][e,missing_dates] <- NA
+  
+  #print(true_missing_dates)
+  #print(other_missing_dates)
+  
+  while(length(true_missing_dates)>0)
+  {
+    can_be_inferred_from <- lapply(missing_dates, function(i) {
+      x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
+      from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
+      from_value <- sapply(seq_len(nrow(x)), function(k) D_proxy[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
+      rule <- sapply(seq_len(nrow(x)), function(k) if(x[k,1]==1) "before" else "after"  )
+      return(list(rule=rule,from_idx=from_idx, from_value=from_value))
+    })
+    can_be_inferred <- which(sapply(seq_len(length(missing_dates)), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
+    for(k in can_be_inferred)
+    {
+      x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
+      if(length(x)==1)
+      {
+        inferred <- can_be_inferred_from[[k]]$from_value[x]
+      }else
+      {
+        if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
+        {
+          inferred <- min(can_be_inferred_from[[k]]$from_value[x])
+        }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
+        {
+          inferred <- max(can_be_inferred_from[[k]]$from_value[x])
+        }else
+        {
+          max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
+          min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
+          if(min_val>max_val)
+          {
+            stop("Incompatible data to infer from. ")
+          }else
+          {
+            inferred <- floor(median(c(min_val, max_val)))
+          }
+        }
+      }
+      D_proxy[[g]][e,missing_dates[k]] <- inferred
+    }
+    missing_dates <- which(is.na(D_proxy[[g]][e,]))
+    true_missing_dates <- setdiff(missing_dates, other_missing_dates)
+    #print("rep")
+    #print(missing_dates)
+    #print(true_missing_dates)
+    #print(other_missing_dates)
+    #Sys.sleep(0.1)
+  }
+  
+  to_replace <- is.na(D_proxy[[g]][e, ])
+  if(any(to_replace)) D_proxy[[g]][e, to_replace] <- D[[g]][e, to_replace]
+  
+  return(D_proxy)
+}

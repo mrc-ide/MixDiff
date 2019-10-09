@@ -385,12 +385,37 @@ false_pos <- detec$false_pos
 # posterior support for erroneous entry
 lapply(1:length(detec$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
 
+g <- 1
+i <- 23#9#54
+j <- 2#2#1
+j2 <- 1#1#2
+par(mfrow = c(2, 1))
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j2]), type = "l")
+
 # in group 1 mostly posterior support for error is not huge
 
+false_neg <- detec$false_neg
+# posterior support for erroneous entry
+lapply(1:length(detec$specificity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
+
 g <- 4
-i <- 38
-j <- 1
+i <- 92#85#96
+j <- 4#3#2
+
+g <- 3
+i <- 78#40
+j <- 3#3
+
+g <- 2
+i <- 70
+j <- 3
+
+g <- 1
+i <- 54#9
+j <- 2#1
 aug_dat_true$D[[g]][i,]
+obs_dat[[g]][i,]
 aug_dat_true$D[[g]][i,j]
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 aug_dat_true$E[[g]][i,]
@@ -432,4 +457,27 @@ aug_dat_true$D[[g]][i,j]
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 aug_dat_true$E[[g]][i,]
 consensus_E[[g]][i,]
+
+###### IDEAS: 
+# ROC curve to show how threshold for posterior support affects 
+# sensitivity / specificity
+
+###### TO DO: 
+# check whether we need some correction factor on the proposal with the new 
+# swap function which also changes the missing data
+
+###### Remaining issues:
+### 1. When there are only two dates recorded and one is erroneous, 
+# it's impossisble to know which one of the two is wrong
+# so based on the consensus date 
+# we will sometimes detect an error where there is none (lack of specificity)
+# (this is the ONLY instance I can see of lack of specificity)
+# and we will sometimes NOT detect an error which exists (lack of sensitivity)
+# HOWEVER in these cases the posterior support for the consensus date is low, 
+# usually around 50% as we oscillate between error for one or the other date
+
+# When the only recorded date is erroneous (because other ones are missing), it's impossible to know that the recorded date is incorrect
+# when the erroneous date is too close to the 
+
+
 

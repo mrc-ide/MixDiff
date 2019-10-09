@@ -305,6 +305,10 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # other datasets - Marc to talk to John? 
 # outputs: proportion erroneous data - ... - nice graphs
 
+my_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
 
 consensus_D <- aug_dat_true$D
 consensus_E <- aug_dat_true$E
@@ -314,11 +318,17 @@ for(g in 1:length(consensus_D))
   {
     for(j in 1:ncol(consensus_D[[g]]))
     {
-      consensus_D[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-      consensus_E[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+      # median:
+      #consensus_D[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+      #consensus_E[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+      # mode: 
+      consensus_D[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+      consensus_E[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
     }
   }
 }
+# in the above use the median or the mode? 
+
 
 
 par(mfrow = c(4, 2))
@@ -395,9 +405,13 @@ plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_
 
 # in group 1 mostly posterior support for error is not huge
 
+
+
+### sensitivity: where we've not detected an error, what was the reason? 
+
 false_neg <- detec$false_neg
-# posterior support for erroneous entry
-lapply(1:length(detec$specificity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
+# posterior support for correct entry
+lapply(1:length(detec$sensitivity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
 
 g <- 4
 i <- 92#85#96
@@ -418,49 +432,17 @@ aug_dat_true$D[[g]][i,]
 obs_dat[[g]][i,]
 aug_dat_true$D[[g]][i,j]
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 aug_dat_true$E[[g]][i,]
 consensus_E[[g]][i,]
-# -> so this case is interesting: 1 wrong, 1 true, 2 missing, and we never manage to swap the wrong and true because of the missing... 
-# -> will need to propose swaps of true/wrong where we update the missings accordingly !!!
-
-i <- 5
-j <- 3 # 2
-aug_dat_true$D[[g]][i,]
-aug_dat_true$D[[g]][i,j]
-table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-aug_dat_true$E[[g]][i,]
-consensus_E[[g]][i,]
-# same as above
-# and of course this only happens in the last group because of having many dates recorded (you need at least three dates to get this issue)
-
-### sensitivity: where we've not detected an error, what was the reason? 
-
-false_neg <- detec$false_neg
-# posterior support for correct entry
-lapply(1:length(detec$specificity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
-
-g <- 3
-i <- 40
-j = 3
-aug_dat_true$D[[g]][i,]
-aug_dat_true$D[[g]][i,j]
-table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-aug_dat_true$E[[g]][i,]
-consensus_E[[g]][i,]
-# same issue as before
-
-g <- 4
-i <- 38
-j <- 2
-aug_dat_true$D[[g]][i,]
-aug_dat_true$D[[g]][i,j]
-table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-aug_dat_true$E[[g]][i,]
-consensus_E[[g]][i,]
+par(mfrow = c(2, 1))
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]), type = "l")
+posterior_support_list[[g]][[false_neg[[g]][which(false_neg[[g]][,1] == i),2]]][false_neg[[g]][which(false_neg[[g]][,1] == i),1]]
 
 ###### IDEAS: 
 # ROC curve to show how threshold for posterior support affects 
-# sensitivity / specificity
+# sensitivity / specificity???
 
 ###### TO DO: 
 # check whether we need some correction factor on the proposal with the new 
@@ -473,11 +455,19 @@ consensus_E[[g]][i,]
 # we will sometimes detect an error where there is none (lack of specificity)
 # (this is the ONLY instance I can see of lack of specificity)
 # and we will sometimes NOT detect an error which exists (lack of sensitivity)
-# HOWEVER in these cases the posterior support for the consensus date is low, 
+# HOWEVER in these cases the posterior support for the error status is low, 
 # usually around 50% as we oscillate between error for one or the other date
 
-# When the only recorded date is erroneous (because other ones are missing), it's impossible to know that the recorded date is incorrect
-# when the erroneous date is too close to the 
+### 2. When the only recorded date is erroneous (because other ones are missing), 
+# it's impossible to know that the recorded date is incorrect
+# so we loose sensitivity here
 
+### 3. When the erroneous date is too close to the true date, 
+# we also can't detect it
+# so again loss of sensitivity
+
+### I think in the example above 
+# ("Wed_Oct__9_110650_2019_5000iter_500burnt_10thin_")
+# this covers ALL reasons for imperfect performance
 
 

@@ -497,4 +497,51 @@ infer_directly_from <- function(g, date_idx, D, i, theta)
               CV = CV))
 }
 
-
+propose_new_D <- function(g, i, date_idx, D, theta, tol = 1e-3)
+{
+  can_be_inferred_directly_from <- infer_directly_from(g, date_idx, D, i, theta) 
+  if(length(can_be_inferred_directly_from$from_value)==0)
+  {
+    warning("can't propose a clever date with current info")
+    # to do: add some way of proposing a date - e.g. moving around current date with +/-1, or according to the error model?
+  } else
+  {
+    x <- which(!is.na(can_be_inferred_directly_from$from_value))
+    if(length(x)==1)
+    {
+      res <- sample_new_date_value(1, x, g, theta, date_idx, 
+                                   list(can_be_inferred_directly_from), 
+                                   index_dates, tol = tol)
+      return(res)
+    }else
+    {
+      tmp <- lapply(x, function(e) sample_new_date_value(1, e, g, theta, date_idx, 
+                                                         list(can_be_inferred_directly_from), 
+                                                         index_dates, tol = tol))
+      possible_dates <- tmp[[1]]$all_possible_values
+      for(ii in 2:length(tmp))
+      {
+        possible_dates <- intersect(possible_dates, tmp[[ii]]$all_possible_values)
+      }
+      if(length(possible_dates) == 0 ) 
+      {
+        warning("Incompatible data to infer from. Inferring from first date only")
+        res <- sample_new_date_value(1, x[1], g, theta, date_idx, 
+                                     can_be_inferred_directly_from, index_dates, tol = tol)
+        return(res)
+      } else
+      {
+        weights <- sapply(possible_dates, function(e) {
+          prod(sapply(tmp, function(ii) ii$probabilities[ii$all_possible_values == e]))})
+        weights <- weights / sum(weights)
+        tmp <- rmultinom(1, 1, weights)
+        inferred <- possible_dates[tmp == 1]
+        probability_inferred_value <- weights[tmp == 1] ### needs to be used for calculating the probability of proposing each value?
+        return(list(inferred = inferred,
+                    probability_inferred_value = probability_inferred_value,
+                    all_possible_values = possible_dates,
+                    probabilities = weights))
+      }
+    }
+  }
+}

@@ -447,6 +447,8 @@ posterior_support_list[[g]][[false_neg[[g]][which(false_neg[[g]][,1] == i),2]]][
 ###### TO DO: 
 # check whether we need some correction factor on the proposal with the new 
 # swap function which also changes the missing data
+# could improve move_Di by drawing directly from the mixture of delays, as we now do in swap E_i
+# add correction factor for move_Di? I think we need one 
 
 ###### Remaining issues:
 ### 1. When there are only two dates recorded and one is erroneous, 

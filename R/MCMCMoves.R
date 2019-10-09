@@ -572,15 +572,14 @@ swap_Ei <- function(i, group_idx,
   date_idx_E0_to_E1 <- date_idx[curr_E_values==0] # currently correct date
   date_idx_E1_to_E0 <- date_idx[curr_E_values==1] # currently errouneous date
   
-  #if(group_idx == 4 & i == 38)
+  # debug
+  #if(group_idx==3 & i == 88)
   #{
   #  browser()
+  #  print("old state:")
+  #  print(curr_aug_dat$E[[group_idx]][i,])
+  #  print(curr_aug_dat$D[[group_idx]][i,])
   #}
-  
-  # debug
-  #print("old state:")
-  #print(curr_aug_dat$E[[group_idx]][i,])
-  #print(curr_aug_dat$D[[group_idx]][i,])
   
   proposed_aug_dat_intermediate <- curr_aug_dat
   proposed_aug_dat_intermediate$E[[group_idx]][i,date_idx_E1_to_E0] <- 0
@@ -593,9 +592,12 @@ swap_Ei <- function(i, group_idx,
                                index_dates,
                                range_dates)
   
-  #print("intermediate state 1:")
-  #print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
-  #print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+  # if(group_idx==3 & i == 88)
+  # {
+  #   print("intermediate state 1:")
+  #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+  #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+  # }
   
   
   ### The following code is to update D where E = -1 i.e. unrecorded dates
@@ -643,10 +645,12 @@ swap_Ei <- function(i, group_idx,
     #       multiply * sample_delay
     #     
     #   }
-    #
-    #print("intermediate state 2:")
-    #print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
-    #print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+    # if(group_idx==3 & i == 88)
+    # {
+    #   print("intermediate state 2:")
+    #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+    #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+    # }
     # }
   }
   
@@ -661,9 +665,12 @@ swap_Ei <- function(i, group_idx,
                                index_dates,
                                range_dates)
   
-  #print("final proposed state:")
-  #print(proposed_aug_dat$E[[group_idx]][i,])
-  #print(proposed_aug_dat$D[[group_idx]][i,])
+  # if(group_idx==3 & i == 88)
+  # {
+  #   print("final proposed state:")
+  #   print(proposed_aug_dat$E[[group_idx]][i,])
+  #   print(proposed_aug_dat$D[[group_idx]][i,])
+  # }
   
   delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
                                       date_idx_E1_to_E0, 
@@ -687,6 +694,8 @@ swap_Ei <- function(i, group_idx,
         LL_observation_term_by_group_delay_and_indiv(
           curr_aug_dat, theta, obs_dat, group_idx, 
           date_idx_E0_to_E1, i, range_dates=range_dates) )
+  
+  #print(ratio_post_obs)
   ## should be the same as:
   # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
   
@@ -694,6 +703,7 @@ swap_Ei <- function(i, group_idx,
                             LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)) + 
     sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i) - 
           LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i))
+  #print(ratio_post_error)
   ## should be the same as:
   # LL_error_term(proposed_aug_dat, theta, obs_dat) - LL_error_term(curr_aug_dat, theta, obs_dat)
   ## LL_error_term_slow(proposed_aug_dat, theta, obs_dat) - LL_error_term_slow(curr_aug_dat, theta, obs_dat)
@@ -705,6 +715,7 @@ swap_Ei <- function(i, group_idx,
                                                  LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
     
   }
+  #print(ratio_post_delay)
   ## should be the same as:
   # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) - LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
   
@@ -727,6 +738,7 @@ swap_Ei <- function(i, group_idx,
                                                                                                                                      hyperparameters, index_dates, range_dates)[2]))
   
   p_accept <- ratio_post + logcorrection_move_from_E1_to_E0 + logcorrection_move_from_E0_to_E1
+  #print(p_accept)
   if(p_accept>0) p_accept <- 0
   
   # accept/reject step

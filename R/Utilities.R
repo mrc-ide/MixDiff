@@ -298,18 +298,28 @@ check_MCMC_settings <- function(MCMC_settings, index_dates)
 }
 
 
-infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order, 
+infer_missing_dates <- function(D, 
+                                E = NULL, 
+                                g, # index of the group
+                                e, # index of individual in that group
+                                index_dates_order, 
                                 do_not_infer_from = NULL, 
                                 theta = NULL, 
                                 tol = 1e-3)
 {
+  
+  #if(g == 3 & e == 71)
+  #{
+  #  browser()
+  #}
+  
   D_proxy <- D
   if(is.null(E))
   {
     true_missing_dates <- which(is.na(D_proxy[[g]][e,]))
   } else 
   {
-    browser()
+    #browser()
     true_missing_dates <- which(E[[g]][e,] == -1)
   }
   missing_dates <- union(true_missing_dates, do_not_infer_from)
@@ -319,74 +329,113 @@ infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order,
   #print(true_missing_dates)
   #print(other_missing_dates)
   
-  while(length(true_missing_dates)>0)
+  if(is.null(theta))
   {
-    can_be_inferred_from <- lapply(missing_dates, function(i) {
-      x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
-      from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
-      from_value <- sapply(seq_len(nrow(x)), function(k) D_proxy[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
-      rule <- sapply(seq_len(nrow(x)), function(k) if(x[k,1]==1) "before" else "after"  )
-      return(list(rule=rule,from_idx=from_idx, from_value=from_value))
-    })
-    can_be_inferred <- which(sapply(seq_len(length(missing_dates)), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
-    for(k in can_be_inferred)
+    while(length(true_missing_dates)>0)
     {
-      x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
-      if(length(x)==1)
+      ### basic inference using only order of dates
+      can_be_inferred_from <- lapply(missing_dates, function(i) {
+        x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
+        from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
+        from_value <- sapply(seq_len(nrow(x)), function(k) D_proxy[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
+        rule <- sapply(seq_len(nrow(x)), function(k) if(x[k,1]==1) "before" else "after"  )
+        return(list(rule=rule,from_idx=from_idx, from_value=from_value))
+      })
+      idx_can_be_inferred <- which(sapply(seq_len(length(missing_dates)), 
+                                          function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
+      for(k in idx_can_be_inferred)
       {
-        if(!is.null(theta))
-        {
-          which_delay <- which(paste(index_dates[[g]][1,], index_dates[[g]][2,], sep = "-") %in% 
-                                 c(paste(missing_dates[k], x, sep = "-"), paste(x, missing_dates[k], sep = "-")))
-          param_delay <- find_params_gamma(theta$mu[[k]][which_delay], CV=theta$CV[[k]][which_delay])
-          delay_max <- ceiling(qgamma(1 - tol, shape=param_delay[1], scale=param_delay[2]))
-          prob_delay <- pgamma(0:(delay_max+1), shape=param_delay[1], scale=param_delay[2])
-          weights <- diff(prob_delay)
-          delays <- 0:(delay_max)
-          if(missing_dates[k] == index_dates[[g]][,which_delay][1])
-          {
-            multiply <- 1
-          } else
-          {
-            multiply <- - 1
-          }
-          tmp <- rmultinom(1, 1, weights)
-          inferred <- can_be_inferred_from[[k]]$from_value[x] + 
-            multiply * delays[tmp == 1]
-        } else
+        x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
+        if(length(x)==1)
         {
           inferred <- can_be_inferred_from[[k]]$from_value[x]
-        }
-      }else
-      {
-        if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
-        {
-          inferred <- min(can_be_inferred_from[[k]]$from_value[x])
-        }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
-        {
-          inferred <- max(can_be_inferred_from[[k]]$from_value[x])
         }else
         {
-          max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
-          min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
-          if(min_val>max_val)
+          if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
           {
-            stop("Incompatible data to infer from. ")
+            inferred <- min(can_be_inferred_from[[k]]$from_value[x])
+          }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
+          {
+            inferred <- max(can_be_inferred_from[[k]]$from_value[x])
           }else
           {
-            inferred <- floor(median(c(min_val, max_val)))
+            max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
+            min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
+            if(min_val>max_val)
+            {
+              stop("Incompatible data to infer from. ")
+            }else
+            {
+              inferred <- floor(median(c(min_val, max_val)))
+            }
           }
         }
+        D_proxy[[g]][e,missing_dates[k]] <- inferred
       }
-      D_proxy[[g]][e,missing_dates[k]] <- inferred
+      missing_dates <- which(is.na(D_proxy[[g]][e,]))
+      true_missing_dates <- setdiff(missing_dates, other_missing_dates)
+      #print("rep")
+      #print(missing_dates)
+      #print(true_missing_dates)
+      #print(other_missing_dates)
+      #Sys.sleep(0.1)
     }
-    missing_dates <- which(is.na(D_proxy[[g]][e,]))
-    true_missing_dates <- setdiff(missing_dates, other_missing_dates)
-    #print("rep")
-    #print(missing_dates)
-    #print(true_missing_dates)
-    #print(other_missing_dates)
-    #Sys.sleep(0.1)
+  }else
+  {
+    while(length(true_missing_dates)>0)
+    {
+      ### more sophisticated inference using the delays
+      can_be_inferred_directly_from <- lapply(missing_dates, function(date_idx) {
+        infer_directly_from(g, date_idx, D_proxy, e, theta) })
+      idx_can_be_inferred_directly <- which(sapply(seq_len(length(missing_dates)), 
+                                                   function(i) length(can_be_inferred_directly_from[[i]]$from_value)>0))
+      ### TO DO: even more sophisticated allowing for sums of delays if needed
+      for(k in idx_can_be_inferred_directly)
+      {
+        #browser()
+        x <- which(!is.na(can_be_inferred_directly_from[[k]]$from_value))
+        if(length(x)==1)
+        {
+          tmp <- sample_new_date_value(k, x, g, theta, missing_dates, 
+                                       can_be_inferred_directly_from, index_dates, tol = tol)
+          inferred <- tmp$inferred
+        }else
+        {
+          #browser()
+          tmp <- lapply(x, function(e) sample_new_date_value(k, e, g, theta, missing_dates, 
+                                                             can_be_inferred_directly_from, index_dates, tol = tol))
+          possible_dates <- tmp[[1]]$all_possible_values
+          for(ii in 2:length(tmp))
+          {
+            possible_dates <- intersect(possible_dates, tmp[[ii]]$all_possible_values)
+          }
+          if(length(possible_dates) == 0 ) 
+          {
+            warning("Incompatible data to infer from. Inferring from first date only")
+            tmp <- sample_new_date_value(k, x[1], g, theta, missing_dates, 
+                                         can_be_inferred_directly_from, index_dates, tol = tol)
+            inferred <- tmp$inferred
+          } else
+          {
+            weights <- sapply(possible_dates, function(e) {
+              prod(sapply(tmp, function(ii) ii$probabilities[ii$all_possible_values == e]))})
+            weights <- weights / sum(weights)
+            tmp <- rmultinom(1, 1, weights)
+            inferred <- possible_dates[tmp == 1]
+            #probability_inferred_value <- weights[tmp == 1] ### needs to be used for calculating the probability of proposing each value?
+          }
+        }
+        D_proxy[[g]][e,missing_dates[k]] <- inferred
+      }
+      missing_dates <- which(is.na(D_proxy[[g]][e,]))
+      true_missing_dates <- setdiff(missing_dates, other_missing_dates)
+      #print("rep")
+      #print(missing_dates)
+      #print(true_missing_dates)
+      #print(other_missing_dates)
+      #Sys.sleep(0.1)
+    }
+    
   }
   
   to_replace <- is.na(D_proxy[[g]][e, ])
@@ -394,3 +443,58 @@ infer_missing_dates <- function(D, E = NULL, g, e, index_dates_order,
   
   return(D_proxy)
 }
+
+sample_new_date_value <- function(k, x, g, theta, missing_dates, can_be_inferred_directly_from, index_dates, tol = 1e-3)
+{
+  if(!is.null(theta))
+  {
+    param_delay <- find_params_gamma(can_be_inferred_directly_from[[k]]$mu[x], 
+                                     CV = can_be_inferred_directly_from[[k]]$CV[x])
+    delay_max <- ceiling(qgamma(1 - tol, shape=param_delay[1], scale=param_delay[2]))
+    prob_delay <- pgamma(0:(delay_max+1), shape=param_delay[1], scale=param_delay[2])
+    weights <- diff(prob_delay)
+    delays <- 0:(delay_max)
+    tmp <- rmultinom(1, 1, weights)
+    inferred <- can_be_inferred_directly_from[[k]]$from_value[x] + 
+      can_be_inferred_directly_from[[k]]$multiply[x] * delays[tmp == 1]
+    all_possible_values <- can_be_inferred_directly_from[[k]]$from_value[x] + 
+      can_be_inferred_directly_from[[k]]$multiply[x] * delays
+    probability_inferred_value <- weights[tmp == 1] ### needs to be used for calculating the probability of proposing each value?
+    return(list(inferred = inferred,
+                probability_inferred_value = probability_inferred_value,
+                all_possible_values = all_possible_values,
+                probabilities = weights))
+  } else
+  {
+    return(list(inferred = can_be_inferred_directly_from[[k]]$from_value[x],
+                probability_inferred_value = 1,
+                all_possible_values = can_be_inferred_directly_from[[k]]$from_value[x],
+                probabilities = 1))
+  }
+}
+
+infer_directly_from <- function(g, date_idx, D, i, theta) 
+{
+  delay_idx <- which(sapply(1:ncol(index_dates[[g]]), function(k) date_idx %in% index_dates[[g]][,k]))
+  from_idx <- sapply(delay_idx, function(k) index_dates[[g]][,k][index_dates[[g]][,k] != date_idx])
+  from_value <- D[[g]][i, from_idx]
+  mu <- theta$mu[[g]][delay_idx]
+  CV <- theta$CV[[g]][delay_idx]
+  multiply <- sapply(delay_idx, function(e)
+  {
+    if(date_idx == index_dates[[g]][,e][1]) return(-1) else return(1)
+  })
+  to_keep <- which(!is.na(from_value))
+  from_idx <- from_idx[to_keep]
+  from_value <- from_value[to_keep]
+  mu <- mu[to_keep]
+  CV <- CV[to_keep]
+  multiply <- multiply[to_keep]
+  return(list(multiply=multiply,
+              from_idx=from_idx, 
+              from_value=from_value,
+              mu = mu,
+              CV = CV))
+}
+
+

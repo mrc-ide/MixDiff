@@ -93,7 +93,7 @@ move_Di <- function(i, group_idx, date_idx,
   proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed_aug_dat_value
   
   ### instead of the above could try and use this:
-  browser()
+  #browser()
   # tmp <- propose_new_D(group_idx, i, date_idx, curr_aug_dat$D, theta, tol) # will need to add tol to parameters of main function if this works
   
   # adjust E_i accordingly

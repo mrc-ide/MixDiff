@@ -392,20 +392,18 @@ infer_missing_dates <- function(D,
       ### TO DO: even more sophisticated allowing for sums of delays if needed
       for(k in idx_can_be_inferred_directly)
       {
-        #browser()
+        # browser()
         x <- which(!is.na(can_be_inferred_directly_from[[k]]$from_value))
         if(length(x)==1)
         {
-          tmp <- sample_new_date_value(k, # or missing_dates[k]??
-                                       x, g, theta,  
-                                       can_be_inferred_directly_from, index_dates, tol = tol)
+          tmp <- sample_new_date_value(x, g, theta,  
+                                       can_be_inferred_directly_from[[k]], index_dates, tol = tol)
           inferred <- tmp$inferred
         }else
         {
           #browser()
-          tmp <- lapply(x, function(e) sample_new_date_value(k, # or missing_dates[k]??
-                                                             e, g, theta, 
-                                                             can_be_inferred_directly_from, index_dates, tol = tol))
+          tmp <- lapply(x, function(e) sample_new_date_value(e, g, theta, 
+                                                             can_be_inferred_directly_from[[k]], index_dates, tol = tol))
           possible_dates <- tmp[[1]]$all_possible_values
           for(ii in 2:length(tmp))
           {
@@ -414,8 +412,8 @@ infer_missing_dates <- function(D,
           if(length(possible_dates) == 0 ) 
           {
             warning("Incompatible data to infer from. Inferring from first date only")
-            tmp <- sample_new_date_value(k, x[1], g, theta, missing_dates, 
-                                         can_be_inferred_directly_from, index_dates, tol = tol)
+            tmp <- sample_new_date_value(x[1], g, theta, 
+                                         can_be_inferred_directly_from[[k]], index_dates, tol = tol)
             inferred <- tmp$inferred
           } else
           {
@@ -446,27 +444,34 @@ infer_missing_dates <- function(D,
   return(D_proxy)
 }
 
-sample_new_date_value <- function(k, 
-                                  x, 
-                                  g, 
-                                  theta, 
-                                  can_be_inferred_directly_from, 
+sample_new_date_value <- function(g, # group index
+                                  can_be_inferred_directly_from, # the output of function infer_directly_from
                                   index_dates, 
                                   tol = 1e-3) # used to define the tail of the CDF of the delay - anything in the tail is neglected
 {
-  if(!is.null(theta))
+  x <- which(!is.na(can_be_inferred_directly_from$from_value))
+  can_be_inferred_directly_from$multiply <- can_be_inferred_directly_from$multiply[x]
+  can_be_inferred_directly_from$from_idx <- can_be_inferred_directly_from$from_idx[x]
+  can_be_inferred_directly_from$from_value <- can_be_inferred_directly_from$from_value[x]
+  can_be_inferred_directly_from$mu <- can_be_inferred_directly_from$mu[x]
+  can_be_inferred_directly_from$CV <- can_be_inferred_directly_from$CV[x]
+  
+  if(length(x) == 1)
   {
-    param_delay <- find_params_gamma(can_be_inferred_directly_from[[k]]$mu[x], 
-                                     CV = can_be_inferred_directly_from[[k]]$CV[x])
+  
+  if(!is.null(can_be_inferred_directly_from$mu))
+  {
+    param_delay <- find_params_gamma(can_be_inferred_directly_from$mu, 
+                                     CV = can_be_inferred_directly_from$CV)
     delay_max <- ceiling(qgamma(1 - tol, shape=param_delay[1], scale=param_delay[2]))
     prob_delay <- pgamma(0:(delay_max+1), shape=param_delay[1], scale=param_delay[2])
     weights <- diff(prob_delay)
     delays <- 0:(delay_max)
     tmp <- rmultinom(1, 1, weights)
-    inferred <- can_be_inferred_directly_from[[k]]$from_value[x] + 
-      can_be_inferred_directly_from[[k]]$multiply[x] * delays[tmp == 1]
-    all_possible_values <- can_be_inferred_directly_from[[k]]$from_value[x] + 
-      can_be_inferred_directly_from[[k]]$multiply[x] * delays
+    inferred <- can_be_inferred_directly_from$from_value + 
+      can_be_inferred_directly_from$multiply * delays[tmp == 1]
+    all_possible_values <- can_be_inferred_directly_from$from_value[x] + 
+      can_be_inferred_directly_from$multiply * delays
     probability_inferred_value <- weights[tmp == 1] ### needs to be used for calculating the probability of proposing each value?
     return(list(inferred = inferred,
                 probability_inferred_value = probability_inferred_value,
@@ -474,10 +479,19 @@ sample_new_date_value <- function(k,
                 probabilities = weights))
   } else
   {
-    return(list(inferred = can_be_inferred_directly_from[[k]]$from_value[x],
+    return(list(inferred = can_be_inferred_directly_from$from_value[x],
                 probability_inferred_value = 1,
-                all_possible_values = can_be_inferred_directly_from[[k]]$from_value[x],
+                all_possible_values = can_be_inferred_directly_from$from_value[x],
                 probabilities = 1))
+  }
+    
+  } else
+  {
+    ### TO WRITE: what to do if there are several options
+    # tmp <- lapply(x, function(e) sample_new_date_value(e, g, theta,
+    #                                                     can_be_inferred_directly_from, 
+    #                                                     index_dates, tol = tol))
+    
   }
 }
 
@@ -498,8 +512,15 @@ infer_directly_from <- function(g, # group
   delay_idx <- which(sapply(1:ncol(index_dates[[g]]), function(k) date_idx %in% index_dates[[g]][,k]))
   from_idx <- sapply(delay_idx, function(k) index_dates[[g]][,k][index_dates[[g]][,k] != date_idx])
   from_value <- D[[g]][i, from_idx]
-  mu <- theta$mu[[g]][delay_idx]
-  CV <- theta$CV[[g]][delay_idx]
+  if(!is.null(theta) 
+  {
+      mu <- theta$mu[[g]][delay_idx] 
+      CV <- theta$CV[[g]][delay_idx]
+  } else 
+  {
+     mu <- NULL
+     CV <- NULL
+  }
   multiply <- sapply(delay_idx, function(e)
   {
     if(date_idx == index_dates[[g]][,e][1]) return(-1) else return(1)
@@ -517,6 +538,7 @@ infer_directly_from <- function(g, # group
               CV = CV))
 }
 
+#### THE BELOW NEEDS TO BE THOUROUGHLY CHECKED _ I DO NOT THINK IT WORKS AT THE MOMENT
 propose_new_D <- function(g, # group index
                           i, # individual index in that group
                           date_idx, # index of date for which new date is to be proposed
@@ -531,17 +553,18 @@ propose_new_D <- function(g, # group index
     # to do: add some way of proposing a date - e.g. moving around current date with +/-1, or according to the error model?
   } else
   {
+    browser()
     x <- which(!is.na(can_be_inferred_directly_from$from_value))
     if(length(x)==1)
     {
-      res <- sample_new_date_value(1, x, g, theta,
-                                   list(can_be_inferred_directly_from), 
+      res <- sample_new_date_value(x, g, theta,
+                                   can_be_inferred_directly_from, 
                                    index_dates, tol = tol)
       return(res)
     }else
     {
-      tmp <- lapply(x, function(e) sample_new_date_value(1, e, g, theta,
-                                                         list(can_be_inferred_directly_from), 
+      tmp <- lapply(x, function(e) sample_new_date_value(e, g, theta,
+                                                         can_be_inferred_directly_from, 
                                                          index_dates, tol = tol))
       possible_dates <- tmp[[1]]$all_possible_values
       for(ii in 2:length(tmp))
@@ -551,7 +574,7 @@ propose_new_D <- function(g, # group index
       if(length(possible_dates) == 0 ) 
       {
         warning("Incompatible data to infer from. Inferring from first date only")
-        res <- sample_new_date_value(1, x[1], g, theta, can_be_inferred_directly_from, index_dates, tol = tol)
+        res <- sample_new_date_value(x[1], g, theta, can_be_inferred_directly_from, index_dates, tol = tol)
         return(res)
       } else
       {

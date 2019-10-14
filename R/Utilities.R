@@ -517,7 +517,12 @@ infer_directly_from <- function(g, # group
               CV = CV))
 }
 
-propose_new_D <- function(g, i, date_idx, D, theta, tol = 1e-3)
+propose_new_D <- function(g, # group index
+                          i, # individual index in that group
+                          date_idx, # index of date for which new date is to be proposed
+                          D, # current data
+                          theta, # current parameter values
+                          tol = 1e-3) # tolerance, used to compute the tail of the CDF of the delays - anything in the tail is neglected
 {
   can_be_inferred_directly_from <- infer_directly_from(g, date_idx, D, i, theta) 
   if(length(can_be_inferred_directly_from$from_value)==0)

@@ -901,8 +901,11 @@ move_lognormal <- function(what=c("mu","CV"), group_idx, delay_idx, sdlog,
 #'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
 #' }
 #' 
-#' The function performs the move, using a Gibbs sampler. 
-#' A new value of parameter zeta is drawn from its marginal posterior distribution, that is a beta distribution with parameters: 
+#' The function performs the move, using a Gibbs sampler, which we can use because 
+#' we use a bernoulli likelihood for the presence/absence of error for each date, 
+#' and we chose a conjugate beta prior for the probability of erroneous entry. 
+#' A new value of parameter zeta is drawn from its marginal posterior distribution, 
+#' which is therefore a beta distribution with parameters: 
 #' \itemize{
 #'  \item{\code{first shape parameter}}{: Equal to \code{hyperparameters$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
 #'  \item{\code{second shape parameter}}{: Equal to \code{hyperparameters$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}

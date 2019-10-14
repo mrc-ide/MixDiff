@@ -58,7 +58,7 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3),
 
 The function performs the move as follows, using a Metropolis-Hastings algorithm. 
 For the parameter to be moved, a new value is drawn from a lognormal distribution with parameters \code{meanlog} equals the log of the current parameter value, and \code{sdlog=sdlog}.
-The new parameter set is then accepted with probability given by the ratio of the posterior values at the new parameter set and the old parameter set, multiplie by a correction factor to reflect the non-symetrical nature of the move.
+The new parameter set is then accepted with probability given by the ratio of the posterior values at the new parameter set and the old parameter set, multiplied by a correction factor to reflect the non-symetrical nature of the move.
 }
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###

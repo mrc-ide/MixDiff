@@ -925,7 +925,11 @@ move_zeta_gibbs <- function(aug_dat,
   number_of_recorded_dates <- tmp[2]
   
   # drawing from the marginal posterior distribution directly
-  new_zeta <- rbeta(1, shape1=hyperparameters$shape1_prob_error + number_of_errors, shape2 = hyperparameters$shape2_prob_error + number_of_recorded_dates-number_of_errors)
+  new_zeta <- rbeta(1, 
+                    shape1 = hyperparameters$shape1_prob_error + 
+                      number_of_errors, 
+                    shape2 = hyperparameters$shape2_prob_error + 
+                      number_of_recorded_dates - number_of_errors)
   
   # therefore accept automatically 
   new_theta <- curr_theta

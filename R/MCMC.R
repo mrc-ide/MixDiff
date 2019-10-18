@@ -136,15 +136,15 @@ RunMCMC <- function(obs_dat,
     {
       for(g in seq_len(n_groups))
       {
-        #print(g)
+        #print(paste("group", g))
         for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
-          #print(j)
+          #print(paste("delay", j))
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(n_groups_to_update))
           {
-            #print(i)
+            #print(paste("individual", i))
             tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
                             curr_theta, 

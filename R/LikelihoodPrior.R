@@ -2,6 +2,7 @@
 ### likelihood function ###
 ###############################################
 
+# probability of making a specific observation
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
@@ -34,6 +35,7 @@ LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
 
+# probability of making an error (whatever the error)
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx)
 {
   res <- matrix(0, length(indiv_idx), length(date_idx))

@@ -255,10 +255,28 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
                                                 obs_dat, 
                                                 hyperparameters, 
                                                 index_dates,
-                                                range_dates)
+                                                range_dates, 
+                                                tol = 1e-3)
 {
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
+  
+  # which delays can this date be derived from
+  can_be_inferred_directly_from <- infer_directly_from(group_idx, date_idx, 
+                                                       proposed_aug_dat$D, i, theta) 
+  # use this information to propose a clever D conditional on the current relevant delays parameters
+  # we only use this to check what would be the probability of the reverse move - to compute the correction factor correctly in MH
+  proposed <- sample_new_date_value(group_idx, 
+                                    can_be_inferred_directly_from, 
+                                    index_dates, tol = tol)
+  
+  if(any(proposed$all_possible_values == curr_aug_dat_value))
+  {
+    prob_reverse_move <- proposed$probabilities[proposed$all_possible_values == curr_aug_dat_value]
+  } else
+  {
+    prob_reverse_move <- 0
+  }
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
@@ -276,35 +294,13 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
-  # this move is NOT symetrical --> correction needed
-  x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
-  which_delay <- x[,2]
-  from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
-  from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
+  prob_cur_to_new <- 1 # going to E0 there is only one choice
+  prob_new_to_cur <- prob_reverse_move
+  #correction <- log(prob_new_to_cur) - log(prob_cur_to_new)
+  correction <- log(prob_new_to_cur)
+  #print(correction)
   
-  find_correction_factor_2 <- function(e)
-  {
-    if(date_idx<from_idx[e])
-    {
-      delay <- from_value[e] - curr_aug_dat_value
-      forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i,date_idx]
-    }else
-    {
-      delay <- curr_aug_dat_value - from_value[e]
-      forbidden_delay <- obs_dat[[group_idx]][i,date_idx] - from_value[e]
-    }
-    
-    param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay[e]], CV=theta$CV[[group_idx]][which_delay][e])
-    K <- diff(pgamma(delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])) / (1 - diff(pgamma(forbidden_delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])))
-    return(K)
-  }
-  K <- mean(sapply(1:length(which_delay), find_correction_factor_2))
-  
-  #log_p_move_from_old_to_new <- log(1) 
-  #log_p_move_from_new_to_old <- log(1) + log(K)
-  logcorrection <- + log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
-  
-  return(c( ratio_post,  logcorrection))
+  return(c( ratio_post,  correction))
 }
 
 #' Performs one iteration of an MCMC move for the augmented data representing the indicator of error in observations

@@ -215,12 +215,16 @@ RunMCMC <- function(obs_dat,
     {
       for(g in seq_len(n_groups))
       {
-        #print(g)
+        # print(paste("group",g))
         candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
         #print(candidates_for_swap)
         for(i in candidates_for_swap)
         {
           #print(i)
+          #if(k == 84 & g == 3 & i == 78)
+          #{
+          #  browser()
+          #}
           tmp <- swap_Ei(i, g,  
                   curr_aug_dat,
                   curr_theta, 

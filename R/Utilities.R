@@ -413,6 +413,14 @@ infer_missing_dates <- function(D,
   return(D_proxy)
 }
 
+# for a given group, date and individual, this proposes a new value for that date. 
+# NOTE this assumes that there are parameters available to infer delays from
+# needs to first get can_be_inferred_directly_from from infer_directly_from function
+# The function returns a list containing:
+# - inferred: the proposed value
+# - probability_inferred_value the probability this specific value was proposed (rather than other values)
+# all_possible_values: all values which could have been proposed,
+# probabilities: probabilities of all values which could have been proposed
 sample_new_date_value <- function(g, # group index
                                   can_be_inferred_directly_from, # the output of function infer_directly_from
                                   index_dates, 

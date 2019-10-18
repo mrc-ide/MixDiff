@@ -180,27 +180,47 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
   }else
   {
     while(proposed$inferred == obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
-      {
-        proposed <- sample_new_date_value(group_idx, 
-                                          can_be_inferred_directly_from, 
-                                          index_dates, tol = tol)
-      }
-      proposed$probability_cur_value <- 1 # because going back to E0 there is only one choice
-      
-      return(proposed)
+    {
+      proposed <- sample_new_date_value(group_idx, 
+                                        can_be_inferred_directly_from, 
+                                        index_dates, tol = tol)
+    }
+    proposed$probability_cur_value <- 1 # because going back to E0 there is only one choice
+    
+    return(proposed)
   }
 }
 
 compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx, 
                                                 curr_aug_dat, proposed_aug_dat,
-                                                prob_move,
+                                                prob_move = NULL,
                                                 theta, 
                                                 obs_dat, 
                                                 hyperparameters, 
                                                 index_dates,
-                                                range_dates=NULL)
+                                                range_dates=NULL, 
+                                                tol = 1e-3)
 {
   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
+  
+  if(is.null(prob_move))
+  {
+    tmp <- propose_move_from_E0_to_E1(i, group_idx, date_idx, 
+                                      curr_aug_dat,
+                                      theta, 
+                                      obs_dat, 
+                                      hyperparameters, 
+                                      index_dates,
+                                      range_dates, 
+                                      tol)
+    if(any(tmp$all_possible_values == proposed_aug_dat_value))
+    {
+      prob_move <- tmp$probabilities[tmp$all_possible_values == proposed_aug_dat_value]
+    } else
+    {
+      prob_move <- 0
+    }
+  }
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
@@ -560,6 +580,8 @@ swap_Ei <- function(i, group_idx,
   #  print(curr_aug_dat$D[[group_idx]][i,])
   #}
   
+  ###### First we move all E = 1 to E = 0 ######
+  
   proposed_aug_dat_intermediate <- curr_aug_dat
   proposed_aug_dat_intermediate$E[[group_idx]][i,date_idx_E1_to_E0] <- 0
   proposed_aug_dat_intermediate$D[[group_idx]][i,date_idx_E1_to_E0] <- 
@@ -571,6 +593,20 @@ swap_Ei <- function(i, group_idx,
                                index_dates,
                                range_dates)
   
+  # for the correction factor
+  log_prob_move <- 0
+  log_prob_reverse_move <- sum(sapply(1:length(date_idx_E1_to_E0), function(kk) 
+  {
+    tmp <- compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx_E1_to_E0[kk],
+                                               proposed_aug_dat_intermediate, # the one we would be moving from 
+                                               curr_aug_dat, # the one we would be moving to
+                                               prob_move = NULL, # will be calculated inside function
+                                               theta, obs_dat, hyperparameters, 
+                                               index_dates,
+                                               range_dates)
+    return(-tmp[2])
+  }))
+  
   # if(group_idx==3 & i == 88)
   # {
   #   print("intermediate state 1:")
@@ -578,6 +614,7 @@ swap_Ei <- function(i, group_idx,
   #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
   # }
   
+  ###### Then we update the missing values, if any, based on the data we just switched to 0 and ignoring the other ones (which will be switched to 1 later) ######
   
   ### The following code is to update D where E = -1 i.e. unrecorded dates
   ### linked to the date we've just changed
@@ -585,6 +622,7 @@ swap_Ei <- function(i, group_idx,
     proposed_aug_dat_intermediate$E[[group_idx]][i,] == -1)
   if(length(missing_to_update)>0)
   {
+    #browser()
     proposed_aug_dat_intermediate$D <- 
       infer_missing_dates(proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
@@ -635,28 +673,52 @@ swap_Ei <- function(i, group_idx,
   
   #browser()
   
+  # for the correction factor ### TO DO: ADD THE CORRECT VALUES FOR CORRECTION FACTOR HERE
+  log_prob_move <- c(log_prob_move, 0)
+  log_prob_reverse_move <- c(log_prob_reverse_move, 0)
+  
+  ###### Finally we move the dates which were initially at E = 0 to E = 1 ######
+  
   proposed_aug_dat <- proposed_aug_dat_intermediate
   proposed_aug_dat$E[[group_idx]][i,date_idx_E0_to_E1] <- 1
-  
-  tmp_move_from_E0_to_E1 <- NULL
+
   for(kk in date_idx_E0_to_E1)
   {
-    tmp <- propose_move_from_E0_to_E1(i, group_idx, kk, 
-                                                         proposed_aug_dat_intermediate,
-                                                         theta, 
-                                                         obs_dat, 
-                                                         hyperparameters, 
-                                                         index_dates,
-                                                         range_dates)
-    if(is.null(tmp))
+    proposed <- propose_move_from_E0_to_E1(i, group_idx, kk, 
+                                           proposed_aug_dat_intermediate,
+                                           theta, 
+                                           obs_dat, 
+                                           hyperparameters, 
+                                           index_dates,
+                                           range_dates)
+    
+    if(!is.null(proposed))
     {
-      proposed_aug_dat$D[[group_idx]][i,kk] <- tmp$inferred
-      prob_move_E0_to_E1[kk] <- tmp$probability_inferred_value
-    }else # reject
+      proposed_aug_dat$D[[group_idx]][i,kk] <- proposed$inferred
+    } else
     {
-      return(list(new_aug_dat=curr_aug_dat, accept=0))
+      proposed_aug_dat$D[[group_idx]][i,kk] <- NULL
     }
   }
+  
+  # for the correction factor 
+  if(any(is.null(proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1])))
+  {
+    log_prob_move <- log_prob_move(log_prob_move, -Inf)
+  } else
+  {
+    log_prob_move <- c(log_prob_move, sum(sapply(1:length(date_idx_E0_to_E1), function(kk) 
+    {
+      tmp <- compute_p_accept_move_from_E1_to_E0(i, group_idx, date_idx_E0_to_E1[kk],
+                                                 proposed_aug_dat, # the one we would be moving from 
+                                                 proposed_aug_dat_intermediate, # the one we would be moving to
+                                                 theta, obs_dat, hyperparameters, 
+                                                 index_dates,
+                                                 range_dates)
+      return(tmp[2])
+    })))
+  }
+  log_prob_reverse_move <- c(log_prob_reverse_move, 0) # as for the reverse move we go back to observed data E = 0 so only one choice
   
   # if(group_idx==3 & i == 88)
   # {
@@ -719,19 +781,13 @@ swap_Ei <- function(i, group_idx,
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
   # This is not a symetric move so need a correction factor
-  
-  logcorrection_move_from_E1_to_E0 <- sum(sapply(seq_len(length(date_idx_E1_to_E0)), function(e) compute_p_accept_move_from_E1_to_E0(i, group_idx, date_idx_E1_to_E0[e], 
-                                                                                                                                     curr_aug_dat, proposed_aug_dat_intermediate, 
-                                                                                                                                     theta, obs_dat, 
-                                                                                                                                     hyperparameters, index_dates, range_dates)[2]))
-  
-  logcorrection_move_from_E0_to_E1 <- sum(sapply(seq_len(length(date_idx_E0_to_E1)), function(e) compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx_E0_to_E1[e], 
-                                                                                                                                     proposed_aug_dat_intermediate, proposed_aug_dat, 
-                                                                                                                                     prob_move = prob_move_E0_to_E1[e], 
-                                                                                                                                     theta, obs_dat, 
-                                                                                                                                     hyperparameters, index_dates, range_dates)[2]))
-  
-  p_accept <- ratio_post + logcorrection_move_from_E1_to_E0 + logcorrection_move_from_E0_to_E1
+  #print(paste("group", group_idx))
+  #print(paste("individual", i))
+  #if(group_idx == 4 & i ==21)
+  #{
+  #  browser()
+  #}
+  p_accept <- ratio_post + sum(log_prob_reverse_move) - sum(log_prob_move)
   #print(p_accept)
   if(p_accept>0) p_accept <- 0
   

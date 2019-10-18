@@ -144,7 +144,7 @@ RunMCMC <- function(obs_dat,
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(n_groups_to_update))
           {
-            #print(paste("individual", i))
+            #print(paste("individual", to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))]))
             tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
                             curr_theta, 
@@ -176,14 +176,15 @@ RunMCMC <- function(obs_dat,
     {
       for(g in seq_len(n_groups))
       {
-        #print(g)
+        #print(paste("group", g))
         for(j in seq_len(ncol(curr_aug_dat$E[[g]])))
         {
-          #print(j)
+          #print(paste("delay", j))
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Ei_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- length(to_update) 
           for(i in seq_len(n_groups_to_update))
           {
+            #print(paste("individual", to_update[i]))
             tmp <- move_Ei (to_update[i], g, j,
                             curr_aug_dat,
                             curr_theta,
@@ -215,16 +216,16 @@ RunMCMC <- function(obs_dat,
     {
       for(g in seq_len(n_groups))
       {
-        # print(paste("group",g))
+        #print(paste("group",g))
         candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
         #print(candidates_for_swap)
         for(i in candidates_for_swap)
         {
-          #print(i)
-          #if(k == 84 & g == 3 & i == 78)
-          #{
-          #  browser()
-          #}
+          # print(paste("individual", i))
+          # if(k == 1 & g == 2 & i == 13)
+          # {
+          #   browser()
+          # }
           tmp <- swap_Ei(i, g,  
                   curr_aug_dat,
                   curr_theta, 

@@ -188,6 +188,7 @@ lposterior_total(aug_dat_true, theta_true, obs_dat, hyperparameters, index_dates
 
 # posterior of current aug data and true parameters
 lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+#lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], MCMCres$theta_chain[[length(MCMCres$theta_chain)]], obs_dat, hyperparameters, index_dates, range_dates=NULL)
 
 # highest posterior reached by MCMC chain
 max(MCMCres$logpost_chain)

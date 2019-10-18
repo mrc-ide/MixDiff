@@ -136,7 +136,7 @@ move_Di <- function(i, group_idx, date_idx,
     
   }else # reject because the algorithm would never have proposed current value...
   {
-    print(paste("group", group_idx, "individual", i))
+    #print(paste("group", group_idx, "individual", i))
     new_aug_dat <- curr_aug_dat
     accept <- 0
   }
@@ -161,67 +161,49 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                        obs_dat, 
                                        hyperparameters, 
                                        index_dates,
-                                       range_dates=NULL)
+                                       range_dates=NULL, 
+                                       tol = 1e-3)
 {
+  # which delays can this date be derived from
+  can_be_inferred_directly_from <- infer_directly_from(group_idx, date_idx, 
+                                                       curr_aug_dat$D, i, theta) 
   
-  # which delays is this particular date involved in?
-  x <- lapply(seq_len(length(date_idx)), function(e) which(index_dates[[group_idx]] == date_idx[e], arr.ind = TRUE))
-  which_delay <- lapply(seq_len(length(date_idx)), function(e) x[[e]][,2])
-  from_idx <- lapply(seq_len(length(date_idx)), function(e) sapply(seq_len(nrow(x[[e]])), function(k) index_dates[[group_idx]][-x[[e]][k,1],x[[e]][k,2]] ))
-  from_value <- lapply(seq_len(length(date_idx)), function(e) sapply(seq_len(nrow(x[[e]])), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[[e]][k,1],x[[e]][k,2]]]))
+  # use this information to propose a clever D conditional on the current relevant delays parameters
+  proposed <- sample_new_date_value(group_idx, 
+                                    can_be_inferred_directly_from, 
+                                    index_dates, tol = tol)
   
-  # if several delays involved, choose one at random
-  tmp <- lapply(seq_len(length(date_idx)), function(e) sample(seq_len(length(from_idx[[e]])), 1))
-  which_delay <- lapply(seq_len(length(date_idx)), function(e) which_delay[[e]][tmp[[e]]])
-  from_idx <- sapply(seq_len(length(date_idx)), function(e) from_idx[[e]][tmp[[e]]])
-  from_value <- sapply(seq_len(length(date_idx)), function(e) from_value[[e]][tmp[[e]]])
-  param_delay <- lapply(seq_len(length(date_idx)), function(e) find_params_gamma(theta$mu[[group_idx]][which_delay[[e]]], CV=theta$CV[[group_idx]][which_delay[[e]]]))
-  
-  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
-  
-  get_one_proposed_aug_value <- function(e)
+  if(length(proposed$all_possible_values)<2 & proposed$inferred == obs_dat[[group_idx]][i,date_idx]) # then the only available date to draw from is the observed one and we can't propose this move from E0 to E1
   {
-    sample_delay <- round(rgamma(1, shape=param_delay[[e]][1], scale=param_delay[[e]][2])) 
-    
-    if(date_idx[e]<from_idx[e])
-    {
-      proposed_aug_dat_value <- from_value[e] - sample_delay
-    }else
-    {
-      proposed_aug_dat_value <- from_value[e] + sample_delay
-    }
-    while(proposed_aug_dat_value==obs_dat[[group_idx]][i,date_idx[e]]) ### whilst we haven't moved to a place where E=1, try again
-    {
-      sample_delay <- round(rgamma(1, shape=param_delay[[e]][1], scale=param_delay[[e]][2]))
-      if(date_idx[e]<from_idx[e])
+    # reject 
+    return(NULL)
+  }else
+  {
+    while(proposed$inferred == obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
       {
-        proposed_aug_dat_value <- from_value[e] - sample_delay
-      }else
-      {
-        proposed_aug_dat_value <- from_value[e] + sample_delay
+        proposed <- sample_new_date_value(group_idx, 
+                                          can_be_inferred_directly_from, 
+                                          index_dates, tol = tol)
       }
-    }
-    return(proposed_aug_dat_value)
+      proposed$probability_cur_value <- 1 # because going back to E0 there is only one choice
+      
+      return(proposed)
   }
-  
-  proposed_aug_dat_value <- sapply(seq_len(length(date_idx)), get_one_proposed_aug_value)
-  
-  return(proposed_aug_dat_value)
 }
 
 compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx, 
                                                 curr_aug_dat, proposed_aug_dat,
+                                                prob_move,
                                                 theta, 
                                                 obs_dat, 
                                                 hyperparameters, 
                                                 index_dates,
                                                 range_dates=NULL)
 {
-  
   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
   
   # calculates probability of acceptance
-  delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
+  delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
     LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
@@ -242,34 +224,13 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
   # }
   
   # this move is NOT symetrical --> correction needed
-  x <- which(index_dates[[group_idx]]==date_idx, arr.ind = TRUE)
-  which_delay <- x[,2]
-  from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k,1],x[k,2]] )
-  from_value <- sapply(seq_len(nrow(x)), function(k) curr_aug_dat$D[[group_idx]][i,index_dates[[group_idx]][-x[k,1],x[k,2]]])
+  prob_cur_to_new <- prob_move
+  prob_new_to_cur <- 1 # going back to E0 there is only one choice
+  #correction <- log(prob_new_to_cur) - log(prob_cur_to_new)
+  correction <- - log(prob_cur_to_new)
+  #print(correction)
   
-  find_correction_factor <- function(e)
-  {
-    if(date_idx<from_idx[e])
-    {
-      delay <- from_value[e] - proposed_aug_dat_value
-      forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i,date_idx]
-    }else
-    {
-      delay <- proposed_aug_dat_value - from_value[e]
-      forbidden_delay <- obs_dat[[group_idx]][i,date_idx] - from_value[e]
-    }
-    
-    param_delay <- find_params_gamma(theta$mu[[group_idx]][which_delay[e]], CV=theta$CV[[group_idx]][which_delay][e])
-    K <- diff(pgamma(delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])) / (1 - diff(pgamma(forbidden_delay+c(-0.5,0.5), shape=param_delay[1], scale=param_delay[2])))
-    return(K)
-  }
-  K <- mean(sapply(1:length(which_delay), find_correction_factor))
-  
-  #log_p_move_from_old_to_new <- log(1) + log(K)
-  #log_p_move_from_new_to_old <- log(1)
-  logcorrection <- - log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
-  
-  return(c(ratio_post, logcorrection))
+  return(c(ratio_post, correction))
 }
 
 propose_move_from_E1_to_E0 <- function(i, group_idx, date_idx, 
@@ -397,6 +358,10 @@ move_Ei <- function(i, group_idx, date_idx,
                     index_dates,
                     range_dates=NULL) 
 {
+  if(length(date_idx)>1)
+  {
+    print("potential issues move_Ei trying to move several dates at once")
+  }
   if(length(i)>1) 
   {
     i <- i[1]
@@ -415,36 +380,46 @@ move_Ei <- function(i, group_idx, date_idx,
     
     if(curr_E_value==0)# moving from E=0 to E=1
     {
+      proposed <- propose_move_from_E0_to_E1(i, group_idx, date_idx, 
+                                             curr_aug_dat,
+                                             theta, 
+                                             obs_dat, 
+                                             hyperparameters, 
+                                             index_dates,
+                                             range_dates)
       
-      proposed_aug_dat$D[[group_idx]][i,date_idx] <- propose_move_from_E0_to_E1(i, group_idx, date_idx, 
-                                                                                curr_aug_dat,
-                                                                                theta, 
-                                                                                obs_dat, 
-                                                                                hyperparameters, 
-                                                                                index_dates,
-                                                                                range_dates)
-      
-      tmp <- compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx, 
-                                                 curr_aug_dat, proposed_aug_dat,
-                                                 theta, 
-                                                 obs_dat, 
-                                                 hyperparameters, 
-                                                 index_dates,
-                                                 range_dates)
-      if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp) 
-      if(p_accept>0) p_accept <- 0
-      
-      # accept/reject step
-      tmp <- log(runif(1))
-      if(tmp<p_accept) # accepting with a certain probability
+      if(!is.null(proposed))
       {
-        new_aug_dat <- proposed_aug_dat
-        accept <- 1
-      }else # reject
+        proposed_aug_dat$D[[group_idx]][i,date_idx] <- proposed$inferred
+        
+        tmp <- compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx, 
+                                                   curr_aug_dat, proposed_aug_dat,
+                                                   prob_move = proposed$probability_inferred_value,
+                                                   theta, 
+                                                   obs_dat, 
+                                                   hyperparameters, 
+                                                   index_dates,
+                                                   range_dates)
+        
+        if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp) 
+        if(p_accept>0) p_accept <- 0
+        
+        # accept/reject step
+        tmp <- log(runif(1))
+        if(tmp<p_accept) # accepting with a certain probability
+        {
+          new_aug_dat <- proposed_aug_dat
+          accept <- 1
+        }else # reject
+        {
+          new_aug_dat <- curr_aug_dat
+          accept <- 0
+        }	
+      } else # reject
       {
         new_aug_dat <- curr_aug_dat
         accept <- 0
-      }	
+      }
       
       # return a list of size 2 where 
       #		the first value is the new augmented data set in the chain
@@ -663,16 +638,30 @@ swap_Ei <- function(i, group_idx,
     # }
   }
   
+  #browser()
+  
   proposed_aug_dat <- proposed_aug_dat_intermediate
   proposed_aug_dat$E[[group_idx]][i,date_idx_E0_to_E1] <- 1
-  proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1] <- 
-    propose_move_from_E0_to_E1(i, group_idx, date_idx_E0_to_E1, 
-                               proposed_aug_dat_intermediate,
-                               theta, 
-                               obs_dat, 
-                               hyperparameters, 
-                               index_dates,
-                               range_dates)
+  
+  tmp_move_from_E0_to_E1 <- NULL
+  for(kk in date_idx_E0_to_E1)
+  {
+    tmp <- propose_move_from_E0_to_E1(i, group_idx, kk, 
+                                                         proposed_aug_dat_intermediate,
+                                                         theta, 
+                                                         obs_dat, 
+                                                         hyperparameters, 
+                                                         index_dates,
+                                                         range_dates)
+    if(is.null(tmp))
+    {
+      proposed_aug_dat$D[[group_idx]][i,kk] <- tmp$inferred
+      prob_move_E0_to_E1[kk] <- tmp$probability_inferred_value
+    }else # reject
+    {
+      return(list(new_aug_dat=curr_aug_dat, accept=0))
+    }
+  }
   
   # if(group_idx==3 & i == 88)
   # {
@@ -743,6 +732,7 @@ swap_Ei <- function(i, group_idx,
   
   logcorrection_move_from_E0_to_E1 <- sum(sapply(seq_len(length(date_idx_E0_to_E1)), function(e) compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx_E0_to_E1[e], 
                                                                                                                                      proposed_aug_dat_intermediate, proposed_aug_dat, 
+                                                                                                                                     prob_move = prob_move_E0_to_E1[e], 
                                                                                                                                      theta, obs_dat, 
                                                                                                                                      hyperparameters, index_dates, range_dates)[2]))
   

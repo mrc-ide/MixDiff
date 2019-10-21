@@ -327,11 +327,12 @@ RunMCMC <- function(obs_dat,
   ###############################################
   
   accept_prob <- list(
-    D_moves=n_accepted_D_moves / n_proposed_D_moves,
-    E_moves=n_accepted_E_moves / n_proposed_E_moves,
-    mu_moves=lapply(seq_len(n_groups), function(g) n_accepted_mu_moves[[g]] / n_proposed_mu_moves[[g]]),
-    CV_moves=lapply(seq_len(n_groups), function(g) n_accepted_CV_moves[[g]] / n_proposed_CV_moves[[g]]),
-    zeta_moves=1)
+    D_moves = n_accepted_D_moves / n_proposed_D_moves,
+    E_moves = n_accepted_E_moves / n_proposed_E_moves,
+    E_swaps = n_accepted_swapE_moves / n_proposed_swapE_moves,
+    mu_moves = lapply(seq_len(n_groups), function(g) n_accepted_mu_moves[[g]] / n_proposed_mu_moves[[g]]),
+    CV_moves = lapply(seq_len(n_groups), function(g) n_accepted_CV_moves[[g]] / n_proposed_CV_moves[[g]]),
+    zeta_moves = 1)
   
   ###############################################
   ### Return list of outputs of interest ###

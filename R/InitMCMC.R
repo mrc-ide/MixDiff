@@ -68,6 +68,10 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
     D[[g]] <- obs_dat[[g]]
     for(e in seq_len(nrow(D[[g]])))
     {
+      # if(g==4 & e == 5)
+      # {
+      #   browser()
+      # }
       #print(paste("individual", e))
       #print(D[[g]][e,])
       # first deal with incompatible dates
@@ -188,7 +192,7 @@ initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) #
 {
   n_groups <- length(aug_dat$D)
   n_dates <- sapply(aug_dat$D, ncol)
-    
+  
   ### mean and std of distribution of various delays, by group
   ### we use a the starting point the observed mean and std of each delay in each group
   obs_delta <- compute_delta(aug_dat$D, index_dates)

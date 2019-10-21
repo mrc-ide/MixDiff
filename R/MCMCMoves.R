@@ -581,14 +581,14 @@ swap_Ei <- function(i, group_idx,
   date_idx_E1_to_E0 <- date_idx[curr_E_values==1] # currently errouneous date
   
   # debug
-  #if(group_idx==3 & i == 88)
-  #{
-  #  browser()
+  # if(group_idx==4 & i == 38)
+  # {
+  #  #browser()
   #  print("old state:")
   #  print(curr_aug_dat$E[[group_idx]][i,])
   #  print(curr_aug_dat$D[[group_idx]][i,])
-  #}
-  
+  # }
+
   ###### First we move all E = 1 to E = 0 ######
   
   proposed_aug_dat_intermediate <- curr_aug_dat
@@ -617,12 +617,13 @@ swap_Ei <- function(i, group_idx,
     return(-tmp[2])
   }))
   
-  # if(group_idx==3 & i == 88)
-  # {
-  #   print("intermediate state 1:")
-  #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
-  #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
-  # }
+   # if(group_idx==4 & i == 38)
+   # {
+   #   print("intermediate state 1:")
+   #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+   #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+   #   #browser()
+   # }
   
   ###### Then we update the missing values, if any, based on the data we just switched to 0 and ignoring the other ones (which will be switched to 1 later) ######
   
@@ -634,17 +635,25 @@ swap_Ei <- function(i, group_idx,
   {
     #browser()
     tmp <- 
-      infer_missing_dates(proposed_aug_dat_intermediate$D, 
+      infer_missing_dates(D = proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
                           group_idx, i, index_dates_order, 
                           do_not_infer_from = date_idx_E0_to_E1, 
                           theta, tol = tol)
-    proposed_aug_dat_intermediate$D <- tmp$D 
+    proposed_aug_dat_intermediate$D[[group_idx]][i,missing_to_update] <- tmp$D[[group_idx]][i,missing_to_update] 
     prob <- tmp$prob
   }else
   {
     prob <- 1
   }
+  
+  # if(group_idx==4 & i == 38)
+  # {
+  #   print("intermediate state 2:")
+  #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+  #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+  #   #browser()
+  # }
   
   # for the correction factor ### TO DO: ADD THE CORRECT VALUES FOR CORRECTION FACTOR HERE
   log_prob_move <- c(log_prob_move, log(prob))
@@ -695,13 +704,21 @@ swap_Ei <- function(i, group_idx,
     })))
   }
   
+  # if(group_idx==4 & i == 38)
+  # {
+  #   print("final proposed state:")
+  #   print(proposed_aug_dat$E[[group_idx]][i,])
+  #   print(proposed_aug_dat$D[[group_idx]][i,])
+  #   browser()
+  # }
+  
   # probability of reverse move for missing data
   ### TO COMPUTE
   if(length(missing_to_update)>0)
   {
     #browser()
     tmp <- 
-      infer_missing_dates(proposed_aug_dat$D, 
+      infer_missing_dates(proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
                           group_idx, i, index_dates_order, 
                           do_not_infer_from = date_idx_E1_to_E0, 
@@ -717,12 +734,13 @@ swap_Ei <- function(i, group_idx,
   # probability of reverse move for E0 to E1
   log_prob_reverse_move <- c(log_prob_reverse_move, 0) # as for the reverse move we go back to observed data E = 0 so only one choice
   
-  # if(group_idx==3 & i == 88)
-  # {
-  #   print("final proposed state:")
-  #   print(proposed_aug_dat$E[[group_idx]][i,])
-  #   print(proposed_aug_dat$D[[group_idx]][i,])
-  # }
+   # if(group_idx==4 & i == 38)
+   # {
+   #   print("final proposed state before calculation of p_accept:")
+   #   print(proposed_aug_dat$E[[group_idx]][i,])
+   #   print(proposed_aug_dat$D[[group_idx]][i,])
+   #   browser()
+   # }
   
   delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
                                       date_idx_E1_to_E0, 
@@ -765,7 +783,6 @@ swap_Ei <- function(i, group_idx,
   {
     ratio_post_delay <- ratio_post_delay + sum(LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
                                                  LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
-    
   }
   #print(ratio_post_delay)
   ## should be the same as:
@@ -792,24 +809,33 @@ swap_Ei <- function(i, group_idx,
   #print(p_accept)
   if(p_accept>0) p_accept <- 0
   
+  # if(group_idx==4 & i == 38)
+  # {
+  #   browser()
+  # }
+  
   # accept/reject step
   tmp <- log(runif(1))
   if(tmp<p_accept) # accepting with a certain probability
   {
     new_aug_dat <- proposed_aug_dat
     accept <- 1
-    #if(group_idx == 4 && i == 9)
-    #{
-    #  print("accepted")
-    #}
+    # if(group_idx == 4 && i == 5)
+    # {
+    #   print("accepted")
+    # }
+    # if(length(missing_to_update)>0)
+    # {
+    #   print("accepted swap with missing values")
+    # }
   }else # reject
   {
     new_aug_dat <- curr_aug_dat
     accept <- 0
-    #if(group_idx == 4 && i == 9)
-    #{
-    #  print("rejected")
-    #}
+    # if(group_idx == 4 && i == 5)
+    # {
+    #   print("rejected")
+    # }
   }	
   
   # return a list of size 2 where 

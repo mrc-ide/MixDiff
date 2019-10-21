@@ -98,7 +98,7 @@ system.time({
 #Rprof(NULL)
 #summaryRprof()
 # 2 Dec --> n_iter = 5000, burnin = 500, record_every=10 takes 596secs
-
+# 21 Oct --> n_iter = 5000, burnin = 500, record_every=10 takes 35mins
 
 ###############################################
 ### save results ###
@@ -174,12 +174,15 @@ dev.off()
 
 ### checking the actual 'true' simulated data
 
-par(mfrow=c(1,3))
-hist(aug_dat_true$D[[3]][,2] - aug_dat_true$D[[3]][,1])
+par(mfrow=c(1,3), mar = c(5, 5, 5, 1))
+hist(aug_dat_true$D[[3]][,2] - aug_dat_true$D[[3]][,1], 
+     col = "grey", main = "True delays 1 (Date 1 to Date 2), group 3")
 summary(aug_dat_true$D[[3]][,2] - aug_dat_true$D[[3]][,1])
-hist(aug_dat_true$D[[3]][,3] - aug_dat_true$D[[3]][,2])
+hist(aug_dat_true$D[[3]][,3] - aug_dat_true$D[[3]][,2],
+     col = "grey", main = "True delays 2 (Date 2 to Date 3), group 3")
 summary(aug_dat_true$D[[3]][,3] - aug_dat_true$D[[3]][,2])
-hist(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1])
+hist(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1],
+     col = "grey", main = "True delays 3 (Date 1 to Date 4), group 3")
 summary(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1])
 
 ### comparing the posterior distribution of true aug_dat and parameters to posterior reached by MCMC chain
@@ -441,6 +444,30 @@ par(mfrow = c(2, 1))
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]), type = "l")
 posterior_support_list[[g]][[false_neg[[g]][which(false_neg[[g]][,1] == i),2]]][false_neg[[g]][which(false_neg[[g]][,1] == i),1]]
+
+g <- 4
+i <- 38
+ylim <- c(16000, 16300)
+par(mfrow = c(1, 1))
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
+            function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 1]), 
+     type = "l", col = "blue", ylim = ylim)
+lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
+            function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), 
+     col = "turquoise")
+lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
+             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 3]), 
+      col = "red")
+lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
+             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 4]), 
+      col = "purple")
+par(xpd = TRUE)
+points(rep(length(MCMCres$aug_dat_chain), 4), aug_dat_true$D[[g]][i, ], 
+      col = c("blue", "turquoise", "red", "purple"),
+      pch = 21, cex = 1.5)
+points(rep(length(MCMCres$aug_dat_chain), 4)*1.02, obs_dat[[g]][i, ], 
+       col = c("blue", "turquoise", "red", "purple"),
+       pch = 19, cex = 1.5)
 
 ###### IDEAS: 
 # ROC curve to show how threshold for posterior support affects 

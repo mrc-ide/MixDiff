@@ -141,13 +141,6 @@ move_Di <- function(i, group_idx, date_idx,
     accept <- 0
   }
   
-  curr_missing <- curr_aug_dat$E[[group_idx]][i,] == -1
-  new_missing <- new_aug_dat$E[[group_idx]][i,] == -1
-  if(!all(curr_missing == new_missing))
-  {
-    browser()
-  }
-  
   # return a list of size 2 where 
   #		the first value is the new augmented data set in the chain
   #		the second value is 1 if the proposed value was accepted, 0 otherwise
@@ -490,13 +483,6 @@ move_Ei <- function(i, group_idx, date_idx,
     res <- list(new_aug_dat=curr_aug_dat, accept=0)
   }
   
-  curr_missing <- curr_aug_dat$E[[group_idx]][i,] == -1
-  new_missing <- res$new_aug_dat$E[[group_idx]][i,] == -1
-  if(!all(curr_missing == new_missing))
-  {
-    browser()
-  }
-  
   return(res)
 }
 
@@ -535,6 +521,7 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @param index_dates_order A list of same lenght as index_dates, containing indications on ordering of dates for each group - see \code{\link{compute_index_dates_order}}}.
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -555,8 +542,9 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 #' 
 #' The function performs the move as follows, using a Metropolis-Hastings algorithm. 
 #' It proposes to swap the indicators of errors in dates, e.g. 0 becomes 1 and 1 becomes 0.
-#' For the dates where we propose a move from E=1 to E=0, we automatically move D=the corresponding observed data. 
-#' For the dates where we propose a move from E=0 to E=1, D is then moved as follows: a new value is drawn from the marginal posterior of one of the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
+#' First, for the dates where E = 1, we propose a move from E=1 to E=0, we automatically move D to the corresponding observed data. 
+#' Then, for any dates not recorded (E = -1) we propose new values by drawing from the joint marginal posterior distribution of the relevant delays, using as reference dates only those that have just been moved to E=0 (not the ones which were initially at E=0 as these will move to erroneous values at the next step).
+#' Finally, for the dates which were initially at E = 0, we propose a move from E=0 to E=1, D is then moved as follows: a new value is drawn from the joint marginal posterior of all the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
 #' If the date is involved in several delays, one of the delays is randomly selected. 
 #' This move is not symmetrical so we use a correction factor in computing the probability of acceptance in the Metropolis Hastings which accounts for the asymetry. 
 #' @return A list of two elements:
@@ -817,13 +805,6 @@ swap_Ei <- function(i, group_idx,
   #		the first value is the new augmented data set in the chain
   #		the second value is 1 if the proposed value was accepted, 0 otherwise
   res <- list(new_aug_dat=new_aug_dat, accept=accept)
-  
-  curr_missing <- curr_aug_dat$E[[group_idx]][i,] == -1
-  new_missing <- res$new_aug_dat$E[[group_idx]][i,] == -1
-  if(!all(curr_missing == new_missing))
-  {
-    browser()
-  }
   
   return(res)
   

@@ -295,6 +295,8 @@ check_MCMC_settings <- function(MCMC_settings, index_dates)
     stop("sdlog_mu does not have the correct structure")
   if(!all(lengths(MCMC_settings$moves_options$sdlog_CV) == lengths(index_dates) / 2))
     stop("sdlog_CV does not have the correct structure")
+  if(!is.numeric(MCMC_settings$tol) | (MCMC_settings$tol<0) | (MCMC_settings$tol>1))
+    stop("tol should be a number between 0 and 1")
 }
 
 
@@ -305,7 +307,7 @@ infer_missing_dates <- function(D,
                                 index_dates_order, 
                                 do_not_infer_from = NULL, 
                                 theta = NULL, 
-                                tol = 1e-3, 
+                                tol = 1e-6, 
                                 move_to_D = NULL) # used to compute probabilities of a given move; this only contains the values of the dates for that specific individual
 {
   #if(g == 3 & e == 71)
@@ -464,7 +466,7 @@ infer_missing_dates <- function(D,
 sample_new_date_value <- function(g, # group index
                                   can_be_inferred_directly_from, # the output of function infer_directly_from
                                   index_dates, 
-                                  tol = 1e-3) # used to define the tail of the CDF of the delay - anything in the tail is neglected
+                                  tol = 1e-6) # used to define the tail of the CDF of the delay - anything in the tail is neglected
 {
   can_be_inferred_directly_from <- can_be_inferred_directly_from[which(!is.na(can_be_inferred_directly_from$from_value)), ]
   
@@ -583,57 +585,3 @@ infer_directly_from <- function(g, # group
                     CV = CV))
 }
 
-#### THE BELOW NEEDS TO BE THOUROUGHLY CHECKED _ I DO NOT THINK IT WORKS AT THE MOMENT
-propose_new_D <- function(g, # group index
-                          i, # individual index in that group
-                          date_idx, # index of date for which new date is to be proposed
-                          D, # current data
-                          theta, # current parameter values
-                          tol = 1e-3) # tolerance, used to compute the tail of the CDF of the delays - anything in the tail is neglected
-{
-  can_be_inferred_directly_from <- infer_directly_from(g, date_idx, D, i, theta) 
-  if(length(can_be_inferred_directly_from$from_value)==0)
-  {
-    warning("can't propose a clever date with current info")
-    # to do: add some way of proposing a date - e.g. moving around current date with +/-1, or according to the error model?
-  } else
-  {
-    browser()
-    x <- which(!is.na(can_be_inferred_directly_from$from_value))
-    if(length(x)==1)
-    {
-      res <- sample_new_date_value(x, g, theta,
-                                   can_be_inferred_directly_from, 
-                                   index_dates, tol = tol)
-      return(res)
-    }else
-    {
-      tmp <- lapply(x, function(e) sample_new_date_value(e, g, theta,
-                                                         can_be_inferred_directly_from, 
-                                                         index_dates, tol = tol))
-      possible_dates <- tmp[[1]]$all_possible_values
-      for(ii in 2:length(tmp))
-      {
-        possible_dates <- intersect(possible_dates, tmp[[ii]]$all_possible_values)
-      }
-      if(length(possible_dates) == 0 ) 
-      {
-        warning("Incompatible data to infer from. Inferring from first date only")
-        res <- sample_new_date_value(x[1], g, theta, can_be_inferred_directly_from, index_dates, tol = tol)
-        return(res)
-      } else
-      {
-        weights <- sapply(possible_dates, function(e) {
-          prod(sapply(tmp, function(ii) ii$probabilities[ii$all_possible_values == e]))})
-        weights <- weights / sum(weights)
-        tmp <- rmultinom(1, 1, weights)
-        inferred <- possible_dates[tmp == 1]
-        probability_inferred_value <- weights[tmp == 1] ### needs to be used for calculating the probability of proposing each value?
-        return(list(inferred = inferred,
-                    probability_inferred_value = probability_inferred_value,
-                    all_possible_values = possible_dates,
-                    probabilities = weights))
-      }
-    }
-  }
-}

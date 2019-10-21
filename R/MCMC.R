@@ -30,6 +30,7 @@
 #'  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
 #'  }
 #'  }
+#'  \item{\code{tol}}{: A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves.}
 #' }
 #' \code{hyperparameters} should be a list containing:
 #' \itemize{
@@ -58,7 +59,8 @@
 RunMCMC <- function(obs_dat, 
                     MCMC_settings,
                     hyperparameters,
-                    index_dates)
+                    index_dates,
+                    tol = 1e-6)
 {
   n_dates <- sapply(obs_dat, ncol )
   n_groups <- length(n_dates)
@@ -151,7 +153,8 @@ RunMCMC <- function(obs_dat,
                             obs_dat, 
                             hyperparameters, 
                             index_dates,
-                            range_dates) 
+                            range_dates,
+                            tol = MCMC_settings$tol) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
             if(tmp$accept==1) 
@@ -191,7 +194,8 @@ RunMCMC <- function(obs_dat,
                             obs_dat,
                             hyperparameters,
                             index_dates,
-                            range_dates)
+                            range_dates,
+                            tol = MCMC_settings$tol)
             n_proposed_E_moves <- n_proposed_E_moves + 1
             n_accepted_E_moves <- n_accepted_E_moves + tmp$accept
             if(tmp$accept==1)

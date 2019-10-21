@@ -19,6 +19,7 @@
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -57,7 +58,7 @@ move_Di <- function(i, group_idx, date_idx,
                     hyperparameters, 
                     index_dates,
                     range_dates = NULL,
-                    tol = 1e-3) 
+                    tol = 1e-6) 
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
@@ -162,7 +163,7 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                        hyperparameters, 
                                        index_dates,
                                        range_dates=NULL, 
-                                       tol = 1e-3)
+                                       tol = 1e-6)
 {
   # which delays can this date be derived from
   can_be_inferred_directly_from <- infer_directly_from(group_idx, date_idx, 
@@ -199,7 +200,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                                 hyperparameters, 
                                                 index_dates,
                                                 range_dates=NULL, 
-                                                tol = 1e-3)
+                                                tol = 1e-6)
 {
   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
   
@@ -276,7 +277,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
                                                 hyperparameters, 
                                                 index_dates,
                                                 range_dates, 
-                                                tol = 1e-3)
+                                                tol = 1e-6)
 {
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
@@ -334,6 +335,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -371,7 +373,8 @@ move_Ei <- function(i, group_idx, date_idx,
                     obs_dat, 
                     hyperparameters, 
                     index_dates,
-                    range_dates=NULL) 
+                    range_dates=NULL,
+                    tol = 1e-6) 
 {
   if(length(date_idx)>1)
   {
@@ -401,7 +404,8 @@ move_Ei <- function(i, group_idx, date_idx,
                                              obs_dat, 
                                              hyperparameters, 
                                              index_dates,
-                                             range_dates)
+                                             range_dates,
+                                             tol = tol)
       
       if(!is.null(proposed))
       {
@@ -414,7 +418,8 @@ move_Ei <- function(i, group_idx, date_idx,
                                                    obs_dat, 
                                                    hyperparameters, 
                                                    index_dates,
-                                                   range_dates)
+                                                   range_dates,
+                                                   tol = tol)
         
         if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp) 
         if(p_accept>0) p_accept <- 0
@@ -457,7 +462,7 @@ move_Ei <- function(i, group_idx, date_idx,
                                                  obs_dat, 
                                                  hyperparameters, 
                                                  index_dates,
-                                                 range_dates)
+                                                 range_dates, tol = tol)
       if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp)
       if(p_accept>0) p_accept <- 0
       
@@ -521,7 +526,8 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
-#' @param index_dates_order A list of same lenght as index_dates, containing indications on ordering of dates for each group - see \code{\link{compute_index_dates_order}}}.
+#' @param index_dates_order A list of same lenght as index_dates, containing indications on ordering of dates for each group - see \code{\link{compute_index_dates_order}}.
+#' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -562,7 +568,8 @@ swap_Ei <- function(i, group_idx,
                     hyperparameters, 
                     index_dates,
                     range_dates=NULL, 
-                    index_dates_order = compute_index_dates_order(index_dates)) 
+                    index_dates_order = compute_index_dates_order(index_dates),
+                    tol = 1e-6) 
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
@@ -605,7 +612,8 @@ swap_Ei <- function(i, group_idx,
                                                prob_move = NULL, # will be calculated inside function
                                                theta, obs_dat, hyperparameters, 
                                                index_dates,
-                                               range_dates)
+                                               range_dates,
+                                               tol = tol)
     return(-tmp[2])
   }))
   
@@ -630,7 +638,7 @@ swap_Ei <- function(i, group_idx,
                           E = proposed_aug_dat_intermediate$E, 
                           group_idx, i, index_dates_order, 
                           do_not_infer_from = date_idx_E0_to_E1, 
-                          theta)
+                          theta, tol = tol)
     proposed_aug_dat_intermediate$D <- tmp$D 
     prob <- tmp$prob
   }else
@@ -656,7 +664,8 @@ swap_Ei <- function(i, group_idx,
                                            obs_dat, 
                                            hyperparameters, 
                                            index_dates,
-                                           range_dates)
+                                           range_dates, 
+                                           tol = tol)
     
     if(!is.null(proposed))
     {
@@ -680,7 +689,8 @@ swap_Ei <- function(i, group_idx,
                                                  proposed_aug_dat_intermediate, # the one we would be moving to
                                                  theta, obs_dat, hyperparameters, 
                                                  index_dates,
-                                                 range_dates)
+                                                 range_dates, 
+                                                 tol = tol)
       return(tmp[2])
     })))
   }
@@ -696,6 +706,7 @@ swap_Ei <- function(i, group_idx,
                           group_idx, i, index_dates_order, 
                           do_not_infer_from = date_idx_E1_to_E0, 
                           theta, 
+                          tol = tol,
                           move_to_D = curr_aug_dat$D[[group_idx]][i,])
     prob_reverse <- tmp$prob_move_to_D
   }else

@@ -4,7 +4,8 @@
 \alias{RunMCMC}
 \title{Runs the MCMC estimation procedure.}
 \usage{
-RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
+RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
+  tol = 1e-06)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
@@ -56,6 +57,7 @@ Runs the MCMC estimation procedure.
  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
  }
  }
+ \item{\code{tol}}{: A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves.}
 }
 \code{hyperparameters} should be a list containing:
 \itemize{

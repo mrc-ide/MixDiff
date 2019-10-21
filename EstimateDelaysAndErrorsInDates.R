@@ -63,9 +63,9 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                                           sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))), 
                        init_options=list(mindelay=0, maxdelay=100),
                        #                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
-                       chain_properties=list(n_iter = 500, burnin = 1, record_every=1),
+                       #chain_properties=list(n_iter = 500, burnin = 1, record_every=1),
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2),
-                       #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
+                       chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
                        tol = 1e-6)
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))

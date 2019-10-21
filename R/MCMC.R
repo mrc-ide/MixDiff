@@ -236,7 +236,8 @@ RunMCMC <- function(obs_dat,
                   obs_dat, 
                   hyperparameters, 
                   index_dates,
-                  range_dates)
+                  range_dates,
+                  tol = MCMC_settings$tol)
           n_proposed_swapE_moves <- n_proposed_swapE_moves + 1
           n_accepted_swapE_moves <- n_accepted_swapE_moves + tmp$accept
           if(tmp$accept==1)

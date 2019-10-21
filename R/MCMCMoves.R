@@ -141,6 +141,13 @@ move_Di <- function(i, group_idx, date_idx,
     accept <- 0
   }
   
+  curr_missing <- curr_aug_dat$E[[group_idx]][i,] == -1
+  new_missing <- new_aug_dat$E[[group_idx]][i,] == -1
+  if(!all(curr_missing == new_missing))
+  {
+    browser()
+  }
+  
   # return a list of size 2 where 
   #		the first value is the new augmented data set in the chain
   #		the second value is 1 if the proposed value was accepted, 0 otherwise
@@ -480,7 +487,14 @@ move_Ei <- function(i, group_idx, date_idx,
     }
   }else # if E=-1, can't move. 
   {
-    res <- list(curr_aug_dat=curr_aug_dat, accept=0)
+    res <- list(new_aug_dat=curr_aug_dat, accept=0)
+  }
+  
+  curr_missing <- curr_aug_dat$E[[group_idx]][i,] == -1
+  new_missing <- res$new_aug_dat$E[[group_idx]][i,] == -1
+  if(!all(curr_missing == new_missing))
+  {
+    browser()
   }
   
   return(res)
@@ -623,65 +637,29 @@ swap_Ei <- function(i, group_idx,
   if(length(missing_to_update)>0)
   {
     #browser()
-    proposed_aug_dat_intermediate$D <- 
+    tmp <- 
       infer_missing_dates(proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
                           group_idx, i, index_dates_order, 
                           do_not_infer_from = date_idx_E0_to_E1, 
                           theta)
-    
-    # 
-    # 
-    # 
-    # # update proposed_aug_dat_intermediate$D
-    # #browser()
-    # x <- lapply(date_idx_E1_to_E0, function(e) which(index_dates[[group_idx]] == e, arr.ind = TRUE))
-    # rows <- x[[1]][,1]
-    # cols <- x[[1]][,2]
-    # new_rows <- 2-(rows-1) # changes 1 to 2 and 2 to 1
-    # in_relation_with_E1_to_E0 <- sapply(1:length(rows), function(e)
-    #   index_dates[[group_idx]][new_rows[e], cols[e]])
-    # missing_to_update <- intersect(missing_to_update, in_relation_with_E1_to_E0)
-    # if(length(missing_to_update)>0)
-    # {
-    #   for(ii in missing_to_update) 
-    #   {
-    #     idx_dates_vect <- paste(index_dates[[group_idx]][1,], 
-    #                             index_dates[[group_idx]][2,], sep = "-")
-    #     idx_delay <- which(
-    #       idx_dates_vect %in% paste(missing_to_update, date_idx_E1_to_E0, sep = "-") | 
-    #         idx_dates_vect %in% paste(date_idx_E1_to_E0, missing_to_update, sep = "-"))
-    #     if(ii == index_dates[[group_idx]][1,idx_delay]) 
-    #     {multiply <- -1} else {multiply <- 1}
-    #     param_delay <- find_params_gamma(theta$mu[[group_idx]][idx_delay], 
-    #                                      CV=theta$CV[[group_idx]][idx_delay])
-    #     sample_delay <- round(rgamma(1, 
-    #                                  shape=param_delay[1], scale=param_delay[2])) 
-    #     proposed_aug_dat_intermediate$D[[group_idx]][i,ii] <- 
-    #       proposed_aug_dat_intermediate$D[[group_idx]][i,date_idx_E1_to_E0] + 
-    #       multiply * sample_delay
-    #     
-    #   }
-    # if(group_idx==3 & i == 88)
-    # {
-    #   print("intermediate state 2:")
-    #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
-    #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
-    # }
-    # }
+    proposed_aug_dat_intermediate$D <- tmp$D 
+    prob <- tmp$prob
+  }else
+  {
+    prob <- 1
   }
   
-  #browser()
-  
   # for the correction factor ### TO DO: ADD THE CORRECT VALUES FOR CORRECTION FACTOR HERE
-  log_prob_move <- c(log_prob_move, 0)
-  log_prob_reverse_move <- c(log_prob_reverse_move, 0)
+  log_prob_move <- c(log_prob_move, log(prob))
+  # log_prob_reverse_move can not yet be calculated at this stage 
+  # as it depends on where we would be moving from so need to know the final proposed_aug_dat
   
   ###### Finally we move the dates which were initially at E = 0 to E = 1 ######
   
   proposed_aug_dat <- proposed_aug_dat_intermediate
   proposed_aug_dat$E[[group_idx]][i,date_idx_E0_to_E1] <- 1
-
+  
   for(kk in date_idx_E0_to_E1)
   {
     proposed <- propose_move_from_E0_to_E1(i, group_idx, kk, 
@@ -718,6 +696,26 @@ swap_Ei <- function(i, group_idx,
       return(tmp[2])
     })))
   }
+  
+  # probability of reverse move for missing data
+  ### TO COMPUTE
+  if(length(missing_to_update)>0)
+  {
+    #browser()
+    tmp <- 
+      infer_missing_dates(proposed_aug_dat$D, 
+                          E = proposed_aug_dat_intermediate$E, 
+                          group_idx, i, index_dates_order, 
+                          do_not_infer_from = date_idx_E1_to_E0, 
+                          theta, 
+                          move_to_D = curr_aug_dat$D[[group_idx]][i,])
+    prob_reverse <- tmp$prob_move_to_D
+  }else
+  {
+    prob_reverse <- 1
+  }
+  log_prob_reverse_move <- c(log_prob_reverse_move, log(prob_reverse))
+  # probability of reverse move for E0 to E1
   log_prob_reverse_move <- c(log_prob_reverse_move, 0) # as for the reverse move we go back to observed data E = 0 so only one choice
   
   # if(group_idx==3 & i == 88)
@@ -787,6 +785,10 @@ swap_Ei <- function(i, group_idx,
   #{
   #  browser()
   #}
+  # if(length(missing_to_update)>0)
+  # {
+  #   browser()
+  # }
   p_accept <- ratio_post + sum(log_prob_reverse_move) - sum(log_prob_move)
   #print(p_accept)
   if(p_accept>0) p_accept <- 0
@@ -815,6 +817,13 @@ swap_Ei <- function(i, group_idx,
   #		the first value is the new augmented data set in the chain
   #		the second value is 1 if the proposed value was accepted, 0 otherwise
   res <- list(new_aug_dat=new_aug_dat, accept=accept)
+  
+  curr_missing <- curr_aug_dat$E[[group_idx]][i,] == -1
+  new_missing <- res$new_aug_dat$E[[group_idx]][i,] == -1
+  if(!all(curr_missing == new_missing))
+  {
+    browser()
+  }
   
   return(res)
   

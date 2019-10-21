@@ -64,17 +64,20 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
   D <- list()
   for(g in seq_len(n_groups) )
   {
+    #print(paste("group", g))
     D[[g]] <- obs_dat[[g]]
     for(e in seq_len(nrow(D[[g]])))
     {
-      #print(e)
-      
+      #print(paste("individual", e))
+      #print(D[[g]][e,])
       # first deal with incompatible dates
       for(j in seq_len(ncol(index_dates_order[[g]])))
       {
+        #print(paste("date", j))
         if(!any(is.na(D[[g]][e,index_dates_order[[g]][,j]])))
         {
           # there is a problem if the dates have too short or too long delay
+          #print(D[[g]][e,])
           if(are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )
           {
             # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
@@ -111,7 +114,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       }
       
       # now deal with missing dates
-      D <- infer_missing_dates(D, E = NULL, g, e, index_dates_order)
+      D <- infer_missing_dates(D, E = NULL, g, e, index_dates_order)$D
       
     }
   }
@@ -127,7 +130,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       error <- D[[g]][,j] != obs_dat[[g]][,j]
       E[[g]][which(error),j] <- 1 # error
       E[[g]][which(!error),j] <- 0 # no error
-      E[[g]][is.na(error)] <- -1 # missing value
+      E[[g]][which(is.na(obs_dat[[g]][,j])), j] <- -1 # missing value
     }
     names(E[[g]]) <- names(obs_dat[[g]])
   }

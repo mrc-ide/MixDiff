@@ -305,9 +305,9 @@ infer_missing_dates <- function(D,
                                 index_dates_order, 
                                 do_not_infer_from = NULL, 
                                 theta = NULL, 
-                                tol = 1e-3)
+                                tol = 1e-3, 
+                                move_to_D = NULL) # used to compute probabilities of a given move; this only contains the values of the dates for that specific individual
 {
-  
   #if(g == 3 & e == 71)
   #{
   #  browser()
@@ -380,8 +380,25 @@ infer_missing_dates <- function(D,
       #print(other_missing_dates)
       #Sys.sleep(0.1)
     }
+    prob <- 1
+    if(!is.null(move_to_D))
+    {
+      to_compare <- which(!is.na(D_proxy[[g]][e,]))
+      if(all(D_proxy[[g]][e,to_compare] == move_to_D[to_compare])) 
+      {
+        prob_move_to_D <- 1 
+      } else 
+      {
+        prob_move_to_D <- 0
+      }
+    } else
+    {
+      prob_move_to_D <- NA
+    }
   }else
   {
+    prob <- rep(NA, length(D_proxy[[g]][e,]))
+    prob_move_to_D <- rep(NA, length(D_proxy[[g]][e,]))
     while(length(true_missing_dates)>0)
     {
       ### more sophisticated inference using the delays
@@ -393,8 +410,19 @@ infer_missing_dates <- function(D,
       for(k in idx_can_be_inferred_directly)
       {
         # browser()
-          tmp <- sample_new_date_value(g, can_be_inferred_directly_from[[k]], index_dates, tol = tol)
-          D_proxy[[g]][e,missing_dates[k]] <- tmp$inferred
+        tmp <- sample_new_date_value(g, can_be_inferred_directly_from[[k]], index_dates, tol = tol)
+        D_proxy[[g]][e,missing_dates[k]] <- tmp$inferred
+        prob[missing_dates[k]] <- tmp$probability_inferred_value
+        if(!is.null(move_to_D)) 
+        {
+          if(any(tmp$all_possible_values == move_to_D[missing_dates[k]]))
+          {
+            prob_move_to_D[missing_dates[k]] <- tmp$probabilities[tmp$all_possible_values == move_to_D[missing_dates[k]]]
+          } else
+          {
+            prob_move_to_D[missing_dates[k]] <- 0
+          }
+        }
       }
       missing_dates <- which(is.na(D_proxy[[g]][e,]))
       true_missing_dates <- setdiff(missing_dates, other_missing_dates)
@@ -409,8 +437,20 @@ infer_missing_dates <- function(D,
   
   to_replace <- is.na(D_proxy[[g]][e, ])
   if(any(to_replace)) D_proxy[[g]][e, to_replace] <- D[[g]][e, to_replace]
+  prob <- prod(prob[!is.na(prob)])
+  if(all(is.na(prob_move_to_D)))
+  {
+    prob_move_to_D <- NA 
+  } else
+  {
+    prob_move_to_D <- prod(prob_move_to_D[!is.na(prob_move_to_D)])
+  }
   
-  return(D_proxy)
+  res <- list(D = D_proxy, 
+              prob = prob, 
+              prob_move_to_D = prob_move_to_D)
+  
+  return(res)
 }
 
 # for a given group, date and individual, this proposes a new value for that date. 

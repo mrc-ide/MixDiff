@@ -588,7 +588,7 @@ swap_Ei <- function(i, group_idx,
   #  print(curr_aug_dat$E[[group_idx]][i,])
   #  print(curr_aug_dat$D[[group_idx]][i,])
   # }
-
+  
   ###### First we move all E = 1 to E = 0 ######
   
   proposed_aug_dat_intermediate <- curr_aug_dat
@@ -617,13 +617,13 @@ swap_Ei <- function(i, group_idx,
     return(-tmp[2])
   }))
   
-   # if(group_idx==4 & i == 38)
-   # {
-   #   print("intermediate state 1:")
-   #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
-   #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
-   #   #browser()
-   # }
+  # if(group_idx==4 & i == 38)
+  # {
+  #   print("intermediate state 1:")
+  #   print(proposed_aug_dat_intermediate$E[[group_idx]][i,])
+  #   print(proposed_aug_dat_intermediate$D[[group_idx]][i,])
+  #   #browser()
+  # }
   
   ###### Then we update the missing values, if any, based on the data we just switched to 0 and ignoring the other ones (which will be switched to 1 later) ######
   
@@ -734,13 +734,13 @@ swap_Ei <- function(i, group_idx,
   # probability of reverse move for E0 to E1
   log_prob_reverse_move <- c(log_prob_reverse_move, 0) # as for the reverse move we go back to observed data E = 0 so only one choice
   
-   # if(group_idx==4 & i == 38)
-   # {
-   #   print("final proposed state before calculation of p_accept:")
-   #   print(proposed_aug_dat$E[[group_idx]][i,])
-   #   print(proposed_aug_dat$D[[group_idx]][i,])
-   #   browser()
-   # }
+  # if(group_idx==4 & i == 38)
+  # {
+  #   print("final proposed state before calculation of p_accept:")
+  #   print(proposed_aug_dat$E[[group_idx]][i,])
+  #   print(proposed_aug_dat$D[[group_idx]][i,])
+  #   browser()
+  # }
   
   delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
                                       date_idx_E1_to_E0, 
@@ -750,6 +750,16 @@ swap_Ei <- function(i, group_idx,
                                         date_idx_E0_to_E1, 
                                       nrow = 
                                         nrow(index_dates[[group_idx]] )))>0))
+  
+  if(length(missing_to_update)>0)
+  {
+    delay_idx <- c(delay_idx, 
+                   which(colSums(matrix(index_dates[[group_idx]] %in% 
+                                          missing_to_update, 
+                                        nrow = 
+                                          nrow(index_dates[[group_idx]] )))>0))
+  }
+  
   delay_idx <- sort(unique(delay_idx))
   
   ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(
@@ -758,12 +768,26 @@ swap_Ei <- function(i, group_idx,
       LL_observation_term_by_group_delay_and_indiv(
         curr_aug_dat, theta, obs_dat, group_idx, 
         date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
+    
     sum(LL_observation_term_by_group_delay_and_indiv(
       proposed_aug_dat, theta, obs_dat, group_idx, 
       date_idx_E0_to_E1, i, range_dates=range_dates) - 
         LL_observation_term_by_group_delay_and_indiv(
           curr_aug_dat, theta, obs_dat, group_idx, 
-          date_idx_E0_to_E1, i, range_dates=range_dates) )
+          date_idx_E0_to_E1, i, range_dates=range_dates) )   
+  
+  if(length(missing_to_update)>0)
+  {
+    ratio_post_obs <- ratio_post_obs + 
+      
+      sum(LL_observation_term_by_group_delay_and_indiv(
+        proposed_aug_dat, theta, obs_dat, group_idx, 
+        missing_to_update, i, range_dates=range_dates) - 
+          LL_observation_term_by_group_delay_and_indiv(
+            curr_aug_dat, theta, obs_dat, group_idx, 
+            missing_to_update, i, range_dates=range_dates) )
+    
+  }
   
   #print(ratio_post_obs)
   ## should be the same as:
@@ -776,7 +800,6 @@ swap_Ei <- function(i, group_idx,
   #print(ratio_post_error)
   ## should be the same as:
   # LL_error_term(proposed_aug_dat, theta, obs_dat) - LL_error_term(curr_aug_dat, theta, obs_dat)
-  ## LL_error_term_slow(proposed_aug_dat, theta, obs_dat) - LL_error_term_slow(curr_aug_dat, theta, obs_dat)
   
   ratio_post_delay <- 0
   for(d in delay_idx)
@@ -791,8 +814,19 @@ swap_Ei <- function(i, group_idx,
   ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
   
   ### should be the same as: 
-  #ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
+  ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
+    lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
+  
+  # print(paste("short", ratio_post))
+  # print(paste("long", ratio_post_long))
+  # 
+  # if(!is.infinite(ratio_post) & !is.infinite(ratio_post_long))
+  # {
+  #   if(abs(ratio_post - ratio_post_long)>1e-6)
+  #   {
+  #     browser()
+  #   }
+  # }
   
   # This is not a symetric move so need a correction factor
   #print(paste("group", group_idx))

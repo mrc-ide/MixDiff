@@ -251,6 +251,7 @@ posterior_support_list <- lapply(seq_len(length(index_dates)),
 
 posterior_support <- unlist(posterior_support_list)
 
+
 par(mfrow = c(2, 1))
 hist(posterior_support, col = "grey", breaks = seq(0, 1, 0.01))
 hist(posterior_support[posterior_support<0.95], col = "grey", breaks = seq(0, 1, 0.01))
@@ -310,89 +311,24 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # other datasets - Marc to talk to John? 
 # outputs: proportion erroneous data - ... - nice graphs
 
-my_mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-consensus_D <- aug_dat_true$D
-consensus_E <- aug_dat_true$E
-for(g in 1:length(consensus_D))
-{
-  for(i in 1:nrow(consensus_D[[g]]))
-  {
-    for(j in 1:ncol(consensus_D[[g]]))
-    {
-      # median:
-      #consensus_D[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-      #consensus_E[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
-      # mode: 
-      consensus_D[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-      consensus_E[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
-    }
-  }
-}
-# in the above use the median or the mode? 
-
-
+consensus <- get_consensus(aug_dat_true, MCMCres, posterior = "mode")
 
 par(mfrow = c(4, 2))
 for(g in 1:4)
 {
   image(t(aug_dat_true$E[[g]]), col = c( "red", "forestgreen", "grey"))
-  image(t(consensus_E[[g]]), col = c( "red", "forestgreen", "grey"))
+  image(t(consensus$E[[g]]), col = c( "red", "forestgreen", "grey"))
 }
 
 g <- 1
-plot(aug_dat_true$D[[g]], consensus_D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
+plot(aug_dat_true$D[[g]], consensus$D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
 for(g in 2:4)
-  points(aug_dat_true$D[[g]], consensus_D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
-table(aug_dat_true$E[[g]] == consensus_E[[g]])['FALSE'] / sum(table(aug_dat_true$E[[g]] == consensus_E[[g]]))
+  points(aug_dat_true$D[[g]], consensus$D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
+table(aug_dat_true$E[[g]] == consensus$E[[g]])['FALSE'] / sum(table(aug_dat_true$E[[g]] == consensus$E[[g]]))
 
 ### Compute sensitivity and specificity of detecting errors in dates
 # remove missing dates from the denominator
-
-compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consensus_E)
-{
-  tmp <- aug_dat_true$E
-  aug_dat_true_E_no_missing <- tmp
-  consensus_E_no_missing <- consensus_E
-  for(g in 1:length(tmp))
-  {
-    aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
-    consensus_E_no_missing[[g]] [consensus_E[[g]] == -1] <- NA
-  }
-  
-  sensitivity <- specificity <- rep(NA, 4)
-  false_pos <- false_neg <- list()
-  
-  for(g in 1:length(tmp))
-  {
-    tab <- table(aug_dat_true_E_no_missing[[g]], consensus_E_no_missing[[g]])
-    n_true_neg <- tab["0", "0"]
-    n_true_pos <- tab["1", "1"]
-    n_false_pos <- tab["0", "1"]
-    n_false_neg <- tab["1", "0"]
-    
-    sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
-    specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
-    
-    false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
-                              (consensus_E_no_missing[[g]]  == 1), # and are detected as errors
-                            arr.ind = TRUE)
-    
-    false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
-                              (consensus_E_no_missing[[g]]  == 0), # and are NOT detected as errors
-                            arr.ind = TRUE)
-  }
-  
-  return(list(sensitivity = sensitivity,
-              specificity = specificity,
-              false_pos = false_pos,
-              false_neg = false_neg))
-}
-
-detec <- compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus_E)
+detec <- compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus)
 
 ### specificity: where we've detected an error which did not exist, what was the reason? 
 
@@ -418,7 +354,7 @@ plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_
 aug_dat_true$E[[g]][i,]
 aug_dat_true$D[[g]][i,]
 obs_dat[[g]][i,]
-consensus_E[[g]][i,]
+consensus$E[[g]][i,]
 
 # posterior support for error is not huge
 # in group 1 mostly 50% chance of each being an error - which makes sense when only 2 dates observed
@@ -450,7 +386,7 @@ aug_dat_true$D[[g]][i,j]
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 aug_dat_true$E[[g]][i,]
-consensus_E[[g]][i,]
+consensus$E[[g]][i,]
 par(mfrow = c(2, 1))
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]), type = "l")
@@ -464,8 +400,8 @@ plot(sapply(seq_len(length(MCMCres$aug_dat_chain)),
             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 1]), 
      type = "l", col = "blue", ylim = ylim)
 lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
-            function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), 
-     col = "turquoise")
+             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), 
+      col = "turquoise")
 lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
              function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 3]), 
       col = "red")
@@ -474,8 +410,8 @@ lines(sapply(seq_len(length(MCMCres$aug_dat_chain)),
       col = "purple")
 par(xpd = TRUE)
 points(rep(length(MCMCres$aug_dat_chain), 4), aug_dat_true$D[[g]][i, ], 
-      col = c("blue", "turquoise", "red", "purple"),
-      pch = 21, cex = 1.5)
+       col = c("blue", "turquoise", "red", "purple"),
+       pch = 21, cex = 1.5)
 points(rep(length(MCMCres$aug_dat_chain), 4)*1.02, obs_dat[[g]][i, ], 
        col = c("blue", "turquoise", "red", "purple"),
        pch = 19, cex = 1.5)
@@ -512,4 +448,40 @@ points(rep(length(MCMCres$aug_dat_chain), 4)*1.02, obs_dat[[g]][i, ],
 # ("Wed_Oct__9_110650_2019_5000iter_500burnt_10thin_")
 # this covers ALL reasons for imperfect performance
 
+###############################################################
+# Looking at individuals rather than dates
+###############################################################
+
+consensus_E_same_as_true_E <- lapply(1:length(consensus$E), function(g) 
+  {
+  apply(consensus$E[[g]] == aug_dat_true$E[[g]], 1, all)
+})
+
+id_problematic_consensus <- lapply(consensus_E_same_as_true_E, function(x) which(!x))
+
+### could add something about support - i.e. if consensus is only weakly 
+# supported maybe differentiate from cases where consensus is highly supported
+
+### could also identify a priori which individuals are going to be problematic
+
+threshold_consensus_support <- 0.95
+
+g <- 1
+
+one_erroneous_entry <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(0, 1)))
+which(one_erroneous_entry)
+
+one_erroneous_entry_one_missing <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(-1, 1)))
+which(one_erroneous_entry_one_missing)
+
+two_erroneous_entries <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(1, 1)))
+which(two_erroneous_entries)
+
+post_support_this_group <- cbind(posterior_support_list[[1]][[1]], posterior_support_list[[1]][[2]])
+low_support_this_group <- post_support_this_group < threshold_consensus_support
+tmp <- which(low_support_this_group, arr.ind = TRUE)
+tmp[tmp[,2]==1,1]
+
+# so only individual 98 has lower than 0.95 support for one of their dates yet not an a prior problem
+aug_dat_true$D[[g]][98,]
 

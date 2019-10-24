@@ -593,3 +593,75 @@ infer_directly_from <- function(g, # group
                     CV = CV))
 }
 
+my_mode <- function(x) { # function to get the mode
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+get_consensus <- function(aug_dat_true, MCMCres, posterior = c("mode", "median"))
+{
+  posterior <- match.arg(posterior)
+  consensus_D <- aug_dat_true$D
+  consensus_E <- aug_dat_true$E
+  for(g in 1:length(consensus_D))
+  {
+    for(i in 1:nrow(consensus_D[[g]]))
+    {
+      for(j in 1:ncol(consensus_D[[g]]))
+      {
+        if(posterior == "median")
+        {
+          consensus_D[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+          consensus_E[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+        } else if(posterior == "mode")
+        {
+          consensus_D[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
+          consensus_E[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+        }
+      }
+    }
+  }
+  return(list(D = consensus_D, E = consensus_E))
+}
+
+### Compute sensitivity and specificity of detecting errors in dates
+# remove missing dates from the denominator
+compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consensus)
+{
+  tmp <- aug_dat_true$E
+  aug_dat_true_E_no_missing <- tmp
+  consensus$E_no_missing <- consensus$E
+  for(g in 1:length(tmp))
+  {
+    aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
+    consensus$E_no_missing[[g]] [consensus$E[[g]] == -1] <- NA
+  }
+  
+  sensitivity <- specificity <- rep(NA, 4)
+  false_pos <- false_neg <- list()
+  
+  for(g in 1:length(tmp))
+  {
+    tab <- table(aug_dat_true_E_no_missing[[g]], consensus$E_no_missing[[g]])
+    n_true_neg <- tab["0", "0"]
+    n_true_pos <- tab["1", "1"]
+    n_false_pos <- tab["0", "1"]
+    n_false_neg <- tab["1", "0"]
+    
+    sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
+    specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
+    
+    false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
+                              (consensus$E_no_missing[[g]]  == 1), # and are detected as errors
+                            arr.ind = TRUE)
+    
+    false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
+                              (consensus$E_no_missing[[g]]  == 0), # and are NOT detected as errors
+                            arr.ind = TRUE)
+  }
+  
+  return(list(sensitivity = sensitivity,
+              specificity = specificity,
+              false_pos = false_pos,
+              false_neg = false_neg))
+}

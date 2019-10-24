@@ -485,3 +485,50 @@ tmp[tmp[,2]==1,1]
 # so only individual 98 has lower than 0.95 support for one of their dates yet not an a prior problem
 aug_dat_true$D[[g]][98,]
 
+g <- 2
+
+one_erroneous_entry <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(0, 1)))
+which(one_erroneous_entry)
+
+one_erroneous_entry_one_missing <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(-1, 1)))
+which(one_erroneous_entry_one_missing)
+
+two_erroneous_entries <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(1, 1)))
+which(two_erroneous_entries)
+
+post_support_this_group <- cbind(posterior_support_list[[1]][[1]], posterior_support_list[[1]][[2]])
+low_support_this_group <- post_support_this_group < threshold_consensus_support
+tmp <- which(low_support_this_group, arr.ind = TRUE)
+tmp[tmp[,2]==1,1]
+
+# so only individual 98 has lower than 0.95 support for one of their dates yet not an a prior problem
+aug_dat_true$D[[g]][98,]
+
+
+# To measure specificity: are we ever inferring an error for an individual with all observed correct errors
+at_least_one_mistake_in_obs <- lapply(1:length(aug_dat_true$E), function(g) 
+  sapply(1:nrow(aug_dat_true$E[[g]]), function(i) 
+    (1 %in% aug_dat_true$E[[g]][i,])))
+at_least_one_mistake_detected_in_consensus <- lapply(1:length(consensus$E), function(g) 
+  sapply(1:nrow(consensus$E[[g]]), function(i) 
+    (1 %in% consensus$E[[g]][i,])))
+
+true_neg_indiv <- lapply(1:length(aug_dat_true$E), function(g)
+  which(at_least_one_mistake_in_obs[[g]] == 0 & at_least_one_mistake_detected_in_consensus[[g]] == 0))
+
+true_pos_indiv <- lapply(1:length(aug_dat_true$E), function(g)
+  which(at_least_one_mistake_in_obs[[g]] == 1 & at_least_one_mistake_detected_in_consensus[[g]] == 1))
+
+false_neg_indiv <- lapply(1:length(aug_dat_true$E), function(g)
+  which(at_least_one_mistake_in_obs[[g]] == 1 & at_least_one_mistake_detected_in_consensus[[g]] == 0))
+
+false_pos_indiv <- lapply(1:length(aug_dat_true$E), function(g)
+  which(at_least_one_mistake_in_obs[[g]] == 0 & at_least_one_mistake_detected_in_consensus[[g]] == 1))
+
+ability_to_detect_individuals_with_errors <- list(
+  sensitivity = lengths(true_pos_indiv) / (lengths(true_pos_indiv) + lengths(false_neg_indiv)),
+  specifiticy = lengths(true_neg_indiv) / (lengths(true_neg_indiv) + lengths(false_pos_indiv))
+)
+
+
+

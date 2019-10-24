@@ -401,16 +401,27 @@ false_pos <- detec$false_pos
 lapply(1:length(detec$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
 
 g <- 1
-i <- 23#9#54
-j <- 2#2#1
-j2 <- 1#1#2
+i <- 65#52#10#9#54
+j <- 2#1
+j2 <- 1#2
 par(mfrow = c(2, 1))
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j2]), type = "l")
 
-# in group 1 mostly posterior support for error is not huge
+g <- 3
+i <- 88
+par(mfrow = c(4, 1))
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 1]), type = "l")
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), type = "l")
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 3]), type = "l")
+plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 4]), type = "l")
+aug_dat_true$E[[g]][i,]
+aug_dat_true$D[[g]][i,]
+obs_dat[[g]][i,]
+consensus_E[[g]][i,]
 
-
+# posterior support for error is not huge
+# in group 1 mostly 50% chance of each being an error - which makes sense when only 2 dates observed
 
 ### sensitivity: where we've not detected an error, what was the reason? 
 
@@ -419,20 +430,20 @@ false_neg <- detec$false_neg
 lapply(1:length(detec$sensitivity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
 
 g <- 4
-i <- 92#85#96
-j <- 4#3#2
+i <- 96#92#85#
+j <- 2#4#3#
 
 g <- 3
-i <- 78#40
-j <- 3#3
+i <- 88#40#78#
+j <- 1#3#3#
 
 g <- 2
 i <- 70
 j <- 3
 
-g <- 1
-i <- 54#9
-j <- 2#1
+g <- 1 # these are the same as the false_pos but for the other date - makes sense
+i <- 54
+j <- 2
 aug_dat_true$D[[g]][i,]
 obs_dat[[g]][i,]
 aug_dat_true$D[[g]][i,j]

@@ -398,14 +398,22 @@ move_Ei <- function(i, group_idx, date_idx,
     
     if(curr_E_value==0)# moving from E=0 to E=1
     {
-      proposed <- propose_move_from_E0_to_E1(i, group_idx, date_idx, 
-                                             curr_aug_dat,
-                                             theta, 
-                                             obs_dat, 
-                                             hyperparameters, 
-                                             index_dates,
-                                             range_dates,
-                                             tol = tol)
+      if(!any(curr_aug_dat$E[[group_idx]][i,-date_idx] == 0))
+      {
+        # in that case we don't want to move the "last" correctly observed date to erroneous
+        # otherwise we end up stuck in spcae of only erroneous/missing data
+        proposed <- NULL
+      } else
+      {
+        proposed <- propose_move_from_E0_to_E1(i, group_idx, date_idx, 
+                                               curr_aug_dat,
+                                               theta, 
+                                               obs_dat, 
+                                               hyperparameters, 
+                                               index_dates,
+                                               range_dates,
+                                               tol = tol)
+      }
       
       if(!is.null(proposed))
       {

@@ -334,43 +334,50 @@ for(g in 1:length(consensus$inferred_E))
         main = paste("group", g))
 }
 
+# save in Excel
+
 #####
 ### note: for the Excel file probably want to have white instead of green, otherwise most cells will be coloured --> annoying and not easy to spot the mistakes I think
 #####
 
-# save in Excel
-
+### using example from here: https://rdrr.io/cran/openxlsx/man/conditionalFormatting.html
+library(openxlsx)
 file <- "consensus.xlsx"
-
-# exporting data.frame to excel is easy with xlsx package
-for(g in 1:length(consensus$inferred_E))
+whiteStyle <- createStyle(fontColour = "#000000", bgFill = "#FFFFFF")
+greyStyle <- createStyle(fontColour = "#000000", bgFill = "#A0A0A0")
+yellowStyle <- createStyle(fontColour = "#000000", bgFill = "#FFFF00")
+orangeStyle <- createStyle(fontColour = "#000000", bgFill = "#FF8000")
+redStyle <- createStyle(fontColour = "#000000", bgFill = "#FF0000")
+wb <- createWorkbook()
+for(g in 1:length(consensus$inferred_E_numeric))
 {
-  sheetname <- paste0("group_", g)
-  xlsx::write.xlsx(consensus$inferred_D[[g]], file, sheetName = sheetname)
+  sheet_name <- paste0("group_", g)
+  addWorksheet(wb, sheet_name)
+  writeData(wb, sheet_name, 
+            consensus$inferred_E_numeric[[g]], colNames=FALSE)  ## write data.frame
+  conditionalFormatting(wb, sheet_name,
+                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
+                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
+                        rule="==0", style = greyStyle)
+  conditionalFormatting(wb, sheet_name,
+                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
+                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
+                        rule="==1", style = whiteStyle)
+  conditionalFormatting(wb, sheet_name,
+                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
+                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
+                        rule="==2", style = yellowStyle)
+  conditionalFormatting(wb, sheet_name,
+                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
+                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
+                        rule="==3", style = orangeStyle)
+  conditionalFormatting(wb, sheet_name,
+                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
+                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
+                        rule="==4", style = redStyle)
 }
-# but we want to highlight cells according to consensus$inferred_E_numeric
-wb <- loadWorkbook(file)              # load workbook
-fo0 <- Fill(foregroundColor="grey")   # create fill object # 0
-cs0 <- CellStyle(wb, fill=fo0)        # create cell style # 0
-fo1 <- Fill(foregroundColor="white")    # create fill object # 1
-cs1 <- CellStyle(wb, fill=fo1)        # create cell style # 1 
-fo2 <- Fill(foregroundColor="yellow")    # create fill object # 2
-cs2 <- CellStyle(wb, fill=fo2)        # create cell style # 2 
-fo3 <- Fill(foregroundColor="orange")    # create fill object # 3
-cs3 <- CellStyle(wb, fill=fo3)        # create cell style # 3
-fo4 <- Fill(foregroundColor="red")       # create fill object # 4
-cs4 <- CellStyle(wb, fill=fo4)        # create cell style # 4
-sheets <- getSheets(wb)               # get all sheets
-sheet <- sheets[[sheetname]]          # get specific sheet
-rows <- getRows(sheet, rowIndex=2:(nrow(d)+1))     # get rows
-# 1st row is headers
-cells <- getCells(rows, colIndex = 2:cols)         # get cells
+saveWorkbook(wb, file, TRUE)
 
-# in the wb I import with loadWorkbook, numeric data starts in column 2
-# The first column is row numbers.  The last column is "yes" and "no" entries, so
-# we do not include them, thus we use colIndex = 2:cols
-
-values <- lapply(cells, getCellValue) # extract the cell values
 
 #####
 

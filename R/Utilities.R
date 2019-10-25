@@ -598,30 +598,82 @@ my_mode <- function(x) { # function to get the mode
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-get_consensus <- function(aug_dat_true, MCMCres, posterior = c("mode", "median"))
+get_consensus <- function(MCMCres, obs_dat,
+                          posterior = c("mode", "median"), 
+                          threshold_error_support = 0)
 {
+  if(!is.numeric(threshold_error_support) | threshold_error_support<0 | threshold_error_support>1)
+  {
+    stop("threshold_error_support should be a numeric value between 0 and 1")
+  }
   posterior <- match.arg(posterior)
-  consensus_D <- aug_dat_true$D
-  consensus_E <- aug_dat_true$E
+  consensus_D <- MCMCres$aug_dat_chain[[1]]$D
+  inferred_D <- MCMCres$aug_dat_chain[[1]]$D
+  support_D <- consensus_D
+  consensus_E <- MCMCres$aug_dat_chain[[1]]$E
+  inferred_E <- MCMCres$aug_dat_chain[[1]]$E
+  inferred_E_numeric <- inferred_E
+  support_E <- consensus_E
   for(g in 1:length(consensus_D))
   {
     for(i in 1:nrow(consensus_D[[g]]))
     {
       for(j in 1:ncol(consensus_D[[g]]))
       {
+        tmp_D <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j])
+        tmp_E <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j])
         if(posterior == "median")
         {
-          consensus_D[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-          consensus_E[[g]][i,j] <- median(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+          consensus_D[[g]][i,j] <- median(tmp_D)
+          consensus_E[[g]][i,j] <- median(tmp_E)
         } else if(posterior == "mode")
         {
-          consensus_D[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-          consensus_E[[g]][i,j] <- my_mode(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]))
+          consensus_D[[g]][i,j] <- my_mode(tmp_D)
+          consensus_E[[g]][i,j] <- my_mode(tmp_E)
         }
+        support_D[[g]][i,j] <- sum(tmp_D == consensus_D[[g]][i,j]) / length(tmp_D)
+        support_E[[g]][i,j] <- sum(tmp_E == consensus_E[[g]][i,j]) / length(tmp_E)
+        if(consensus_E[[g]][i,j] == 1) 
+        {
+          if(support_E[[g]][i,j] >= threshold_error_support)
+          {
+            inferred_D[[g]][i, j] <- consensus_D[[g]][i,j]  
+            inferred_E[[g]][i,j] <- "error_high_support"
+            inferred_E_numeric[[g]][i,j] <- 4
+          }else
+          {
+            # if we detect an error but it's got 'low support', we revert to the observed value
+            inferred_D[[g]][i, j] <- obs_dat[[g]][i,j]  
+            inferred_E[[g]][i,j] <- "error_low_support"
+            inferred_E_numeric[[g]][i,j] <- 3
+          }
+        } else if(consensus_E[[g]][i,j] == 0) 
+        {
+          if(support_E[[g]][i,j] >= threshold_error_support)
+          {
+            inferred_D[[g]][i, j] <- consensus_D[[g]][i,j]  
+            inferred_E[[g]][i,j] <- "no_error_high_support"
+            inferred_E_numeric[[g]][i,j] <- 1
+          }else
+          {
+            inferred_D[[g]][i, j] <- obs_dat[[g]][i,j]  
+            inferred_E[[g]][i,j] <- "no_error_low_support"
+            inferred_E_numeric[[g]][i,j] <- 2
+          }
+        } else if(consensus_E[[g]][i,j] == -1) 
+        {
+          inferred_D[[g]][i, j] <- consensus_D[[g]][i,j]  
+          inferred_E[[g]][i,j] <- "missing_data"
+          inferred_E_numeric[[g]][i,j] <- 0
+        }
+        
       }
     }
   }
-  return(list(D = consensus_D, E = consensus_E))
+  return(list(consensus_D = consensus_D, consensus_E = consensus_E,
+              support_D = support_D, support_E = support_E,
+              inferred_D = inferred_D, inferred_E = inferred_E,
+              inferred_E_numeric = inferred_E_numeric))
 }
 
 ### Compute sensitivity and specificity of detecting errors in dates
@@ -664,4 +716,13 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
               specificity = specificity,
               false_pos = false_pos,
               false_neg = false_neg))
+}
+
+are_true_param_in_95perc_post <- function(MCMCres, theta_true)
+{
+  param_post <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) unlist(MCMCres$theta_chain[[e]]))
+  param_post_summary <- apply(param_post, 1, summary)
+  param_post_summary <- rbind(param_post_summary, apply(param_post, 1, quantile, c(0.025, 0.975)))
+  unlist(theta_true[-match("prop_missing_data", names(theta_true))]) >= param_post_summary["2.5%", ] & 
+    unlist(theta_true[-match("prop_missing_data", names(theta_true))]) <= param_post_summary["97.5%", ]
 }

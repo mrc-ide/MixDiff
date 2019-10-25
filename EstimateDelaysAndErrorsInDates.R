@@ -18,11 +18,17 @@ rm(list=ls())
 ### if needed, compile documentation, then check, build and install the package ###
 ###############################################
 
+### to install from local version (ANNE)
 ##devtools::install_github("mrc-ide/rmnist")
 #devtools::document()
 #devtools::check()
 #devtools::build()
 #devtools::install()
+
+### to install from remote (NATSUKO and others)
+# devtools::install_github("MJomaba/MixDiff@anne")
+
+### load library
 library(MixDiff)
 
 ###############################################
@@ -42,7 +48,7 @@ if(!USE_SIMULATED_DATA)
   obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 } else
 {
-  name_place_to_load_simulated_data_from <- "1" # "2"
+  name_place_to_load_simulated_data_from <- "2" # "1" # 
   where_to_load_from <- paste0("./SimulatedData/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
 }
@@ -80,7 +86,7 @@ hyperparameters <- list(
   shape1_prob_error=3, 
   shape2_prob_error=12, 
   mean_mean_delay=100, 
-  mean_CV_delay=100)
+  mean_CV_delay=100) # AT THE MOMENT NOT USED 
 
 ###############################################
 ### Run the MCMC  ###
@@ -152,6 +158,8 @@ dev.off()
 pdf(paste0(where_to_load_from,"/AugDataConvergencePlots_",ext,".pdf"), width=14, height=14)
 plot_aug_dat_chains(MCMCres, aug_dat_true)
 dev.off()
+
+### get consensus ###
 
 ###############################################
 ### Correlations and autocorrelation ###
@@ -311,13 +319,32 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # other datasets - Marc to talk to John? 
 # outputs: proportion erroneous data - ... - nice graphs
 
-consensus <- get_consensus(aug_dat_true, MCMCres, posterior = "mode")
+consensus <- MixDiff:::get_consensus(MCMCres, 
+                                     obs_dat, 
+                                     posterior = "mode", 
+                                     threshold_error_support = 0.95)
+
+
+par(mfrow = c(2, 2), mar = c(4, 4, 5, .5))
+for(g in 1:length(consensus$inferred_E))
+{
+  image(t(consensus$inferred_E_numeric[[g]]), 
+        col = c("white", "forestgreen", "yellow", "orange", "red"), 
+        breaks = seq(-0.5, 4.5, 1),
+        main = paste("group", g))
+}
+
+
+
+
+#####
+
 
 par(mfrow = c(4, 2))
 for(g in 1:4)
 {
   image(t(aug_dat_true$E[[g]]), col = c( "red", "forestgreen", "grey"))
-  image(t(consensus$E[[g]]), col = c( "red", "forestgreen", "grey"))
+  image(t(consensus$consensus_E[[g]]), col = c( "red", "forestgreen", "grey"))
 }
 
 g <- 1
@@ -328,7 +355,7 @@ table(aug_dat_true$E[[g]] == consensus$E[[g]])['FALSE'] / sum(table(aug_dat_true
 
 ### Compute sensitivity and specificity of detecting errors in dates
 # remove missing dates from the denominator
-detec <- compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus)
+detec <- MixDiff:::compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus)
 
 ### specificity: where we've detected an error which did not exist, what was the reason? 
 
@@ -337,15 +364,15 @@ false_pos <- detec$false_pos
 lapply(1:length(detec$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
 
 g <- 1
-i <- 65#52#10#9#54
-j <- 2#1
-j2 <- 1#2
+i <- 18
+j <- 1#1
+j2 <- 2#2
 par(mfrow = c(2, 1))
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j2]), type = "l")
 
-g <- 3
-i <- 88
+g <- 4
+i <- 5
 par(mfrow = c(4, 1))
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 1]), type = "l")
 plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), type = "l")
@@ -374,8 +401,8 @@ i <- 88#40#78#
 j <- 1#3#3#
 
 g <- 2
-i <- 70
-j <- 3
+i <- 11
+j <- 2
 
 g <- 1 # these are the same as the false_pos but for the other date - makes sense
 i <- 54
@@ -487,23 +514,12 @@ aug_dat_true$D[[g]][98,]
 
 g <- 2
 
-one_erroneous_entry <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(0, 1)))
-which(one_erroneous_entry)
-
-one_erroneous_entry_one_missing <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(-1, 1)))
-which(one_erroneous_entry_one_missing)
-
-two_erroneous_entries <- sapply(1:nrow(aug_dat_true$E[[g]]), function(i) all(sort(aug_dat_true$E[[g]][i,]) == c(1, 1)))
-which(two_erroneous_entries)
-
-post_support_this_group <- cbind(posterior_support_list[[1]][[1]], posterior_support_list[[1]][[2]])
+post_support_this_group <- cbind(posterior_support_list[[g]][[1]], posterior_support_list[[g]][[2]], posterior_support_list[[g]][[3]])
 low_support_this_group <- post_support_this_group < threshold_consensus_support
 tmp <- which(low_support_this_group, arr.ind = TRUE)
-tmp[tmp[,2]==1,1]
+unique(tmp[,1])
 
-# so only individual 98 has lower than 0.95 support for one of their dates yet not an a prior problem
-aug_dat_true$D[[g]][98,]
-
+# so all those with problematic consensus have a low posterior support for at least one date
 
 # To measure specificity: are we ever inferring an error for an individual with all observed correct errors
 at_least_one_mistake_in_obs <- lapply(1:length(aug_dat_true$E), function(g) 
@@ -530,5 +546,26 @@ ability_to_detect_individuals_with_errors <- list(
   specifiticy = lengths(true_neg_indiv) / (lengths(true_neg_indiv) + lengths(false_pos_indiv))
 )
 
+g <- 4
+i <- 5
+consensus$E[[g]][i,]
+consensus$D[[g]][i,]
+aug_dat_true$E[[g]][i,]
+aug_dat_true$D[[g]][i,]
+obs_dat[[g]][i,]
+
+# issue: sometimes the consensus date will be the true D as here, but the consensus E will be E = 1
+# this can happen because for E = 1 there sill be multiple D values, which each will have low support
+
+tmp_chain_E <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i,1])
+plot(tmp_chain_E, typ = "l")
+tmp_chain_D <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i,1])
+plot(tmp_chain_D, typ = "l")
+
+hist(tmp_chain_E, col = "grey")
+hist(tmp_chain_D, col = "grey")
+
+#### examining parameter values ####
+are_true_param_in_95perc_post(MCMCres, theta_true)
 
 

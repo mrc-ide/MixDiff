@@ -375,9 +375,14 @@ for(g in 1:length(consensus$inferred_E_numeric))
                         cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
                         rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
                         rule="==4", style = redStyle)
+  # now what I really want is keep formatting above but write these values inside:
+  #writeData(wb, sheet_name, 
+  #          consensus$inferred_D[[g]], colNames=FALSE)  ## write data.frame
+  # maybe instead use this:
+  #https://cran.r-project.org/web/packages/tidyxl/vignettes/tidyxl.html
+  # alternatively create other sheets with the inferred_E_numeric which we use to define the colour
 }
 saveWorkbook(wb, file, TRUE)
-
 
 #####
 

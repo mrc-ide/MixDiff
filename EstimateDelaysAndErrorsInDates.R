@@ -354,7 +354,7 @@ for(g in 1:length(consensus$inferred_E_numeric))
   sheet_name <- paste0("group_", g,"_color_code")
   addWorksheet(wb, sheet_name)
   writeData(wb, sheet_name, 
-            consensus$inferred_D[[g]], colNames=FALSE) 
+            sapply(1:ncol(consensus$inferred_D[[g]]), function(j) as.character(int_to_date(consensus$inferred_D[[g]][,j]))), colNames=FALSE) 
   
   if(any(consensus$inferred_E_numeric[[g]] == 0))
   {
@@ -400,7 +400,10 @@ for(g in 1:length(consensus$inferred_E_numeric))
       addStyle(wb, sheet = g, redStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
     }
   }
+  setColWidths(wb, sheet = g, cols = 1:ncol(consensus$inferred_D[[g]]), 
+                                            widths = 10)
 }
+
 saveWorkbook(wb, file, overwrite = TRUE)
 
 

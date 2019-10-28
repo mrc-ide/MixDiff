@@ -343,46 +343,66 @@ for(g in 1:length(consensus$inferred_E))
 ### using example from here: https://rdrr.io/cran/openxlsx/man/conditionalFormatting.html
 library(openxlsx)
 file <- "consensus.xlsx"
-whiteStyle <- createStyle(fontColour = "#000000", bgFill = "#FFFFFF")
-greyStyle <- createStyle(fontColour = "#000000", bgFill = "#A0A0A0")
-yellowStyle <- createStyle(fontColour = "#000000", bgFill = "#FFFF00")
-orangeStyle <- createStyle(fontColour = "#000000", bgFill = "#FF8000")
-redStyle <- createStyle(fontColour = "#000000", bgFill = "#FF0000")
+whiteStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFFFF")
+greyStyle <- createStyle(fontColour = "#000000", fgFill = "#A0A0A0")
+yellowStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFF00")
+orangeStyle <- createStyle(fontColour = "#000000", fgFill = "#FF8000")
+redStyle <- createStyle(fontColour = "#000000", fgFill = "#FF0000")
 wb <- createWorkbook()
 for(g in 1:length(consensus$inferred_E_numeric))
 {
-  sheet_name <- paste0("group_", g)
+  sheet_name <- paste0("group_", g,"_color_code")
   addWorksheet(wb, sheet_name)
   writeData(wb, sheet_name, 
-            consensus$inferred_E_numeric[[g]], colNames=FALSE)  ## write data.frame
-  conditionalFormatting(wb, sheet_name,
-                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
-                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
-                        rule="==0", style = greyStyle)
-  conditionalFormatting(wb, sheet_name,
-                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
-                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
-                        rule="==1", style = whiteStyle)
-  conditionalFormatting(wb, sheet_name,
-                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
-                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
-                        rule="==2", style = yellowStyle)
-  conditionalFormatting(wb, sheet_name,
-                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
-                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
-                        rule="==3", style = orangeStyle)
-  conditionalFormatting(wb, sheet_name,
-                        cols=1:ncol( consensus$inferred_E_numeric[[g]]), 
-                        rows=1:nrow( consensus$inferred_E_numeric[[g]]), 
-                        rule="==4", style = redStyle)
-  # now what I really want is keep formatting above but write these values inside:
-  #writeData(wb, sheet_name, 
-  #          consensus$inferred_D[[g]], colNames=FALSE)  ## write data.frame
-  # maybe instead use this:
-  #https://cran.r-project.org/web/packages/tidyxl/vignettes/tidyxl.html
-  # alternatively create other sheets with the inferred_E_numeric which we use to define the colour
+            consensus$inferred_D[[g]], colNames=FALSE) 
+  
+  if(any(consensus$inferred_E_numeric[[g]] == 0))
+  {
+    tmp <- which(consensus$inferred_E_numeric[[g]] == 0, arr.ind = TRUE)
+    for(kk in 1:max(tmp[,2]))
+    {
+      tmp_kk <- tmp[tmp[,2]==kk,1]
+      addStyle(wb, sheet = g, greyStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+    }
+  }
+  if(any(consensus$inferred_E_numeric[[g]] == 1))
+  {
+    tmp <- which(consensus$inferred_E_numeric[[g]] == 1, arr.ind = TRUE)
+    for(kk in 1:max(tmp[,2]))
+    {
+      tmp_kk <- tmp[tmp[,2]==kk,1]
+      addStyle(wb, sheet = g, whiteStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+    }
+  }
+  if(any(consensus$inferred_E_numeric[[g]] == 2))
+  {
+    tmp <- which(consensus$inferred_E_numeric[[g]] == 2, arr.ind = TRUE)
+    for(kk in 1:max(tmp[,2]))
+    {
+      tmp_kk <- tmp[tmp[,2]==kk,1]
+      addStyle(wb, sheet = g, yellowStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+    }
+  }
+  if(any(consensus$inferred_E_numeric[[g]] == 3))
+  {tmp <- which(consensus$inferred_E_numeric[[g]] == 3, arr.ind = TRUE)
+  for(kk in 1:max(tmp[,2]))
+  {
+    tmp_kk <- tmp[tmp[,2]==kk,1]
+    addStyle(wb, sheet = g, orangeStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+  }
+  }
+  if(any(consensus$inferred_E_numeric[[g]] == 4))
+  {
+    tmp <- which(consensus$inferred_E_numeric[[g]] == 4, arr.ind = TRUE)
+    for(kk in 1:max(tmp[,2]))
+    {
+      tmp_kk <- tmp[tmp[,2]==kk,1]
+      addStyle(wb, sheet = g, redStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+    }
+  }
 }
-saveWorkbook(wb, file, TRUE)
+saveWorkbook(wb, file, overwrite = TRUE)
+
 
 #####
 

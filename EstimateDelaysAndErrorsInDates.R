@@ -319,7 +319,7 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # other datasets - Marc to talk to John? 
 # outputs: proportion erroneous data - ... - nice graphs
 
-consensus <- MixDiff:::get_consensus(MCMCres, 
+consensus <- get_consensus(MCMCres, 
                                      obs_dat, 
                                      posterior = "mode", 
                                      threshold_error_support = 0.95)
@@ -335,76 +335,12 @@ for(g in 1:length(consensus$inferred_E))
 }
 
 # save in Excel
+write_xlsx_consensus(consensus,
+                                 file = "consensus.xlsx",
+                                 where = "./",
+                                 col_width = 10,
+                                 overwrite = TRUE)
 
-#####
-### note: for the Excel file probably want to have white instead of green, otherwise most cells will be coloured --> annoying and not easy to spot the mistakes I think
-#####
-
-### using example from here: https://rdrr.io/cran/openxlsx/man/conditionalFormatting.html
-library(openxlsx)
-file <- "consensus.xlsx"
-whiteStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFFFF")
-greyStyle <- createStyle(fontColour = "#000000", fgFill = "#A0A0A0")
-yellowStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFF00")
-orangeStyle <- createStyle(fontColour = "#000000", fgFill = "#FF8000")
-redStyle <- createStyle(fontColour = "#000000", fgFill = "#FF0000")
-wb <- createWorkbook()
-for(g in 1:length(consensus$inferred_E_numeric))
-{
-  sheet_name <- paste0("group_", g,"_color_code")
-  addWorksheet(wb, sheet_name)
-  writeData(wb, sheet_name, 
-            sapply(1:ncol(consensus$inferred_D[[g]]), function(j) as.character(int_to_date(consensus$inferred_D[[g]][,j]))), colNames=FALSE) 
-  
-  if(any(consensus$inferred_E_numeric[[g]] == 0))
-  {
-    tmp <- which(consensus$inferred_E_numeric[[g]] == 0, arr.ind = TRUE)
-    for(kk in 1:max(tmp[,2]))
-    {
-      tmp_kk <- tmp[tmp[,2]==kk,1]
-      addStyle(wb, sheet = g, greyStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
-    }
-  }
-  if(any(consensus$inferred_E_numeric[[g]] == 1))
-  {
-    tmp <- which(consensus$inferred_E_numeric[[g]] == 1, arr.ind = TRUE)
-    for(kk in 1:max(tmp[,2]))
-    {
-      tmp_kk <- tmp[tmp[,2]==kk,1]
-      addStyle(wb, sheet = g, whiteStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
-    }
-  }
-  if(any(consensus$inferred_E_numeric[[g]] == 2))
-  {
-    tmp <- which(consensus$inferred_E_numeric[[g]] == 2, arr.ind = TRUE)
-    for(kk in 1:max(tmp[,2]))
-    {
-      tmp_kk <- tmp[tmp[,2]==kk,1]
-      addStyle(wb, sheet = g, yellowStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
-    }
-  }
-  if(any(consensus$inferred_E_numeric[[g]] == 3))
-  {tmp <- which(consensus$inferred_E_numeric[[g]] == 3, arr.ind = TRUE)
-  for(kk in 1:max(tmp[,2]))
-  {
-    tmp_kk <- tmp[tmp[,2]==kk,1]
-    addStyle(wb, sheet = g, orangeStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
-  }
-  }
-  if(any(consensus$inferred_E_numeric[[g]] == 4))
-  {
-    tmp <- which(consensus$inferred_E_numeric[[g]] == 4, arr.ind = TRUE)
-    for(kk in 1:max(tmp[,2]))
-    {
-      tmp_kk <- tmp[tmp[,2]==kk,1]
-      addStyle(wb, sheet = g, redStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
-    }
-  }
-  setColWidths(wb, sheet = g, cols = 1:ncol(consensus$inferred_D[[g]]), 
-                                            widths = 10)
-}
-
-saveWorkbook(wb, file, overwrite = TRUE)
 
 
 #####

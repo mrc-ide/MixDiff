@@ -598,9 +598,40 @@ my_mode <- function(x) { # function to get the mode
   ux[which.max(tabulate(match(x, ux)))]
 }
 
+#' Computes the posterior support for errors, and classifies each dates according to a threshold support
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. This must be the same as the obseerved data which were used to generate MCMCres
+#' @param posterior the function used to determine the "consensus" values absed on the posterior: either "mode" (used by default) or "median". 
+#' @param threshold_error_support a numeric value between 0 and 1 used to determine the threshold required to classify an error as "almost certain". 
+#' @return A list with the following objects: 
+#' \itemize{
+#' \item{\code{consensus_D}}{: A list similar to obs_dat, but where missing dates have been replaced by the mode or median posterior, and 
+#' the other dates have been replaced by the mode or median posterior (irrespective of error status).}
+#' \item{\code{consensus_E}}{: A list structured similarly to \code{consensus_D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{consensus_E=-1}), 
+#'  where the mode or median posterior indicates that \code{obs_dat} is recorded but with error (\code{consensus_E=1}), and where the mode or median posterior indicates that \code{obs_dat} is recorded with no error (\code{consensus_E=0}). 
+#'  Note that \code{consensus_E} can be 1 but \code{consensus_D} be equal to \code{obs_dat} because \code{consensus_D} is obtained from the full posterior distribution of dates, not conditional on the error status.}
+#' \item{\code{inferred_D}}{: A list similar to obs_dat, but where missing dates have been replaced by the mode or median posterior, and when the posteior support for error is larger than \code{threshold_error_support},
+#' i.e. the error is almost certain, the observed dates have been replaced by the mode or median of the posterior dates conditional on presencen of error. }
+#' \item{\code{inferred_E}}{: A list structured similarly to \code{consensus_E}, containing the following codes:
+#' missing data (if \code{consensus_E} = -1), 
+#' non erroneous date with high support (if \code{consensus_E} = 0 and the support for this is larger than \code{threshold_error_support}),
+#' non erroneous date ut without high support (if \code{consensus_E} = 0 and the support for this is smaller than \code{threshold_error_support}),
+#' erroneous date but without high support (if \code{consensus_E} = 1 and the support for this is smaller than \code{threshold_error_support}),
+#' erroneous date with high support (if \code{consensus_E} = 1 and the support for this is larger than \code{threshold_error_support})}
+#' \item{\code{inferred_E_numeric}}{: As \code{inferred_E} but with the following numeric coding: 
+#' 0 = missing data, 
+#' 1 = non erroneous date with high support,
+#' 2 = non erroneous date but without high support,
+#' 3 = erroneous date but without high support,
+#' 4 = erroneous date with high support}
+#' }
+#' @export
+#' @examples
+#' # TO WRITE
 get_consensus <- function(MCMCres, obs_dat,
                           posterior = c("mode", "median"), 
-                          threshold_error_support = 0)
+                          threshold_error_support = 0.5)
 {
   if(!is.numeric(threshold_error_support) | threshold_error_support<0 | threshold_error_support>1)
   {
@@ -674,6 +705,96 @@ get_consensus <- function(MCMCres, obs_dat,
               support_D = support_D, support_E = support_E,
               inferred_D = inferred_D, inferred_E = inferred_E,
               inferred_E_numeric = inferred_E_numeric))
+}
+
+#' Writes Excel file corresponding to the original data, with inferred missing and erroneous dates recorded instead of the observations, and cells colour coded according to the posterior support for error. 
+#'
+#' @param consensus the output of function \code{\link{get_consensus}}
+#' @param file Name of file to be written
+#' @param where location of the file to be written
+#' @param col_width column width for the file to be written
+#' @param overwrite boolean indicating whether to overwrite file if a file with that name already exists
+#' @return Nothing, but writes an excel file in the indicated location with one sheet per group of individuals. 
+#' In each sheet, each row corresponds to one individual and each column a date for that individual. 
+#' Cells are coloured as followed: 
+#' 1) white if the consensus (for a given threshold, see function \code{\link{get_consensus}}) infers that the date is correct with a high posterior probability 
+#' 2) grey if the date was missing - in that case the mode of the posterior for that date is recorded
+#' 3) yellow if the consensus infers that the date is most likely correct but not with a high posterior probability - the date recorded is the observed date
+#' 4) orange if the consensus infers that the date is most likely incorrect but not with a high posterior probability - the date recorded is still the observed date
+#' 5) red if the consensus infers that the date is incorrect with a high posterior probability - in that case the date recorded is the mode of the posterior for that date
+#' @export
+#' @examples
+#' # TO WRITE
+write_xlsx_consensus <- function(consensus,
+                                 file = "consensus.xlsx",
+                                 where = "./",
+                                 col_width = 10,
+                                 overwrite = FALSE)
+{
+  # colours used for the cells:
+  whiteStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFFFF")
+  greyStyle <- createStyle(fontColour = "#000000", fgFill = "#A0A0A0")
+  yellowStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFF00")
+  orangeStyle <- createStyle(fontColour = "#000000", fgFill = "#FF8000")
+  redStyle <- createStyle(fontColour = "#000000", fgFill = "#FF0000")
+  
+  wb <- createWorkbook()
+  for(g in 1:length(consensus$inferred_E_numeric))
+  {
+    sheet_name <- paste0("group_", g,"_color_code")
+    addWorksheet(wb, sheet_name)
+    writeData(wb, sheet_name, 
+              sapply(1:ncol(consensus$inferred_D[[g]]), function(j) as.character(int_to_date(consensus$inferred_D[[g]][,j]))), colNames=FALSE) 
+    
+    if(any(consensus$inferred_E_numeric[[g]] == 0))
+    {
+      tmp <- which(consensus$inferred_E_numeric[[g]] == 0, arr.ind = TRUE)
+      for(kk in 1:max(tmp[,2]))
+      {
+        tmp_kk <- tmp[tmp[,2]==kk,1]
+        addStyle(wb, sheet = g, greyStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+      }
+    }
+    if(any(consensus$inferred_E_numeric[[g]] == 1))
+    {
+      tmp <- which(consensus$inferred_E_numeric[[g]] == 1, arr.ind = TRUE)
+      for(kk in 1:max(tmp[,2]))
+      {
+        tmp_kk <- tmp[tmp[,2]==kk,1]
+        addStyle(wb, sheet = g, whiteStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+      }
+    }
+    if(any(consensus$inferred_E_numeric[[g]] == 2))
+    {
+      tmp <- which(consensus$inferred_E_numeric[[g]] == 2, arr.ind = TRUE)
+      for(kk in 1:max(tmp[,2]))
+      {
+        tmp_kk <- tmp[tmp[,2]==kk,1]
+        addStyle(wb, sheet = g, yellowStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+      }
+    }
+    if(any(consensus$inferred_E_numeric[[g]] == 3))
+    {tmp <- which(consensus$inferred_E_numeric[[g]] == 3, arr.ind = TRUE)
+    for(kk in 1:max(tmp[,2]))
+    {
+      tmp_kk <- tmp[tmp[,2]==kk,1]
+      addStyle(wb, sheet = g, orangeStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+    }
+    }
+    if(any(consensus$inferred_E_numeric[[g]] == 4))
+    {
+      tmp <- which(consensus$inferred_E_numeric[[g]] == 4, arr.ind = TRUE)
+      for(kk in 1:max(tmp[,2]))
+      {
+        tmp_kk <- tmp[tmp[,2]==kk,1]
+        addStyle(wb, sheet = g, redStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+      }
+    }
+    setColWidths(wb, sheet = g, cols = 1:ncol(consensus$inferred_D[[g]]), 
+                 widths = col_width)
+  }
+  
+  saveWorkbook(wb, file.path(dirname(where), file), overwrite = overwrite)
 }
 
 ### Compute sensitivity and specificity of detecting errors in dates

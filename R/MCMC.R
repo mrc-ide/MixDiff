@@ -867,6 +867,7 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
     if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
   }
   
+  # TO DO: here suggest to add all inputs into the list output so you can recover what data this was based on and what MCMC settings etc. 
   return(output)
   
 }

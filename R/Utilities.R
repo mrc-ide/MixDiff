@@ -803,7 +803,7 @@ write_xlsx_consensus <- function(consensus,
                  widths = col_width)
   }
   
-  if(substr(where, nchar(where), nchar(where)) != "/") where <- paste0(where, "/")
+  if(substr(where, nchar(where), nchar(where)) != "/") where <- paste0(where,)
   saveWorkbook(wb, file.path(where, file), overwrite = overwrite)
 }
 
@@ -813,11 +813,11 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
 {
   tmp <- aug_dat_true$E
   aug_dat_true_E_no_missing <- tmp
-  consensus$E_no_missing <- consensus$E
+  consensus$E_no_missing <- consensus$consensus_E
   for(g in 1:length(tmp))
   {
     aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
-    consensus$E_no_missing[[g]] [consensus$E[[g]] == -1] <- NA
+    consensus$E_no_missing[[g]] [consensus$consensus_E[[g]] == -1] <- NA
   }
   
   sensitivity <- specificity <- rep(NA, 4)
@@ -856,4 +856,15 @@ are_true_param_in_95perc_post <- function(MCMCres, theta_true)
   param_post_summary <- rbind(param_post_summary, apply(param_post, 1, quantile, c(0.025, 0.975)))
   unlist(theta_true[-match("prop_missing_data", names(theta_true))]) >= param_post_summary["2.5%", ] & 
     unlist(theta_true[-match("prop_missing_data", names(theta_true))]) <= param_post_summary["97.5%", ]
+}
+
+check_not_all_missing <- function(obs_dat)
+{
+  problem <- lapply(1:length(obs_dat), function(g) 
+    which(apply(is.na(obs_dat[[g]]), 1, sum) == ncol(obs_dat[[g]]))
+  )
+  if(any(lengths(problem)>0))
+  {
+    stop("Your dataset contains individuals with only missing dates. Please discard them. ")
+  }
 }

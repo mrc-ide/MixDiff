@@ -116,7 +116,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
 #' ### (some individuals with only missing data do not appear in the observed dataset)
 #' nrow(D$true_dat[[1]])
 #' nrow(observed_D$obs_dat[[1]])
-simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=FALSE)
+simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=TRUE)
 {
   E <- D
   obs_dat <- D

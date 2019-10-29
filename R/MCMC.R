@@ -69,6 +69,12 @@ RunMCMC <- function(obs_dat,
   n_groups <- length(n_dates)
   
   ###############################################
+  ### check for issues in observations - i.e. cases with only missing observations ###
+  ###############################################
+  
+  check_not_all_missing(obs_dat)
+  
+  ###############################################
   ### fix the random seed if appropriate ###
   ###############################################
   

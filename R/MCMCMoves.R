@@ -184,6 +184,7 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
   {
     while(proposed$inferred == obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
     {
+      browser()
       proposed <- sample_new_date_value(group_idx, 
                                         can_be_inferred_directly_from, 
                                         index_dates, tol = tol)

@@ -338,7 +338,7 @@ for(g in 1:length(consensus$inferred_E))
 # save in Excel
 write_xlsx_consensus(consensus,
                                  file = "consensus.xlsx",
-                                 where = "./",
+                                 where = where_to_load_from,
                                  col_width = 10,
                                  overwrite = TRUE)
 

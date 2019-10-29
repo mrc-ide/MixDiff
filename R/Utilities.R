@@ -803,7 +803,8 @@ write_xlsx_consensus <- function(consensus,
                  widths = col_width)
   }
   
-  saveWorkbook(wb, file.path(dirname(where), file), overwrite = overwrite)
+  if(substr(where, nchar(where), nchar(where)) != "/") where <- paste0(where, "/")
+  saveWorkbook(wb, file.path(where, file), overwrite = overwrite)
 }
 
 ### Compute sensitivity and specificity of detecting errors in dates

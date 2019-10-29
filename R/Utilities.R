@@ -505,7 +505,7 @@ sample_new_date_value <- function(g, # group index
     
     if(length(merged_possible_values)==0)
     {
-      warning("Incompatible dates, drawing from the first delay only.")
+      #warning("Incompatible dates, drawing from the first delay only.")
       return(sample_new_date_value(g, can_be_inferred_directly_from[1,], 
                                    index_dates, tol) 
       )
@@ -514,7 +514,7 @@ sample_new_date_value <- function(g, # group index
     merged_weights <- sapply(merged_possible_values, function(ee) prod(weights[all_possible_values == ee]))
     if(sum(merged_weights)==0)
     {
-      warning("Incompatible dates, drawing from the first delay only.")
+      #warning("Incompatible dates, drawing from the first delay only.")
       return(sample_new_date_value(g, can_be_inferred_directly_from[1,], 
                                    index_dates, tol) 
       )

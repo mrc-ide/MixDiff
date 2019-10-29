@@ -72,6 +72,7 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                        #chain_properties=list(n_iter = 500, burnin = 1, record_every=1),
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2),
                        chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
+                       #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
                        tol = 1e-6)
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
@@ -92,14 +93,14 @@ hyperparameters <- list(
 ### Run the MCMC  ###
 ###############################################
 
-set.seed(1)
 #Rprof()
 system.time({
   #  profvis::profvis({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
                      hyperparameters,
-                     index_dates)
+                     index_dates, 
+                     seed = 1)
 })
 #Rprof(NULL)
 #summaryRprof()

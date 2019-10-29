@@ -87,7 +87,7 @@ RunMCMC <- function(obs_dat,
   ### define augmented data to be used for initialisation of the chain ###
   ###############################################
   
-  aug_dat <- initialise_aug_data(obs_dat, compute_index_dates_order(index_dates), MCMC_settings)
+  aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings)
   
   ###############################################
   ### define parameters to be used for initialisation of the chain ###

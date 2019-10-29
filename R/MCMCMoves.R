@@ -201,7 +201,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                                 obs_dat, 
                                                 hyperparameters, 
                                                 index_dates,
-                                                range_dates=NULL, 
+                                                range_dates = NULL, 
                                                 tol = 1e-6)
 {
   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
@@ -376,7 +376,7 @@ move_Ei <- function(i, group_idx, date_idx,
                     obs_dat, 
                     hyperparameters, 
                     index_dates,
-                    range_dates=NULL,
+                    range_dates = NULL,
                     tol = 1e-6) 
 {
   if(length(date_idx)>1)
@@ -578,11 +578,13 @@ swap_Ei <- function(i, group_idx,
                     obs_dat, 
                     hyperparameters, 
                     index_dates,
-                    range_dates=NULL, 
+                    range_dates = NULL, 
                     index_dates_order = compute_index_dates_order(index_dates),
                     tol = 1e-6) 
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
+  
+  reject <- 0
   
   all_E_values <- curr_aug_dat$E[[group_idx]][i,]
   date_idx <- which(all_E_values %in% c(0,1))
@@ -692,196 +694,205 @@ swap_Ei <- function(i, group_idx,
       proposed_aug_dat$D[[group_idx]][i,kk] <- proposed$inferred
     } else
     {
-      proposed_aug_dat$D[[group_idx]][i,kk] <- NULL
+      #proposed_aug_dat$D[[group_idx]][i,kk] <- NULL
+      reject <- 1
     }
   }
   
-  # for the correction factor 
-  if(any(is.null(proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1])))
-  {
-    log_prob_move <- log_prob_move(log_prob_move, -Inf)
-  } else
-  {
-    log_prob_move <- c(log_prob_move, sum(sapply(1:length(date_idx_E0_to_E1), function(kk) 
-    {
-      tmp <- compute_p_accept_move_from_E1_to_E0(i, group_idx, date_idx_E0_to_E1[kk],
-                                                 proposed_aug_dat, # the one we would be moving from 
-                                                 proposed_aug_dat_intermediate, # the one we would be moving to
-                                                 theta, obs_dat, hyperparameters, 
-                                                 index_dates,
-                                                 range_dates, 
-                                                 tol = tol)
-      return(tmp[2])
-    })))
-  }
-  
-  # if(group_idx==4 & i == 38)
-  # {
-  #   print("final proposed state:")
-  #   print(proposed_aug_dat$E[[group_idx]][i,])
-  #   print(proposed_aug_dat$D[[group_idx]][i,])
-  #   browser()
-  # }
-  
-  # probability of reverse move for missing data
-  ### TO COMPUTE
-  if(length(missing_to_update)>0)
-  {
-    #browser()
-    tmp <- 
-      infer_missing_dates(proposed_aug_dat_intermediate$D, 
-                          E = proposed_aug_dat_intermediate$E, 
-                          group_idx, i, index_dates, index_dates_order, 
-                          do_not_infer_from = date_idx_E1_to_E0, 
-                          theta, 
-                          tol = tol,
-                          move_to_D = curr_aug_dat$D[[group_idx]][i,])
-    prob_reverse <- tmp$prob_move_to_D
-  }else
-  {
-    prob_reverse <- 1
-  }
-  log_prob_reverse_move <- c(log_prob_reverse_move, log(prob_reverse))
-  # probability of reverse move for E0 to E1
-  log_prob_reverse_move <- c(log_prob_reverse_move, 0) # as for the reverse move we go back to observed data E = 0 so only one choice
-  
-  # if(group_idx==4 & i == 38)
-  # {
-  #   print("final proposed state before calculation of p_accept:")
-  #   print(proposed_aug_dat$E[[group_idx]][i,])
-  #   print(proposed_aug_dat$D[[group_idx]][i,])
-  #   browser()
-  # }
-  
-  delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
-                                      date_idx_E1_to_E0, 
-                                    nrow = nrow(index_dates[[group_idx]] )))>0)
-  delay_idx <- c(delay_idx, 
-                 which(colSums(matrix(index_dates[[group_idx]] %in% 
-                                        date_idx_E0_to_E1, 
-                                      nrow = 
-                                        nrow(index_dates[[group_idx]] )))>0))
-  
-  if(length(missing_to_update)>0)
-  {
-    delay_idx <- c(delay_idx, 
-                   which(colSums(matrix(index_dates[[group_idx]] %in% 
-                                          missing_to_update, 
-                                        nrow = 
-                                          nrow(index_dates[[group_idx]] )))>0))
-  }
-  
-  delay_idx <- sort(unique(delay_idx))
-  
-  ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat, group_idx, 
-    date_idx_E1_to_E0, i, range_dates=range_dates) - 
-      LL_observation_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, obs_dat, group_idx, 
-        date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
-    
-    sum(LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat, theta, obs_dat, group_idx, 
-      date_idx_E0_to_E1, i, range_dates=range_dates) - 
-        LL_observation_term_by_group_delay_and_indiv(
-          curr_aug_dat, theta, obs_dat, group_idx, 
-          date_idx_E0_to_E1, i, range_dates=range_dates) )   
-  
-  if(length(missing_to_update)>0)
-  {
-    ratio_post_obs <- ratio_post_obs + 
-      
-      sum(LL_observation_term_by_group_delay_and_indiv(
-        proposed_aug_dat, theta, obs_dat, group_idx, 
-        missing_to_update, i, range_dates=range_dates) - 
-          LL_observation_term_by_group_delay_and_indiv(
-            curr_aug_dat, theta, obs_dat, group_idx, 
-            missing_to_update, i, range_dates=range_dates) )
-    
-  }
-  
-  #print(ratio_post_obs)
-  ## should be the same as:
-  # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
-  
-  ratio_post_error <- sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i) - 
-                            LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)) + 
-    sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i) - 
-          LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i))
-  #print(ratio_post_error)
-  ## should be the same as:
-  # LL_error_term(proposed_aug_dat, theta, obs_dat) - LL_error_term(curr_aug_dat, theta, obs_dat)
-  
-  ratio_post_delay <- 0
-  for(d in delay_idx)
-  {
-    ratio_post_delay <- ratio_post_delay + sum(LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
-                                                 LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
-  }
-  #print(ratio_post_delay)
-  ## should be the same as:
-  # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) - LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
-  
-  ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
-  
-  ### should be the same as: 
-  ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
-    lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
-  
-  # print(paste("short", ratio_post))
-  # print(paste("long", ratio_post_long))
-  # 
-  # if(!is.infinite(ratio_post) & !is.infinite(ratio_post_long))
-  # {
-  #   if(abs(ratio_post - ratio_post_long)>1e-6)
-  #   {
-  #     browser()
-  #   }
-  # }
-  
-  # This is not a symetric move so need a correction factor
-  #print(paste("group", group_idx))
-  #print(paste("individual", i))
-  #if(group_idx == 4 & i ==21)
-  #{
-  #  browser()
-  #}
-  # if(length(missing_to_update)>0)
-  # {
-  #   browser()
-  # }
-  p_accept <- ratio_post + sum(log_prob_reverse_move) - sum(log_prob_move)
-  #print(p_accept)
-  if(p_accept>0) p_accept <- 0
-  
-  # if(group_idx==4 & i == 38)
-  # {
-  #   browser()
-  # }
-  
-  # accept/reject step
-  tmp <- log(runif(1))
-  if(tmp<p_accept) # accepting with a certain probability
-  {
-    new_aug_dat <- proposed_aug_dat
-    accept <- 1
-    # if(group_idx == 4 && i == 5)
-    # {
-    #   print("accepted")
-    # }
-    # if(length(missing_to_update)>0)
-    # {
-    #   print("accepted swap with missing values")
-    # }
-  }else # reject
+  if(reject ==1)
   {
     new_aug_dat <- curr_aug_dat
     accept <- 0
-    # if(group_idx == 4 && i == 5)
+  } else
+  {
+    
+    # for the correction factor 
+    if(any(is.null(proposed_aug_dat$D[[group_idx]][i,date_idx_E0_to_E1])))
+    {
+      log_prob_move <- log_prob_move(log_prob_move, -Inf)
+    } else
+    {
+      log_prob_move <- c(log_prob_move, sum(sapply(1:length(date_idx_E0_to_E1), function(kk) 
+      {
+        tmp <- compute_p_accept_move_from_E1_to_E0(i, group_idx, date_idx_E0_to_E1[kk],
+                                                   proposed_aug_dat, # the one we would be moving from 
+                                                   proposed_aug_dat_intermediate, # the one we would be moving to
+                                                   theta, obs_dat, hyperparameters, 
+                                                   index_dates,
+                                                   range_dates, 
+                                                   tol = tol)
+        return(tmp[2])
+      })))
+    }
+    
+    # if(group_idx==4 & i == 38)
     # {
-    #   print("rejected")
+    #   print("final proposed state:")
+    #   print(proposed_aug_dat$E[[group_idx]][i,])
+    #   print(proposed_aug_dat$D[[group_idx]][i,])
+    #   browser()
     # }
-  }	
+    
+    # probability of reverse move for missing data
+    ### TO COMPUTE
+    if(length(missing_to_update)>0)
+    {
+      #browser()
+      tmp <- 
+        infer_missing_dates(proposed_aug_dat_intermediate$D, 
+                            E = proposed_aug_dat_intermediate$E, 
+                            group_idx, i, index_dates, index_dates_order, 
+                            do_not_infer_from = date_idx_E1_to_E0, 
+                            theta, 
+                            tol = tol,
+                            move_to_D = curr_aug_dat$D[[group_idx]][i,])
+      prob_reverse <- tmp$prob_move_to_D
+    }else
+    {
+      prob_reverse <- 1
+    }
+    log_prob_reverse_move <- c(log_prob_reverse_move, log(prob_reverse))
+    # probability of reverse move for E0 to E1
+    log_prob_reverse_move <- c(log_prob_reverse_move, 0) # as for the reverse move we go back to observed data E = 0 so only one choice
+    
+    # if(group_idx==4 & i == 38)
+    # {
+    #   print("final proposed state before calculation of p_accept:")
+    #   print(proposed_aug_dat$E[[group_idx]][i,])
+    #   print(proposed_aug_dat$D[[group_idx]][i,])
+    #   browser()
+    # }
+    
+    delay_idx <- which(colSums(matrix(index_dates[[group_idx]] %in% 
+                                        date_idx_E1_to_E0, 
+                                      nrow = nrow(index_dates[[group_idx]] )))>0)
+    delay_idx <- c(delay_idx, 
+                   which(colSums(matrix(index_dates[[group_idx]] %in% 
+                                          date_idx_E0_to_E1, 
+                                        nrow = 
+                                          nrow(index_dates[[group_idx]] )))>0))
+    
+    if(length(missing_to_update)>0)
+    {
+      delay_idx <- c(delay_idx, 
+                     which(colSums(matrix(index_dates[[group_idx]] %in% 
+                                            missing_to_update, 
+                                          nrow = 
+                                            nrow(index_dates[[group_idx]] )))>0))
+    }
+    
+    delay_idx <- sort(unique(delay_idx))
+    
+    ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(
+      proposed_aug_dat, theta, obs_dat, group_idx, 
+      date_idx_E1_to_E0, i, range_dates=range_dates) - 
+        LL_observation_term_by_group_delay_and_indiv(
+          curr_aug_dat, theta, obs_dat, group_idx, 
+          date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
+      
+      sum(LL_observation_term_by_group_delay_and_indiv(
+        proposed_aug_dat, theta, obs_dat, group_idx, 
+        date_idx_E0_to_E1, i, range_dates=range_dates) - 
+          LL_observation_term_by_group_delay_and_indiv(
+            curr_aug_dat, theta, obs_dat, group_idx, 
+            date_idx_E0_to_E1, i, range_dates=range_dates) )   
+    
+    if(length(missing_to_update)>0)
+    {
+      ratio_post_obs <- ratio_post_obs + 
+        
+        sum(LL_observation_term_by_group_delay_and_indiv(
+          proposed_aug_dat, theta, obs_dat, group_idx, 
+          missing_to_update, i, range_dates=range_dates) - 
+            LL_observation_term_by_group_delay_and_indiv(
+              curr_aug_dat, theta, obs_dat, group_idx, 
+              missing_to_update, i, range_dates=range_dates) )
+      
+    }
+    
+    #print(ratio_post_obs)
+    ## should be the same as:
+    # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
+    
+    ratio_post_error <- sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i) - 
+                              LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)) + 
+      sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i) - 
+            LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i))
+    #print(ratio_post_error)
+    ## should be the same as:
+    # LL_error_term(proposed_aug_dat, theta, obs_dat) - LL_error_term(curr_aug_dat, theta, obs_dat)
+    
+    ratio_post_delay <- 0
+    for(d in delay_idx)
+    {
+      ratio_post_delay <- ratio_post_delay + sum(LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
+                                                   LL_delays_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates))
+    }
+    #print(ratio_post_delay)
+    ## should be the same as:
+    # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) - LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
+    
+    ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
+    
+    ### should be the same as: 
+    ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
+      lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
+    
+    # print(paste("short", ratio_post))
+    # print(paste("long", ratio_post_long))
+    # 
+    # if(!is.infinite(ratio_post) & !is.infinite(ratio_post_long))
+    # {
+    #   if(abs(ratio_post - ratio_post_long)>1e-6)
+    #   {
+    #     browser()
+    #   }
+    # }
+    
+    # This is not a symetric move so need a correction factor
+    #print(paste("group", group_idx))
+    #print(paste("individual", i))
+    #if(group_idx == 4 & i ==21)
+    #{
+    #  browser()
+    #}
+    # if(length(missing_to_update)>0)
+    # {
+    #   browser()
+    # }
+    p_accept <- ratio_post + sum(log_prob_reverse_move) - sum(log_prob_move)
+    #print(p_accept)
+    if(p_accept>0) p_accept <- 0
+    
+    # if(group_idx==4 & i == 38)
+    # {
+    #   browser()
+    # }
+    
+    # accept/reject step
+    tmp <- log(runif(1))
+    if(tmp<p_accept) # accepting with a certain probability
+    {
+      new_aug_dat <- proposed_aug_dat
+      accept <- 1
+      # if(group_idx == 4 && i == 5)
+      # {
+      #   print("accepted")
+      # }
+      # if(length(missing_to_update)>0)
+      # {
+      #   print("accepted swap with missing values")
+      # }
+    }else # reject
+    {
+      new_aug_dat <- curr_aug_dat
+      accept <- 0
+      # if(group_idx == 4 && i == 5)
+      # {
+      #   print("rejected")
+      # }
+    }	
+  }
   
   # return a list of size 2 where 
   #		the first value is the new augmented data set in the chain

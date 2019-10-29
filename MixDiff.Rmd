@@ -17,7 +17,7 @@ There exist four different pathays depending if the case has been hospitalised a
 |------------------|-------|-----------------|-------|-----------|--------|
 | $HD$             |   X   |        X        |   X   |           |    X   |
 | $H\bar{D}$       |   X   |        X        |       |     X     |    X   |
-| $\bar{HD}$       |   X   |                 |   X   |           |    X   |
+| $\bar{H}D$       |   X   |                 |   X   |           |    X   |
 | $\bar{H}\bar{D}$ |   X   |                 |       |           |    X   |
 
 ## Notations

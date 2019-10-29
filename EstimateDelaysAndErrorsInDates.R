@@ -48,7 +48,7 @@ if(!USE_SIMULATED_DATA)
   obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 } else
 {
-  name_place_to_load_simulated_data_from <- "2" # "1" # 
+  name_place_to_load_simulated_data_from <- "1" # "1" # 
   where_to_load_from <- paste0("./SimulatedData/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
 }

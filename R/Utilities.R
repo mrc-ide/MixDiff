@@ -670,7 +670,13 @@ get_consensus <- function(MCMCres, obs_dat,
         {
           if(support_E[[g]][i,j] >= threshold_error_support)
           {
-            inferred_D[[g]][i, j] <- consensus_D[[g]][i,j]  
+            if(posterior == "median")
+            {
+              inferred_D[[g]][i,j] <- median(tmp_D[which(tmp_E == 1)])
+            } else if(posterior == "mode")
+            {
+              inferred_D[[g]][i,j] <- my_mode(tmp_D[which(tmp_E == 1)])
+            }
             inferred_E[[g]][i,j] <- "error_high_support"
             inferred_E_numeric[[g]][i,j] <- 4
           }else

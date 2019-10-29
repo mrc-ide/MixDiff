@@ -253,47 +253,7 @@ abline(0, 1)
 ### so this may explain the differences
 
 
-### values for simulation from NEJM 9 months
-# https://www.nejm.org/doi/pdf/10.1056/NEJMoa1411100?articleTools=true
-# mean / sd for all countries
 
-### onset to hosp 
-# 5.0 / 4.7
-
-### hosp to discharge
-# 11.8 / 6.1
-
-### hosp to death
-# 4.2 / 6.4
-
-### onset to report
-# 6.1 / 8.5
-
-
-### values for simulation from the NEJM one year
-# https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true
-# numbers below are actually from supplement: 
-# https://www.nejm.org/doi/suppl/10.1056/NEJMc1414992/suppl_file/nejmc1414992_appendix.pdf
-
-# mean / CI (for the mean) for all countries, Dec 2013 to 25 Nov 2014
-# sd / CI (for the sd) for all countries, Dec 2013 to 25 Nov 2014
-# for confirmed and probable cases
-
-### onset to hosp 
-# 5.0 / 4.9-5.1
-# 4.4 / 4.3-4.6
-
-### hosp to discharge
-# 11.2 / 10.8-11.7
-# 7.2 / 6.8-7.6
-
-### hosp to death
-# 4.3 / 4.1-4.5
-# 4.0 / 3.8-4.3
-
-### onset to report (not reported in main text?)
-# 5.5 / 5.4-5.7
-# 5.2 / 5.1-5.3
 
 
 

@@ -813,11 +813,11 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
 {
   tmp <- aug_dat_true$E
   aug_dat_true_E_no_missing <- tmp
-  consensus$E_no_missing <- consensus$consensus_E
+  consensus$E_no_missing <- lapply(1:length(consensus$inferred_E), function(g) 1*sapply(1:ncol(consensus$inferred_E[[g]]), function(j) consensus$inferred_E[[g]][,j] %in% "error_high_support"))
   for(g in 1:length(tmp))
   {
     aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
-    consensus$E_no_missing[[g]] [consensus$consensus_E[[g]] == -1] <- NA
+    consensus$E_no_missing[[g]] [consensus$inferred_E[[g]] %in% "missing_data"] <- NA
   }
   
   sensitivity <- specificity <- rep(NA, 4)
@@ -825,11 +825,11 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
   
   for(g in 1:length(tmp))
   {
-    tab <- table(aug_dat_true_E_no_missing[[g]], consensus$E_no_missing[[g]])
-    n_true_neg <- tab["0", "0"]
-    n_true_pos <- tab["1", "1"]
-    n_false_pos <- tab["0", "1"]
-    n_false_neg <- tab["1", "0"]
+    #tab <- table(aug_dat_true_E_no_missing[[g]], consensus$E_no_missing[[g]])
+    n_true_neg <- sum(aug_dat_true_E_no_missing[[g]] == 0 & consensus$E_no_missing[[g]] == 0, na.rm = TRUE)
+    n_true_pos <-  sum(aug_dat_true_E_no_missing[[g]] == 1 & consensus$E_no_missing[[g]] == 1, na.rm = TRUE)
+    n_false_pos <-  sum(aug_dat_true_E_no_missing[[g]] == 0 & consensus$E_no_missing[[g]] == 1, na.rm = TRUE)
+    n_false_neg <-  sum(aug_dat_true_E_no_missing[[g]] == 1 & consensus$E_no_missing[[g]] == 0, na.rm = TRUE)
     
     sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
     specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)

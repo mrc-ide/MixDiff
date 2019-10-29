@@ -4,7 +4,7 @@
 \alias{simul_obs_dat}
 \title{Introduces missingness and errors in data}
 \usage{
-simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = FALSE)
+simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE)
 }
 \arguments{
 \item{D}{A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.}

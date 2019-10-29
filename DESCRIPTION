@@ -7,6 +7,6 @@ Maintainer: Anne Cori <a.cori@imperial.ac.uk> or Marc Baguelin <Marc.Baguelin@ph
 Description: Reconstruct dataset with missing or erroneous data for outbreaks intervention, and estimate key delay distributions as well as proportion of erroneous data at the same time. 
 License: GPL-2
 RoxygenNote: 6.1.1
-Imports: stats, graphics, rmnist
+Imports: stats, graphics, rmnist, openxlsx
 Remotes: richfitz/rmnist
 Suggests: testthat

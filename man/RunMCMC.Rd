@@ -5,7 +5,7 @@
 \title{Runs the MCMC estimation procedure.}
 \usage{
 RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
-  tol = 1e-06)
+  tol = 1e-06, seed = NULL)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
@@ -15,6 +15,10 @@ RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
 \item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+
+\item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
+
+\item{seed}{Optional. A numerical value used to fix the random seed.}
 }
 \value{
 A list of the following elements:

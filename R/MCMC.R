@@ -4,6 +4,8 @@
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see details.
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
+#' @param seed Optional. A numerical value used to fix the random seed. 
 #' @details \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on, zeta_on) stating whether each parameter/augmented data should be moved in the procedure or not.}
@@ -60,10 +62,20 @@ RunMCMC <- function(obs_dat,
                     MCMC_settings,
                     hyperparameters,
                     index_dates,
-                    tol = 1e-6)
+                    tol = 1e-6,
+                    seed = NULL)
 {
   n_dates <- sapply(obs_dat, ncol )
   n_groups <- length(n_dates)
+  
+  ###############################################
+  ### fix the random seed if appropriate ###
+  ###############################################
+  
+  if(!is.null(seed))
+  {
+    set.seed(seed)
+  }
   
   ###############################################
   ### define augmented data to be used for initialisation of the chain ###
@@ -110,7 +122,6 @@ RunMCMC <- function(obs_dat,
   
   n_accepted_swapE_moves <- 0 
   n_proposed_swapE_moves <- 0 
-  
   n_accepted_mu_moves <- lapply(seq_len(n_groups), function(g) rep(0, ncol(index_dates[[g]]) ))
   n_proposed_mu_moves <- n_accepted_mu_moves
   

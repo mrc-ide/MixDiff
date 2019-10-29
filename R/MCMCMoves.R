@@ -65,7 +65,8 @@ move_Di <- function(i, group_idx, date_idx,
   # draw proposed value for D using one of the delays
   # which delays is this particular date involved in?
   can_be_inferred_directly_from <- infer_directly_from(group_idx, date_idx, 
-                                                       curr_aug_dat$D, i, theta) 
+                                                       curr_aug_dat$D, i, theta,
+                                                       index_dates) 
   
   # use this information to propose a clever D conditional on the current relevant delays parameters
   proposed <- sample_new_date_value(group_idx, 
@@ -167,7 +168,8 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
 {
   # which delays can this date be derived from
   can_be_inferred_directly_from <- infer_directly_from(group_idx, date_idx, 
-                                                       curr_aug_dat$D, i, theta) 
+                                                       curr_aug_dat$D, i, theta,
+                                                       index_dates) 
   
   # use this information to propose a clever D conditional on the current relevant delays parameters
   proposed <- sample_new_date_value(group_idx, 
@@ -284,7 +286,8 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
   
   # which delays can this date be derived from
   can_be_inferred_directly_from <- infer_directly_from(group_idx, date_idx, 
-                                                       proposed_aug_dat$D, i, theta) 
+                                                       proposed_aug_dat$D, i, theta,
+                                                       index_dates) 
   # use this information to propose a clever D conditional on the current relevant delays parameters
   # we only use this to check what would be the probability of the reverse move - to compute the correction factor correctly in MH
   proposed <- sample_new_date_value(group_idx, 
@@ -645,7 +648,7 @@ swap_Ei <- function(i, group_idx,
     tmp <- 
       infer_missing_dates(D = proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
-                          group_idx, i, index_dates_order, 
+                          group_idx, i, index_dates, index_dates_order, 
                           do_not_infer_from = date_idx_E0_to_E1, 
                           theta, tol = tol)
     proposed_aug_dat_intermediate$D[[group_idx]][i,missing_to_update] <- tmp$D[[group_idx]][i,missing_to_update] 
@@ -728,7 +731,7 @@ swap_Ei <- function(i, group_idx,
     tmp <- 
       infer_missing_dates(proposed_aug_dat_intermediate$D, 
                           E = proposed_aug_dat_intermediate$E, 
-                          group_idx, i, index_dates_order, 
+                          group_idx, i, index_dates, index_dates_order, 
                           do_not_infer_from = date_idx_E1_to_E0, 
                           theta, 
                           tol = tol,

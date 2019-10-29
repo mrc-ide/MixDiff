@@ -118,7 +118,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       }
       
       # now deal with missing dates
-      D <- infer_missing_dates(D, E = NULL, g, e, index_dates_order)$D
+      D <- infer_missing_dates(D, E = NULL, g, e, index_dates, index_dates_order)$D
       
     }
   }

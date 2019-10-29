@@ -304,6 +304,7 @@ infer_missing_dates <- function(D,
                                 E = NULL, 
                                 g, # index of the group
                                 e, # index of individual in that group
+                                index_dates,
                                 index_dates_order, 
                                 do_not_infer_from = NULL, 
                                 theta = NULL, 
@@ -405,7 +406,7 @@ infer_missing_dates <- function(D,
     {
       ### more sophisticated inference using the delays
       can_be_inferred_directly_from <- lapply(missing_dates, function(date_idx) {
-        infer_directly_from(g, date_idx, D_proxy, e, theta) })
+        infer_directly_from(g, date_idx, D_proxy, e, theta, index_dates) })
       idx_can_be_inferred_directly <- which(sapply(seq_len(length(missing_dates)), 
                                                    function(i) length(can_be_inferred_directly_from[[i]]$from_value)>0))
       ### TO DO: even more sophisticated allowing for sums of delays if needed
@@ -562,7 +563,8 @@ infer_directly_from <- function(g, # group
                                 date_idx, # date index for that group
                                 D, # data (augmented)
                                 i, # index of individual in the group
-                                theta) # parameter values 
+                                theta, # parameter values 
+                                index_dates)
 {
   delay_idx <- which(sapply(1:ncol(index_dates[[g]]), function(k) date_idx %in% index_dates[[g]][,k]))
   from_idx <- sapply(delay_idx, function(k) index_dates[[g]][,k][index_dates[[g]][,k] != date_idx])
@@ -722,6 +724,7 @@ get_consensus <- function(MCMCres, obs_dat,
 #' 3) yellow if the consensus infers that the date is most likely correct but not with a high posterior probability - the date recorded is the observed date
 #' 4) orange if the consensus infers that the date is most likely incorrect but not with a high posterior probability - the date recorded is still the observed date
 #' 5) red if the consensus infers that the date is incorrect with a high posterior probability - in that case the date recorded is the mode of the posterior for that date
+#' @import openxlsx
 #' @export
 #' @examples
 #' # TO WRITE

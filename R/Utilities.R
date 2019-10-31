@@ -611,19 +611,81 @@ my_mode <- function(x) { # function to get the mode
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-#' Computes the posterior support for errors, and classifies each dates according to a threshold support
+#' Computes the posterior support for errors and dates
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
 #' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. This must be the same as the obseerved data which were used to generate MCMCres
-#' @param posterior the function used to determine the "consensus" values absed on the posterior: either "mode" (used by default) or "median". 
-#' @param threshold_error_support a numeric value between 0 and 1 used to determine the threshold required to classify an error as "almost certain". 
+#' @param posterior the function used to determine the "consensus" values based on the posterior: either "mode" (used by default) or "median". 
 #' @return A list with the following objects: 
 #' \itemize{
 #' \item{\code{consensus_D}}{: A list similar to obs_dat, but where missing dates have been replaced by the mode or median posterior, and 
 #' the other dates have been replaced by the mode or median posterior (irrespective of error status).}
+#' \item{\code{consensus_D_if_erroneous}}{: A list similar to obs_dat, but which instead of containing the consensus D values, returns the consensus D values conditional on error. This is NA if the support for error is 0.}
+#' \item{\code{consensus_D_if_non_erroneous}}{: A list similar to obs_dat, but which instead of containing the consensus D values, returns the consensus D values conditional on no error. This is NA if the support for error is 1.}
 #' \item{\code{consensus_E}}{: A list structured similarly to \code{consensus_D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{consensus_E=-1}), 
 #'  where the mode or median posterior indicates that \code{obs_dat} is recorded but with error (\code{consensus_E=1}), and where the mode or median posterior indicates that \code{obs_dat} is recorded with no error (\code{consensus_E=0}). 
 #'  Note that \code{consensus_E} can be 1 but \code{consensus_D} be equal to \code{obs_dat} because \code{consensus_D} is obtained from the full posterior distribution of dates, not conditional on the error status.}
+#'  \item{\code{support_D}}{: A list with similar structure as \code{consensus_D}, containing values of the posterior support for each date in \code{consensus_D}}
+#'  \item{\code{support_E}}{: A list with similar structure as \code{consensus_E}, containing values of the posterior support for each error status in \code{consensus_E}}
+#' }
+#' @export
+#' @examples
+#' # TO WRITE
+get_consensus <- function(MCMCres, obs_dat,
+                          posterior = c("mode", "median"))
+{
+  posterior <- match.arg(posterior)
+  consensus_D <- MCMCres$aug_dat_chain[[1]]$D
+  support_D <- consensus_D
+  consensus_E <- MCMCres$aug_dat_chain[[1]]$E
+  support_E <- consensus_E
+  consensus_D_if_erroneous <- MCMCres$aug_dat_chain[[1]]$D
+  consensus_D_if_non_erroneous <- MCMCres$aug_dat_chain[[1]]$D
+  
+  for(g in 1:length(consensus_D))
+  {
+    for(i in 1:nrow(consensus_D[[g]]))
+    {
+      for(j in 1:ncol(consensus_D[[g]]))
+      {
+        tmp_D <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j])
+        tmp_E <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j])
+        if(posterior == "median")
+        {
+          consensus_D[[g]][i,j] <- median(tmp_D)
+          consensus_E[[g]][i,j] <- median(tmp_E)
+          if(any(tmp_E == 1)) consensus_D_if_erroneous[[g]][i,j] <- median(tmp_D[which(tmp_E == 1)]) else consensus_D_if_erroneous[[g]][i,j] <- NA
+          if(any(tmp_E == 0)) consensus_D_if_non_erroneous[[g]][i,j] <- median(tmp_D[which(tmp_E == 0)]) else consensus_D_if_non_erroneous[[g]][i,j] <- NA
+        } else if(posterior == "mode")
+        {
+          consensus_D[[g]][i,j] <- my_mode(tmp_D)
+          consensus_E[[g]][i,j] <- my_mode(tmp_E)
+          if(any(tmp_E == 1)) consensus_D_if_erroneous[[g]][i,j] <- my_mode(tmp_D[which(tmp_E == 1)]) else consensus_D_if_erroneous[[g]][i,j] <- NA
+          if(any(tmp_E == 0)) consensus_D_if_non_erroneous[[g]][i,j] <- my_mode(tmp_D[which(tmp_E == 0)]) else consensus_D_if_non_erroneous[[g]][i,j] <- NA
+        }
+        support_D[[g]][i,j] <- sum(tmp_D == consensus_D[[g]][i,j]) / length(tmp_D)
+        support_E[[g]][i,j] <- sum(tmp_E == consensus_E[[g]][i,j]) / length(tmp_E)
+      }
+    }
+  }
+  return(list(consensus_D = consensus_D, consensus_E = consensus_E,
+              support_D = support_D, support_E = support_E, 
+              consensus_D_if_erroneous = consensus_D_if_erroneous, 
+              consensus_D_if_non_erroneous = consensus_D_if_non_erroneous))
+}
+
+#' Classifies each error status and each date according to the posterior consensus and a threshold support
+#'
+#' @param consensus the consensus as returned by function \code{\link{get_consensus}}
+#' @param threshold_error_support a numeric value between 0 and 1 used to determine the threshold required to classify an error as "almost certain". 
+#' @return A list with the following objects: 
+#' \itemize{
+#' \item{\code{consensus_D}}{: the same as consensus$consensus_D (see function \code{\link{get_consensus})}
+#' \item{\code{consensus_E}}{: the same as consensus$consensus_E (see function \code{\link{get_consensus})}
+#' \item{\code{support_D}}{: the same as consensus$support_D (see function \code{\link{get_consensus})}
+#' \item{\code{support_E}}{: the same as consensus$support_E (see function \code{\link{get_consensus})}
+#' \item{\code{consensus_D_if_erroneous}}{: the same as consensus$consensus_D_if_erroneous (see function \code{\link{get_consensus})}
+#' \item{\code{consensus_D_if_non_erroneous}}{: the same as consensus$consensus_D_if_non_erroneous (see function \code{\link{get_consensus})}
 #' \item{\code{inferred_D}}{: A list similar to obs_dat, but where missing dates have been replaced by the mode or median posterior, and when the posteior support for error is larger than \code{threshold_error_support},
 #' i.e. the error is almost certain, the observed dates have been replaced by the mode or median of the posterior dates conditional on presencen of error. }
 #' \item{\code{inferred_E}}{: A list structured similarly to \code{consensus_E}, containing the following codes:
@@ -642,88 +704,60 @@ my_mode <- function(x) { # function to get the mode
 #' @export
 #' @examples
 #' # TO WRITE
-get_consensus <- function(MCMCres, obs_dat,
-                          posterior = c("mode", "median"), 
+get_inferred_from_consensus <- function(consensus, 
                           threshold_error_support = 0.5)
 {
   if(!is.numeric(threshold_error_support) | threshold_error_support<0 | threshold_error_support>1)
   {
     stop("threshold_error_support should be a numeric value between 0 and 1")
   }
-  posterior <- match.arg(posterior)
-  consensus_D <- MCMCres$aug_dat_chain[[1]]$D
-  inferred_D <- MCMCres$aug_dat_chain[[1]]$D
-  support_D <- consensus_D
-  consensus_E <- MCMCres$aug_dat_chain[[1]]$E
-  inferred_E <- MCMCres$aug_dat_chain[[1]]$E
-  inferred_E_numeric <- inferred_E
-  support_E <- consensus_E
-  for(g in 1:length(consensus_D))
+  consensus$inferred_D <- consensus$consensus_D
+  consensus$inferred_E <- consensus$consensus_E
+  consensus$inferred_E_numeric <- consensus$inferred_E
+  for(g in 1:length(consensus$consensus_D))
   {
-    for(i in 1:nrow(consensus_D[[g]]))
+    for(i in 1:nrow(consensus$consensus_D[[g]]))
     {
-      for(j in 1:ncol(consensus_D[[g]]))
+      for(j in 1:ncol(consensus$consensus_D[[g]]))
       {
-        tmp_D <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j])
-        tmp_E <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j])
-        if(posterior == "median")
+        if(consensus$consensus_E[[g]][i,j] == 1) 
         {
-          consensus_D[[g]][i,j] <- median(tmp_D)
-          consensus_E[[g]][i,j] <- median(tmp_E)
-        } else if(posterior == "mode")
-        {
-          consensus_D[[g]][i,j] <- my_mode(tmp_D)
-          consensus_E[[g]][i,j] <- my_mode(tmp_E)
-        }
-        support_D[[g]][i,j] <- sum(tmp_D == consensus_D[[g]][i,j]) / length(tmp_D)
-        support_E[[g]][i,j] <- sum(tmp_E == consensus_E[[g]][i,j]) / length(tmp_E)
-        if(consensus_E[[g]][i,j] == 1) 
-        {
-          if(support_E[[g]][i,j] >= threshold_error_support)
+          if(consensus$support_E[[g]][i,j] >= threshold_error_support)
           {
-            if(posterior == "median")
-            {
-              inferred_D[[g]][i,j] <- median(tmp_D[which(tmp_E == 1)])
-            } else if(posterior == "mode")
-            {
-              inferred_D[[g]][i,j] <- my_mode(tmp_D[which(tmp_E == 1)])
-            }
-            inferred_E[[g]][i,j] <- "error_high_support"
-            inferred_E_numeric[[g]][i,j] <- 4
+            consensus$inferred_D[[g]][i,j] <- consensus$consensus_D_if_erroneous[[g]][i,j]
+            consensus$inferred_E[[g]][i,j] <- "error_high_support"
+            consensus$inferred_E_numeric[[g]][i,j] <- 4
           }else
           {
             # if we detect an error but it's got 'low support', we revert to the observed value
-            inferred_D[[g]][i, j] <- obs_dat[[g]][i,j]  
-            inferred_E[[g]][i,j] <- "error_low_support"
-            inferred_E_numeric[[g]][i,j] <- 3
+            consensus$inferred_D[[g]][i, j] <- consensus$consensus_D_if_non_erroneous[[g]][i,j]
+            consensus$inferred_E[[g]][i,j] <- "error_low_support"
+            consensus$inferred_E_numeric[[g]][i,j] <- 3
           }
-        } else if(consensus_E[[g]][i,j] == 0) 
+        } else if(consensus$consensus_E[[g]][i,j] == 0) 
         {
-          if(support_E[[g]][i,j] >= threshold_error_support)
+          if(consensus$support_E[[g]][i,j] >= threshold_error_support)
           {
-            inferred_D[[g]][i, j] <- consensus_D[[g]][i,j]  
-            inferred_E[[g]][i,j] <- "no_error_high_support"
-            inferred_E_numeric[[g]][i,j] <- 1
+            consensus$inferred_D[[g]][i, j] <- consensus$consensus_D_if_non_erroneous[[g]][i,j]
+            consensus$inferred_E[[g]][i,j] <- "no_error_high_support"
+            consensus$inferred_E_numeric[[g]][i,j] <- 1
           }else
           {
-            inferred_D[[g]][i, j] <- obs_dat[[g]][i,j]  
-            inferred_E[[g]][i,j] <- "no_error_low_support"
-            inferred_E_numeric[[g]][i,j] <- 2
+            consensus$inferred_D[[g]][i, j] <- consensus$consensus_D_if_non_erroneous[[g]][i,j]
+            consensus$inferred_E[[g]][i,j] <- "no_error_low_support"
+            consensus$inferred_E_numeric[[g]][i,j] <- 2
           }
-        } else if(consensus_E[[g]][i,j] == -1) 
+        } else if(consensus$consensus_E[[g]][i,j] == -1) 
         {
-          inferred_D[[g]][i, j] <- consensus_D[[g]][i,j]  
-          inferred_E[[g]][i,j] <- "missing_data"
-          inferred_E_numeric[[g]][i,j] <- 0
+          consensus$inferred_D[[g]][i, j] <- consensus$consensus_D[[g]][i,j]  
+          consensus$inferred_E[[g]][i,j] <- "missing_data"
+          consensus$inferred_E_numeric[[g]][i,j] <- 0
         }
         
       }
     }
   }
-  return(list(consensus_D = consensus_D, consensus_E = consensus_E,
-              support_D = support_D, support_E = support_E,
-              inferred_D = inferred_D, inferred_E = inferred_E,
-              inferred_E_numeric = inferred_E_numeric))
+  return(consensus)
 }
 
 #' Writes Excel file corresponding to the original data, with inferred missing and erroneous dates recorded instead of the observations, and cells colour coded according to the posterior support for error. 

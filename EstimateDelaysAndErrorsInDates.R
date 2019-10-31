@@ -323,9 +323,16 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 
 consensus <- get_consensus(MCMCres, 
                                      obs_dat, 
-                                     posterior = "mode", 
-                                     threshold_error_support = 0.95)
+                                     posterior = "mode")
 
+inferred <- get_inferred_from_consensus(consensus, 
+                                        threshold_error_support = 0.95)
+
+thresholds <- seq(0.5, 1, 0.05)
+inferred_all_thresholds <- lapply(thresholds, function(t) get_inferred_from_consensus(consensus, 
+                                                           threshold_error_support = t)) 
+
+names(inferred_all_thresholds) <- thresholds
 
 par(mfrow = c(2, 2), mar = c(4, 4, 5, .5))
 for(g in 1:length(consensus$inferred_E))

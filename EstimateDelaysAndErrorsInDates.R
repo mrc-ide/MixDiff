@@ -48,8 +48,8 @@ if(!USE_SIMULATED_DATA)
   obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 } else
 {
-  name_place_to_load_simulated_data_from <- "4" # "1" # 
-  where_to_load_from <- paste0("./SimulatedData/",name_place_to_load_simulated_data_from)
+  name_place_to_load_simulated_data_from <- "83" # "1" # 
+  where_to_load_from <- paste0("./SimulatedData/baseline_random_params/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
 }
 
@@ -71,8 +71,9 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                        #                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
                        #chain_properties=list(n_iter = 500, burnin = 1, record_every=1),
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2),
-                       chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
-                       #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
+                       #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
+                       chain_properties=list(n_iter = 5000, burnin = 1, record_every=1),
+                        #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
                        tol = 1e-6)
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
@@ -100,7 +101,7 @@ system.time({
                      MCMC_settings,
                      hyperparameters,
                      index_dates, 
-                     seed = 1)
+                     seed = 2)
 })
 #Rprof(NULL)
 #summaryRprof()

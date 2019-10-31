@@ -467,7 +467,8 @@ infer_missing_dates <- function(D,
 sample_new_date_value <- function(g, # group index
                                   can_be_inferred_directly_from, # the output of function infer_directly_from
                                   index_dates, 
-                                  tol = 1e-6) # used to define the tail of the CDF of the delay - anything in the tail is neglected
+                                  tol = 1e-6, # used to define the tail of the CDF of the delay - anything in the tail is neglected
+                                  forbidden_dates = NULL) # dates you don't want to sample, e.g. current date you are trying to move away from
 {
   can_be_inferred_directly_from <- can_be_inferred_directly_from[which(!is.na(can_be_inferred_directly_from$from_value)), ]
   
@@ -493,6 +494,16 @@ sample_new_date_value <- function(g, # group index
     matrix(rep(can_be_inferred_directly_from$multiply, length(delays)), nrow = length(delays), byrow = TRUE) * 
     matrix(rep(delays, nrow(can_be_inferred_directly_from)), nrow = length(delays), byrow = FALSE)
   
+  # set weights to zero for the forbidden dates so we never draw from these
+  if(!is.null(forbidden_dates) & any(forbidden_dates %in% all_possible_values))
+  {
+    for(e in 1:ncol(all_possible_values))
+    {
+      remove <- which(all_possible_values[,e] %in% forbidden_dates)
+      weights[remove,e] <- 0
+    }
+  }
+  
   if(nrow(can_be_inferred_directly_from) > 1)
   {
     #need to merge info from various delays
@@ -507,7 +518,7 @@ sample_new_date_value <- function(g, # group index
     {
       #warning("Incompatible dates, drawing from the first delay only.")
       return(sample_new_date_value(g, can_be_inferred_directly_from[1,], 
-                                   index_dates, tol) 
+                                   index_dates, tol, forbidden_dates) 
       )
     } 
     
@@ -516,7 +527,7 @@ sample_new_date_value <- function(g, # group index
     {
       #warning("Incompatible dates, drawing from the first delay only.")
       return(sample_new_date_value(g, can_be_inferred_directly_from[1,], 
-                                   index_dates, tol) 
+                                   index_dates, tol, forbidden_dates) 
       )
     } 
     

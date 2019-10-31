@@ -174,7 +174,7 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
   # use this information to propose a clever D conditional on the current relevant delays parameters
   proposed <- sample_new_date_value(group_idx, 
                                     can_be_inferred_directly_from, 
-                                    index_dates, tol = tol)
+                                    index_dates, tol = tol, forbidden_dates = obs_dat[[group_idx]][i,date_idx]) # move somewhere were E = 1
   
   if(length(proposed$all_possible_values)<2 & proposed$inferred == obs_dat[[group_idx]][i,date_idx]) # then the only available date to draw from is the observed one and we can't propose this move from E0 to E1
   {
@@ -182,15 +182,7 @@ propose_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
     return(NULL)
   }else
   {
-    while(proposed$inferred == obs_dat[[group_idx]][i,date_idx]) ### whilst we haven't moved to a place where E=1, try again
-    {
-      browser()
-      proposed <- sample_new_date_value(group_idx, 
-                                        can_be_inferred_directly_from, 
-                                        index_dates, tol = tol)
-    }
     proposed$probability_cur_value <- 1 # because going back to E0 there is only one choice
-    
     return(proposed)
   }
 }
@@ -293,7 +285,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
   # we only use this to check what would be the probability of the reverse move - to compute the correction factor correctly in MH
   proposed <- sample_new_date_value(group_idx, 
                                     can_be_inferred_directly_from, 
-                                    index_dates, tol = tol)
+                                    index_dates, tol = tol, forbidden_dates = obs_dat[[group_idx]][i,date_idx])
   
   if(any(proposed$all_possible_values == curr_aug_dat_value))
   {

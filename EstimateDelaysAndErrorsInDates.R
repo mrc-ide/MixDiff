@@ -208,98 +208,6 @@ lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_t
 max(MCMCres$logpost_chain)
 
 ###############################################
-### Examining how well we reestimate the E (error/missingness in data) ###
-###############################################
-
-par(mfrow=c(4, 2))
-dy <- 10
-for(g in 1:4)
-{
-  tmp <- t(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) table(MCMCres$aug_dat_chain[[e]]$E[[g]])))
-  ylim <- mean(tmp[,2])+c(-1,1)*dy
-  plot(tmp[,2], type="l", main="Number of correctly recorded dates in that group", ylab="", xlab="Iterations", ylim=ylim)
-  abline(h=table(aug_dat_true$E[[g]])[2], col="red")
-  ylim <- mean(tmp[,3])+c(-1,1)*dy
-  plot(tmp[,3], type="l", main="Number of erroroneous dates in that group", ylab="", xlab="Iterations", ylim=ylim)
-  abline(h=table(aug_dat_true$E[[g]])[3], col="red")
-}
-
-### define inferred E as wrong if support for true E < 1/4 
-
-posterior_support_for_real_status_of_entry <- function(g, j)
-{
-  tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
-  # remove missing entries to focus on true errors, not just missing data
-  tmp [tmp == -1] <- NA
-  ### definition using the mode posterior -- sesems a bit restrictive 
-  #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
-  # as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
-  ### definition using threshold 1/4 posterior support
-  prob <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
-  {
-    if(all(is.na(tmp[i,])))
-    {
-      res <- NA
-    } else if (any(tmp[i,] == as.character(aug_dat_true$E[[g]][i,j]))) 
-    {
-      res <- as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))) 
-    } else res <- 0
-    return(res)
-  })
-  return(prob)
-}
-
-find_problematic_Es <- function(g, j, threshold_posterior_support = 1/4)
-{
-  prob <- which(posterior_support_for_real_status_of_entry(g,j) <= threshold_posterior_support)
-  return(prob)
-}
-
-posterior_support_list <- lapply(seq_len(length(index_dates)), 
-                                 function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
-                                                    function(j) posterior_support_for_real_status_of_entry(g, j)))
-
-posterior_support <- unlist(posterior_support_list)
-
-
-par(mfrow = c(2, 1))
-hist(posterior_support, col = "grey", breaks = seq(0, 1, 0.01))
-hist(posterior_support[posterior_support<0.95], col = "grey", breaks = seq(0, 1, 0.01))
-
-threshold_posterior_support <- 0.25
-abline(v = threshold_posterior_support, col = "red", lty = 2)
-
-# using threshold 1/4
-prob <- lapply(seq_len(length(index_dates)), 
-               function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
-                                  function(j) find_problematic_Es(g, j, 
-                                                                  threshold_posterior_support = threshold_posterior_support)))
-
-# using threshold 1/2
-# prob <- lapply(seq_len(length(index_dates)), 
-#                function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
-#                                   function(j) find_problematic_Es(g, j, threshold_posterior_support = 1/2)))
-#prob
-#prob[[4]]
-
-g <- 3
-j <- 3
-
-prob_i <- prob[[g]][[j]][1]
-sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j])
-table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][prob_i, j]))
-table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][prob_i, j]))
-hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][prob_i, j]))
-obs_dat[[g]][prob_i, j]
-obs_dat[[g]][prob_i, ]
-aug_dat_true$E[[g]][prob_i,]
-aug_dat_true$D[[g]][prob_i,]
-MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$E[[g]][prob_i,]
-MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
-
-### All of the remaining issues seem to be because the observation is erroneous but the error is too small to be detected, we can't do anything about this.
-
-###############################################
 ### TO DO ###
 ###############################################
 
@@ -322,7 +230,6 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # outputs: proportion erroneous data - ... - nice graphs
 
 consensus <- get_consensus(MCMCres, 
-                           obs_dat, 
                            posterior = "mode")
 
 inferred <- get_inferred_from_consensus(consensus, 
@@ -332,7 +239,6 @@ thresholds <- seq(0.5, 1, 0.05)
 inferred_all_thresholds <- lapply(thresholds, function(t) 
   get_inferred_from_consensus(consensus, 
                               threshold_error_support = t)) 
-
 names(inferred_all_thresholds) <- thresholds
 
 par(mfrow = c(2, 2), mar = c(4, 4, 5, .5))
@@ -351,23 +257,13 @@ write_xlsx_inferred(inferred_all_thresholds[["0.95"]],
                     col_width = 10,
                     overwrite = TRUE)
 
-
-
-#####
-
-
-par(mfrow = c(4, 2))
+# visualise
+par(mfrow = c(4, 2), mar = c(3, 3, 1, .5))
 for(g in 1:4)
 {
-  image(t(aug_dat_true$E[[g]]), col = c( "red", "forestgreen", "grey"))
-  image(t(consensus$consensus_E[[g]]), col = c( "red", "forestgreen", "grey"))
+  image(t(aug_dat_true$E[[g]]), col = c("grey", "white", "red"))
+  image(t(inferred_all_thresholds[["0.95"]]$inferred_E_numeric[[g]]), col = c("grey", "white", "yellow", "orange", "red"))
 }
-
-g <- 1
-plot(aug_dat_true$D[[g]], consensus$D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
-for(g in 2:4)
-  points(aug_dat_true$D[[g]], consensus$D[[g]], col = scales::alpha("grey", 0.5), pch = 19)
-table(aug_dat_true$E[[g]] == consensus$E[[g]])['FALSE'] / sum(table(aug_dat_true$E[[g]] == consensus$E[[g]]))
 
 ### Compute sensitivity and specificity of detecting errors in dates
 # remove missing dates from the denominator
@@ -382,91 +278,28 @@ sensitivity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(
 specificity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
   e$specificity)
 
-### specificity: where we've detected an error which did not exist, what was the reason? 
+ROC_dates <- ROC_per_date(MCMCres, aug_dat_true, thresholds)
 
-false_pos <- detec_dates$false_pos
-# posterior support for erroneous entry
-lapply(1:length(detec_dates$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
+plot_ROC(ROC_dates, xlim = c(0, 0.1), ylim = c(0, 1))
 
-g <- 1
-i <- 18
-j <- 1#1
-j2 <- 2#2
-par(mfrow = c(2, 1))
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j2]), type = "l")
-
-g <- 4
-i <- 5
-par(mfrow = c(4, 1))
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 1]), type = "l")
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), type = "l")
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 3]), type = "l")
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 4]), type = "l")
-aug_dat_true$E[[g]][i,]
-aug_dat_true$D[[g]][i,]
-obs_dat[[g]][i,]
-consensus$E[[g]][i,]
-
-# posterior support for error is not huge
-# in group 1 mostly 50% chance of each being an error - which makes sense when only 2 dates observed
-
-### sensitivity: where we've not detected an error, what was the reason? 
-
-false_neg <- detec_dates$false_neg
-# posterior support for correct entry
-lapply(1:length(detec_dates$sensitivity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
-
-g <- 4
-i <- 96#92#85#
-j <- 2#4#3#
-
-g <- 3
-i <- 88#40#78#
-j <- 1#3#3#
-
-g <- 2
-i <- 11
-j <- 2
-
-g <- 1 # these are the same as the false_pos but for the other date - makes sense
-i <- 54
-j <- 2
-aug_dat_true$D[[g]][i,]
-obs_dat[[g]][i,]
-aug_dat_true$D[[g]][i,j]
-table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-hist(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
-aug_dat_true$E[[g]][i,]
-consensus$E[[g]][i,]
-par(mfrow = c(2, 1))
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]), type = "l")
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][i, j]), type = "l")
-posterior_support_list[[g]][[false_neg[[g]][which(false_neg[[g]][,1] == i),2]]][false_neg[[g]][which(false_neg[[g]][,1] == i),1]]
-
-g <- 4
-i <- 38
-ylim <- c(16000, 16300)
-par(mfrow = c(1, 1))
-plot(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
-            function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 1]), 
-     type = "l", col = "blue", ylim = ylim)
-lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
-             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 2]), 
-      col = "turquoise")
-lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
-             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 3]), 
-      col = "red")
-lines(sapply(seq_len(length(MCMCres$aug_dat_chain)), 
-             function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, 4]), 
-      col = "purple")
-par(xpd = TRUE)
-points(rep(length(MCMCres$aug_dat_chain), 4), aug_dat_true$D[[g]][i, ], 
-       col = c("blue", "turquoise", "red", "purple"),
-       pch = 21, cex = 1.5)
-points(rep(length(MCMCres$aug_dat_chain), 4)*1.02, obs_dat[[g]][i, ], 
-       col = c("blue", "turquoise", "red", "purple"),
-       pch = 19, cex = 1.5)
+plot_ROC <- function(ROC_dates, 
+                     mfrow = c(2, 2), 
+                     xlim = c(0, 1), ylim = c(0, 1), 
+                     ...) # other graphical parameters for plot()
+{
+  if(nrow(ROC_dates$sensitivity) > prod(mfrow))
+  {
+    warning("All groups cannot be plotted, adjust mfrow parameters to show all groups")
+  }
+  par(mfrow = mfrow)
+  for(g in 1:nrow(ROC_dates$sensitivity))
+  {
+    plot(1 - ROC_dates$specificity[g,], ROC_dates$sensitivity[g,], 
+         type = "o",
+         xlim = xlim, ylim = ylim,
+         ...)
+  }
+}
 
 ###### IDEAS: 
 # ROC curve to show how threshold for posterior support affects 
@@ -504,12 +337,23 @@ points(rep(length(MCMCres$aug_dat_chain), 4)*1.02, obs_dat[[g]][i, ],
 # Looking at individuals rather than dates
 ###############################################################
 
-consensus_E_same_as_true_E <- lapply(1:length(consensus$E), function(g) 
-{
-  apply(consensus$E[[g]] == aug_dat_true$E[[g]], 1, all)
-})
+detec_indiv <- compute_performance_per_individual_from_inferred(aug_dat_true, inferred_all_thresholds[["0.95"]])
 
-id_problematic_consensus <- lapply(consensus_E_same_as_true_E, function(x) which(!x))
+detec_indiv_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
+  compute_performance_per_individual_from_inferred(aug_dat_true, e))
+names(detec_all_thresholds) <- thresholds
+
+sensitivity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(e) 
+  e$sensitivity)
+specificity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(e) 
+  e$specificity)
+
+
+
+
+
+
+id_problematic_consensus <- lapply(inferred_E_same_as_true_E, function(x) which(!x))
 
 ### could add something about support - i.e. if consensus is only weakly 
 # supported maybe differentiate from cases where consensus is highly supported

@@ -614,7 +614,6 @@ my_mode <- function(x) { # function to get the mode
 #' Computes the posterior support for errors and dates
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
-#' @param obs_dat A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. This must be the same as the obseerved data which were used to generate MCMCres
 #' @param posterior the function used to determine the "consensus" values based on the posterior: either "mode" (used by default) or "median". 
 #' @return A list with the following objects: 
 #' \itemize{
@@ -631,8 +630,7 @@ my_mode <- function(x) { # function to get the mode
 #' @export
 #' @examples
 #' # TO WRITE
-get_consensus <- function(MCMCres, obs_dat,
-                          posterior = c("mode", "median"))
+get_consensus <- function(MCMCres, posterior = c("mode", "median"))
 {
   posterior <- match.arg(posterior)
   consensus_D <- MCMCres$aug_dat_chain[[1]]$D
@@ -677,7 +675,7 @@ get_consensus <- function(MCMCres, obs_dat,
 #' Classifies each error status and each date according to the posterior consensus and a threshold support
 #'
 #' @param consensus the consensus as returned by function \code{\link{get_consensus}}
-#' @param threshold_error_support a numeric value between 0 and 1 used to determine the threshold required to classify an error as "almost certain". 
+#' @param threshold_error_support a numeric value between 0.5 and 1 used to determine the threshold required to classify an error as "almost certain". 
 #' @return A list with the following objects: 
 #' \itemize{
 #' \item{\code{consensus_D}}{: the same as consensus$consensus_D (see function \code{\link{get_consensus})}
@@ -707,9 +705,9 @@ get_consensus <- function(MCMCres, obs_dat,
 get_inferred_from_consensus <- function(consensus, 
                           threshold_error_support = 0.5)
 {
-  if(!is.numeric(threshold_error_support) | threshold_error_support<0 | threshold_error_support>1)
+  if(!is.numeric(threshold_error_support) | threshold_error_support<0.5 | threshold_error_support>1)
   {
-    stop("threshold_error_support should be a numeric value between 0 and 1")
+    stop("threshold_error_support should be a numeric value between 0.5 and 1")
   }
   consensus$inferred_D <- consensus$consensus_D
   consensus$inferred_E <- consensus$consensus_E
@@ -878,7 +876,7 @@ compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
     inferred$E_no_missing[[g]] [inferred$inferred_E[[g]] %in% "missing_data"] <- NA
   }
   
-  sensitivity <- specificity <- rep(NA, 4)
+  sensitivity <- specificity <- rep(NA, length(inferred$inferred_E))
   false_pos <- false_neg <- list()
   
   for(g in 1:length(tmp))
@@ -905,6 +903,90 @@ compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
               specificity = specificity,
               false_pos = false_pos,
               false_neg = false_neg))
+}
+
+#' Compute sensitivity and specificity of detecting at least one error in dates for each individual observed
+#'
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param inferred the output of function \code{\link{get_inferred_from_consensus}}
+#' @return A list containing: 
+#' \itemize{
+#' \item{\code{sensitivity}}{: A vector containing the sensitivity of detecting at least one error in date for individuals in each group}
+#' \item{\code{specificity}}{: A vector containing the specificity of detecting at least one error in date for individuals in each group}
+#' \item{\code{false_pos}}{: A list containing, for each group, the indexes (indicating the individual's position in the group) of the false positives, i.e. individuals for which we detected at least one error in dates, but there were no errors.}
+#' \item{\code{false_neg}}{: A list containing, for each group, the indexes (indicating the individual's position in the group) of the false negatives, i.e. individuals for which we did not detec any error in dates but there was at least one error.}
+#' }
+#' @export
+#' @examples
+#' # TO WRITE
+compute_performance_per_individual_from_inferred <- function(aug_dat_true, inferred)
+{
+  at_least_one_error_inferred <- lapply(1:length(inferred$inferred_E), function(g) 
+    sapply(1:nrow(inferred$inferred_E[[g]]), function(e) any(inferred$inferred_E[[g]][e,] %in% "error_high_support"))
+  )
+  
+  at_least_one_error_observed <- lapply(1:length(inferred$inferred_E), function(g) 
+    sapply(1:nrow(aug_dat_true$E[[g]]), function(e) any(aug_dat_true$E[[g]][e,] %in% 1))
+  )
+  
+  sensitivity <- specificity <- rep(NA, length(aug_dat_true$E))
+  false_pos <- false_neg <- list()
+  
+  for(g in 1:length(aug_dat_true$E))
+  {
+    n_true_neg <- sum((!at_least_one_error_observed[[g]]) & (!at_least_one_error_inferred[[g]]), na.rm = TRUE)
+    n_true_pos <-  sum(at_least_one_error_observed[[g]] & at_least_one_error_inferred[[g]], na.rm = TRUE)
+    n_false_pos <-  sum((!at_least_one_error_observed[[g]]) & at_least_one_error_inferred[[g]], na.rm = TRUE)
+    n_false_neg <-  sum(at_least_one_error_observed[[g]] & (!at_least_one_error_inferred[[g]]), na.rm = TRUE)
+    
+    sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
+    specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
+    
+    false_pos[[g]] <- which((!at_least_one_error_observed[[g]]) & # are really NOT an error
+                              at_least_one_error_inferred[[g]], # and are detected as errors
+                            arr.ind = TRUE)
+    
+    false_neg[[g]] <- which(at_least_one_error_observed[[g]] & # are really  an error
+                              (!at_least_one_error_inferred[[g]]), # and are NOT detected as errors
+                            arr.ind = TRUE)
+  }
+  
+  return(list(sensitivity = sensitivity,
+              specificity = specificity,
+              false_pos = false_pos,
+              false_neg = false_neg))
+}
+
+#' Compute sensitivity and specificity of detecting errors in dates for a variety of posterior thresholds
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param thresholds A vector of thresholds used to compute sensitivity and specificity of detecting errors in dates, where an error is defined as an error with posterior support above this threshold value
+#' @return A list containing: 
+#' \itemize{
+#' \item{\code{sensitivity}}{: A matrix containing the sensitivity of detecting errors in dates for each group (rows) and each threshold (columns)}
+#' \item{\code{specificity}}{: A vector containing the specificity of detecting errors in dates for each group (rows) and each threshold (columns)}
+#' }
+#' @export
+#' @examples
+#' # TO WRITE
+ROC_per_date <- function(MCMCres, aug_dat_true, thresholds)
+{
+  posterior <- "mode" # here we only look at the error status, not the actual dates, and as this is binary (0 or 1) the mode and median will return the same
+  consensus <- get_consensus(MCMCres, posterior)
+  inferred_all_thresholds <- lapply(thresholds, function(t) 
+    get_inferred_from_consensus(consensus, 
+                                threshold_error_support = t)) 
+  names(inferred_all_thresholds) <- thresholds
+  detec_dates_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
+    compute_performance_per_date_from_inferred(aug_dat_true, e))
+  names(detec_all_thresholds) <- thresholds
+  sensitivity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
+    e$sensitivity)
+  specificity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
+    e$specificity)
+  return(list(sensitivity = sensitivity_dates_all_thresholds,
+              specificity = specificity_dates_all_thresholds))
 }
 
 are_true_param_in_95perc_post <- function(MCMCres, theta_true)

@@ -980,13 +980,45 @@ ROC_per_date <- function(MCMCres, aug_dat_true, thresholds)
   names(inferred_all_thresholds) <- thresholds
   detec_dates_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
     compute_performance_per_date_from_inferred(aug_dat_true, e))
-  names(detec_all_thresholds) <- thresholds
+  names(detec_dates_all_thresholds) <- thresholds
   sensitivity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
     e$sensitivity)
   specificity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
     e$specificity)
   return(list(sensitivity = sensitivity_dates_all_thresholds,
               specificity = specificity_dates_all_thresholds))
+}
+
+#' Compute sensitivity and specificity of detecting at least one error per individual for a variety of posterior thresholds
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param thresholds A vector of thresholds used to compute sensitivity and specificity of detecting errors in dates, where an error is defined as an error with posterior support above this threshold value
+#' @return A list containing: 
+#' \itemize{
+#' \item{\code{sensitivity}}{: A matrix containing the sensitivity of detecting at least one error in date for individuals in each group (rows) for each threshold (columns)}
+#' \item{\code{specificity}}{: A vector containing the specificity of detecting at least one error in date for individuals in each group (rows) for each threshold (columns)}
+#' }
+#' @export
+#' @examples
+#' # TO WRITE
+ROC_per_individual <- function(MCMCres, aug_dat_true, thresholds)
+{
+  posterior <- "mode" # here we only look at the error status, not the actual dates, and as this is binary (0 or 1) the mode and median will return the same
+  consensus <- get_consensus(MCMCres, posterior)
+  inferred_all_thresholds <- lapply(thresholds, function(t) 
+    get_inferred_from_consensus(consensus, 
+                                threshold_error_support = t)) 
+  names(inferred_all_thresholds) <- thresholds
+  detec_indiv_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
+    compute_performance_per_individual_from_inferred(aug_dat_true, e))
+  names(detec_indiv_all_thresholds) <- thresholds
+  sensitivity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(e) 
+    e$sensitivity)
+  specificity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(e) 
+    e$specificity)
+  return(list(sensitivity = sensitivity_indiv_all_thresholds,
+              specificity = specificity_indiv_all_thresholds))
 }
 
 are_true_param_in_95perc_post <- function(MCMCres, theta_true)

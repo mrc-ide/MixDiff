@@ -348,9 +348,10 @@ sensitivity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(
 specificity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(e) 
   e$specificity)
 
+ROC_indiv <- ROC_per_individual(MCMCres, aug_dat_true, thresholds)
 
-
-
+plot_ROC(ROC_dates, xlim = c(0, 0.1), ylim = c(0, 1))
+plot_ROC(ROC_indiv, xlim = c(0, 0.1), ylim = c(0, 1))
 
 
 id_problematic_consensus <- lapply(inferred_E_same_as_true_E, function(x) which(!x))

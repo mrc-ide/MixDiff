@@ -73,7 +73,7 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2),
                        #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
                        chain_properties=list(n_iter = 5000, burnin = 1, record_every=1),
-                        #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
+                       #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
                        tol = 1e-6)
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
@@ -322,33 +322,34 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 # outputs: proportion erroneous data - ... - nice graphs
 
 consensus <- get_consensus(MCMCres, 
-                                     obs_dat, 
-                                     posterior = "mode")
+                           obs_dat, 
+                           posterior = "mode")
 
 inferred <- get_inferred_from_consensus(consensus, 
                                         threshold_error_support = 0.95)
 
 thresholds <- seq(0.5, 1, 0.05)
-inferred_all_thresholds <- lapply(thresholds, function(t) get_inferred_from_consensus(consensus, 
-                                                           threshold_error_support = t)) 
+inferred_all_thresholds <- lapply(thresholds, function(t) 
+  get_inferred_from_consensus(consensus, 
+                              threshold_error_support = t)) 
 
 names(inferred_all_thresholds) <- thresholds
 
 par(mfrow = c(2, 2), mar = c(4, 4, 5, .5))
-for(g in 1:length(consensus$inferred_E))
+for(g in 1:length(inferred$inferred_E))
 {
-  image(t(consensus$inferred_E_numeric[[g]]), 
+  image(t(inferred$inferred_E_numeric[[g]]), 
         col = c("black", "forestgreen", "yellow", "orange", "red"), 
         breaks = seq(-0.5, 4.5, 1),
         main = paste("group", g))
 }
 
 # save in Excel
-write_xlsx_consensus(consensus,
-                                 file = "consensus.xlsx",
-                                 where = where_to_load_from,
-                                 col_width = 10,
-                                 overwrite = TRUE)
+write_xlsx_inferred(inferred_all_thresholds[["0.95"]],
+                    file = "consensus.xlsx",
+                    where = where_to_load_from,
+                    col_width = 10,
+                    overwrite = TRUE)
 
 
 

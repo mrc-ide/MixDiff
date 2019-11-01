@@ -762,7 +762,7 @@ get_inferred_from_consensus <- function(consensus,
 
 #' Writes Excel file corresponding to the original data, with inferred missing and erroneous dates recorded instead of the observations, and cells colour coded according to the posterior support for error. 
 #'
-#' @param consensus the output of function \code{\link{get_consensus}}
+#' @param inferred the output of function \code{\link{get_inferred_from_consensus}}
 #' @param file Name of file to be written
 #' @param where location of the file to be written
 #' @param col_width column width for the file to be written
@@ -779,7 +779,7 @@ get_inferred_from_consensus <- function(consensus,
 #' @export
 #' @examples
 #' # TO WRITE
-write_xlsx_consensus <- function(consensus,
+write_xlsx_inferred <- function(inferred,
                                  file = "consensus.xlsx",
                                  where = "./",
                                  col_width = 10,
@@ -793,62 +793,63 @@ write_xlsx_consensus <- function(consensus,
   redStyle <- createStyle(fontColour = "#000000", fgFill = "#FF0000")
   
   wb <- createWorkbook()
-  for(g in 1:length(consensus$inferred_E_numeric))
+  for(g in 1:length(inferred$inferred_E_numeric))
   {
     sheet_name <- paste0("group_", g,"_color_code")
     addWorksheet(wb, sheet_name)
     writeData(wb, sheet_name, 
-              sapply(1:ncol(consensus$inferred_D[[g]]), function(j) as.character(int_to_date(consensus$inferred_D[[g]][,j]))), colNames=FALSE) 
+              sapply(1:ncol(inferred$inferred_D[[g]]), function(j) as.character(int_to_date(inferred$inferred_D[[g]][,j]))), colNames=FALSE) 
     
-    if(any(consensus$inferred_E_numeric[[g]] == 0))
+    if(any(inferred$inferred_E_numeric[[g]] == 0))
     {
-      tmp <- which(consensus$inferred_E_numeric[[g]] == 0, arr.ind = TRUE)
+      tmp <- which(inferred$inferred_E_numeric[[g]] == 0, arr.ind = TRUE)
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
         addStyle(wb, sheet = g, greyStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
       }
     }
-    if(any(consensus$inferred_E_numeric[[g]] == 1))
+    if(any(inferred$inferred_E_numeric[[g]] == 1))
     {
-      tmp <- which(consensus$inferred_E_numeric[[g]] == 1, arr.ind = TRUE)
+      tmp <- which(inferred$inferred_E_numeric[[g]] == 1, arr.ind = TRUE)
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
         addStyle(wb, sheet = g, whiteStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
       }
     }
-    if(any(consensus$inferred_E_numeric[[g]] == 2))
+    if(any(inferred$inferred_E_numeric[[g]] == 2))
     {
-      tmp <- which(consensus$inferred_E_numeric[[g]] == 2, arr.ind = TRUE)
+      tmp <- which(inferred$inferred_E_numeric[[g]] == 2, arr.ind = TRUE)
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
         addStyle(wb, sheet = g, yellowStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
       }
     }
-    if(any(consensus$inferred_E_numeric[[g]] == 3))
-    {tmp <- which(consensus$inferred_E_numeric[[g]] == 3, arr.ind = TRUE)
+    if(any(inferred$inferred_E_numeric[[g]] == 3))
+    {tmp <- which(inferred$inferred_E_numeric[[g]] == 3, arr.ind = TRUE)
     for(kk in 1:max(tmp[,2]))
     {
       tmp_kk <- tmp[tmp[,2]==kk,1]
       addStyle(wb, sheet = g, orangeStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
     }
     }
-    if(any(consensus$inferred_E_numeric[[g]] == 4))
+    if(any(inferred$inferred_E_numeric[[g]] == 4))
     {
-      tmp <- which(consensus$inferred_E_numeric[[g]] == 4, arr.ind = TRUE)
+      tmp <- which(inferred$inferred_E_numeric[[g]] == 4, arr.ind = TRUE)
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
         addStyle(wb, sheet = g, redStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
       }
     }
-    setColWidths(wb, sheet = g, cols = 1:ncol(consensus$inferred_D[[g]]), 
+    setColWidths(wb, sheet = g, cols = 1:ncol(inferred$inferred_D[[g]]), 
                  widths = col_width)
   }
   
-  if(substr(where, nchar(where), nchar(where)) != "/") where <- paste0(where,)
+  if(substr(where, nchar(where), nchar(where)) != "/") 
+    where <- paste0(where, "/")
   saveWorkbook(wb, file.path(where, file), overwrite = overwrite)
 }
 

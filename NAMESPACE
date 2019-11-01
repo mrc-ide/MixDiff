@@ -3,6 +3,7 @@
 export(ROC_per_date)
 export(ROC_per_individual)
 export(RunMCMC)
+export(are_true_param_in_95perc_post)
 export(compute_autocorr)
 export(compute_correlations_mu_CV)
 export(compute_delta)

@@ -1021,6 +1021,19 @@ ROC_per_individual <- function(MCMCres, aug_dat_true, thresholds)
               specificity = specificity_indiv_all_thresholds))
 }
 
+#' Compute sensitivity and specificity of detecting at least one error per individual for a variety of posterior thresholds
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param theta_true A list of parameters to which the output chains should be compared. This should contain:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups=length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of \code{mu} should be a scalar or vector giving the mean delay(s) in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' @return A vector of logical values indicating for each parameter, whether the true parameter value is inside the posterior 95% credible interval
+#' @export
+#' @examples
+#' # TO WRITE
 are_true_param_in_95perc_post <- function(MCMCres, theta_true)
 {
   param_post <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) unlist(MCMCres$theta_chain[[e]]))

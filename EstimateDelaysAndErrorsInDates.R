@@ -371,13 +371,22 @@ table(aug_dat_true$E[[g]] == consensus$E[[g]])['FALSE'] / sum(table(aug_dat_true
 
 ### Compute sensitivity and specificity of detecting errors in dates
 # remove missing dates from the denominator
-detec <- MixDiff:::compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus)
+detec_dates <- compute_performance_per_date_from_inferred(aug_dat_true, inferred_all_thresholds[["0.95"]])
+
+detec_dates_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
+  compute_performance_per_date_from_inferred(aug_dat_true, e))
+names(detec_all_thresholds) <- thresholds
+
+sensitivity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
+  e$sensitivity)
+specificity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
+  e$specificity)
 
 ### specificity: where we've detected an error which did not exist, what was the reason? 
 
-false_pos <- detec$false_pos
+false_pos <- detec_dates$false_pos
 # posterior support for erroneous entry
-lapply(1:length(detec$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
+lapply(1:length(detec_dates$sensitivity), function(g) if(nrow(false_pos[[g]])>0) sapply(1:nrow(false_pos[[g]]), function(i) posterior_support_list[[g]][[false_pos[[g]][i,2]]][false_pos[[g]][i,1]]) else NA )
 
 g <- 1
 i <- 18
@@ -404,9 +413,9 @@ consensus$E[[g]][i,]
 
 ### sensitivity: where we've not detected an error, what was the reason? 
 
-false_neg <- detec$false_neg
+false_neg <- detec_dates$false_neg
 # posterior support for correct entry
-lapply(1:length(detec$sensitivity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
+lapply(1:length(detec_dates$sensitivity), function(g) if(nrow(false_neg[[g]])>0) sapply(1:nrow(false_neg[[g]]), function(i) posterior_support_list[[g]][[false_neg[[g]][i,2]]][false_neg[[g]][i,1]]) else NA )
 
 g <- 4
 i <- 96#92#85#

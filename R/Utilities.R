@@ -853,17 +853,29 @@ write_xlsx_inferred <- function(inferred,
   saveWorkbook(wb, file.path(where, file), overwrite = overwrite)
 }
 
-### Compute sensitivity and specificity of detecting errors in dates
-# remove missing dates from the denominator
-compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consensus)
+#' Compute sensitivity and specificity of detecting errors in dates 
+#'
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param inferred the output of function \code{\link{get_inferred_from_consensus}}
+#' @return A list containing: 
+#' \itemize{
+#' \item{\code{sensitivity}}{: A vector containing the sensitivity of detecting errors in dates for each group}
+#' \item{\code{specificity}}{: A vector containing the specificity of detecting errors in dates for each group}
+#' \item{\code{false_pos}}{: A list containing, for each group, the row (indicating the individual's position in the group) and column (indicating the date for that individual) ids of the false positive dates, i.e. dates which were inferred as erroneous but were not.}
+#' \item{\code{false_neg}}{: A list containing, for each group, the row (indicating the individual's position in the group) and column (indicating the date for that individual) ids of the false negative dates, i.e. dates which were inferred as non erroneous but were erroneous.}
+#' }
+#' @export
+#' @examples
+#' # TO WRITE
+compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
 {
   tmp <- aug_dat_true$E
   aug_dat_true_E_no_missing <- tmp
-  consensus$E_no_missing <- lapply(1:length(consensus$inferred_E), function(g) 1*sapply(1:ncol(consensus$inferred_E[[g]]), function(j) consensus$inferred_E[[g]][,j] %in% "error_high_support"))
+  inferred$E_no_missing <- lapply(1:length(inferred$inferred_E), function(g) 1*sapply(1:ncol(inferred$inferred_E[[g]]), function(j) inferred$inferred_E[[g]][,j] %in% "error_high_support"))
   for(g in 1:length(tmp))
   {
     aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
-    consensus$E_no_missing[[g]] [consensus$inferred_E[[g]] %in% "missing_data"] <- NA
+    inferred$E_no_missing[[g]] [inferred$inferred_E[[g]] %in% "missing_data"] <- NA
   }
   
   sensitivity <- specificity <- rep(NA, 4)
@@ -871,21 +883,21 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
   
   for(g in 1:length(tmp))
   {
-    #tab <- table(aug_dat_true_E_no_missing[[g]], consensus$E_no_missing[[g]])
-    n_true_neg <- sum(aug_dat_true_E_no_missing[[g]] == 0 & consensus$E_no_missing[[g]] == 0, na.rm = TRUE)
-    n_true_pos <-  sum(aug_dat_true_E_no_missing[[g]] == 1 & consensus$E_no_missing[[g]] == 1, na.rm = TRUE)
-    n_false_pos <-  sum(aug_dat_true_E_no_missing[[g]] == 0 & consensus$E_no_missing[[g]] == 1, na.rm = TRUE)
-    n_false_neg <-  sum(aug_dat_true_E_no_missing[[g]] == 1 & consensus$E_no_missing[[g]] == 0, na.rm = TRUE)
+    #tab <- table(aug_dat_true_E_no_missing[[g]], inferred$E_no_missing[[g]])
+    n_true_neg <- sum(aug_dat_true_E_no_missing[[g]] == 0 & inferred$E_no_missing[[g]] == 0, na.rm = TRUE)
+    n_true_pos <-  sum(aug_dat_true_E_no_missing[[g]] == 1 & inferred$E_no_missing[[g]] == 1, na.rm = TRUE)
+    n_false_pos <-  sum(aug_dat_true_E_no_missing[[g]] == 0 & inferred$E_no_missing[[g]] == 1, na.rm = TRUE)
+    n_false_neg <-  sum(aug_dat_true_E_no_missing[[g]] == 1 & inferred$E_no_missing[[g]] == 0, na.rm = TRUE)
     
     sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
     specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
     
     false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
-                              (consensus$E_no_missing[[g]]  == 1), # and are detected as errors
+                              (inferred$E_no_missing[[g]]  == 1), # and are detected as errors
                             arr.ind = TRUE)
     
     false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
-                              (consensus$E_no_missing[[g]]  == 0), # and are NOT detected as errors
+                              (inferred$E_no_missing[[g]]  == 0), # and are NOT detected as errors
                             arr.ind = TRUE)
   }
   

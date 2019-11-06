@@ -1,3 +1,15 @@
+# TO DO: add instructions on installation
+# TO DO: add a legend to plot of error status by group 
+# (and improve the plot? --> x and y labels + colour code (as a chart of posterior support that would be dynamic), group names)
+# suggestion to add light lines between cases
+# in the excel write a separate README sheet with dynamics colour coding
+# in get_param_posterior_estimates set the y axes limits for all mu to be the same and same for CV
+# write function to plot central posterior estimate of distribution of each delay - and/or full set of distributions
+# gamma_params <- epitrix::gamma_mucv2shapescale(mu = MCMCres_summary$theta$mu[[3]][1,1], cv = MCMCres_summary$theta$CV[[3]][1,1])
+# x <- seq(0, 20, 0.1)
+# y <- dgamma(x, shape = gamma_params$shape, scale = gamma_params$scale)
+# plot(x, y, type = "l")
+
 library(MixDiff)
 
 ### read in data from Tini's paper
@@ -34,7 +46,7 @@ dat$group[dat$group_name %in% "YesDead"] <- 4
 
 ### choose a way of subsetting the data to get reasonable numbers for analysis to run in decent amount of time
 
-dat_with_unknown_groups <- dat
+dat_with_unknown_groups <- dat # save the original full data
 dat <- dat[!is.na(dat$group),]
 
 table(dat$QuarterOnsetInferred, dat$Country)
@@ -80,6 +92,11 @@ id_obs_dat <- lapply(1:length(id_obs_dat), function(g) {
 
 sapply(obs_dat, dim) 
 
+# what is the proportion of missing dates? 
+num <- sum(sapply(obs_dat, function(e) sum(is.na(e))))
+denom <- sum(sapply(obs_dat, function(e) prod(dim(e))))
+num / denom # 22% --> will use 20% of missing dates for baseline simulation
+
 ### take only the first 100 of each group
 
 obs_dat_large <- obs_dat
@@ -104,10 +121,10 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                                           sdlog_mu = list(0.05, c(0.15, 0.15), c(0.15, 0.15, 0.15), c(0.25, 0.25, 0.25)), 
                                           sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))), 
                        init_options=list(mindelay=0, maxdelay=100),
-                       #                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
+                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1),
                        #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
                        #chain_properties=list(n_iter = 500, burnin = 1, record_every=1),
-                       chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
+                       #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
                        tol = 1e-6)
 
 ###############################################
@@ -151,23 +168,32 @@ MCMCres_summary <- get_param_posterior_estimates(MCMCres, cex.axis=0.8)
 dev.off()
 
 ### Get and plot consensus ###
-consensus <- get_consensus(MCMCres, 
-                           obs_dat, 
-                           posterior = "mode", 
-                           threshold_error_support = 0.95)
+#consensus <- get_consensus(MCMCres, posterior = "median")
+consensus <- get_consensus(MCMCres, posterior = "mode")
+# what is the most likely error status for the first few cases in group 1?
+head(consensus$consensus_E[[1]]) # -1 = missing data, 0 = no error, 1 = error
+# what is the support for these error status
+head(consensus$support_E[[1]])
 
+# choses a threshold above which we take the error at face value
+#inferred <- get_inferred_from_consensus(consensus, threshold_error_support = 0.5) 
+inferred <- get_inferred_from_consensus(consensus, threshold_error_support = 0.95)
+# look again at the same individuals
+head(inferred$inferred_E[[1]]) 
+head(inferred$inferred_D[[1]]) 
 
+# plot the results
 par(mfrow = c(2, 2), mar = c(4, 4, 5, .5))
-for(g in 1:length(consensus$inferred_E))
+for(g in 1:length(inferred$inferred_E))
 {
-  image(t(consensus$inferred_E_numeric[[g]]), 
+  image(t(inferred$inferred_E_numeric[[g]]), 
         col = c("black", "forestgreen", "yellow", "orange", "red"), 
         breaks = seq(-0.5, 4.5, 1),
         main = paste("group", g))
 }
 
 # save in Excel
-write_xlsx_consensus(consensus,
+write_xlsx_inferred(inferred,
                      file = "/consensus.xlsx",
                      where = where_to_load_from,
                      col_width = 10,
@@ -176,17 +202,17 @@ write_xlsx_consensus(consensus,
 
 ### look at the errors we found ###
 ### for this would be good to keep the IDs of cases so we could check more stuff in initial dataset
-lapply(1:length(consensus$inferred_E), function(g) table(consensus$inferred_E[[g]]))
+lapply(1:length(inferred$inferred_E), function(g) table(inferred$inferred_E[[g]]))
 
 g <- 3
-idx <- which(consensus$inferred_E[[g]] == "error_high_support", arr.ind = TRUE)
+idx <- which(inferred$inferred_E[[g]] == "error_high_support", arr.ind = TRUE)
 ii <- idx[1,1]
 # what was observed for that case
 obs_dat[[g]][ii, ]
 int_to_date(obs_dat[[g]][ii, ])
 # what was inferred for that case
-consensus$inferred_D[[g]][ii,]
-int_to_date(consensus$inferred_D[[g]][ii,])
+inferred$inferred_D[[g]][ii,]
+int_to_date(inferred$inferred_D[[g]][ii,])
 # original dataset:
 dat[dat$id %in% id_obs_dat[[g]][ii],]
 # check convergence: 
@@ -199,14 +225,14 @@ for(k in 1:nrow(tmp_E))
   plot(tmp_D[k,], type = "l", ylim = range(tmp_D), col = k)
 
 g <- 4
-idx <- which(consensus$inferred_E[[g]] == "error_high_support", arr.ind = TRUE)
+idx <- which(inferred$inferred_E[[g]] == "error_high_support", arr.ind = TRUE)
 ii <- idx[1,1]
 # what was observed for that case
 obs_dat[[g]][ii, ]
 int_to_date(obs_dat[[g]][ii, ])
 # what was inferred for that case
-consensus$inferred_D[[g]][ii,]
-int_to_date(consensus$inferred_D[[g]][ii,])
+inferred$inferred_D[[g]][ii,]
+int_to_date(inferred$inferred_D[[g]][ii,])
 # original dataset:
 dat[dat$id %in% id_obs_dat[[g]][ii],]
 # check convergence: 
@@ -234,7 +260,7 @@ for(g in 1:length(obs_dat))
     ids_missing_onset <- id_obs_dat[[g]][which(missing_onset)] 
     ids_inferred <- c(ids_inferred, ids_missing_onset)
     manually_inferred <- c(manually_inferred, dat$DateOnsetInferred[dat$id %in% ids_missing_onset])
-    automatically_inferred <- c(automatically_inferred, int_to_date(consensus$inferred_D[[g]][which(missing_onset)] ))
+    automatically_inferred <- c(automatically_inferred, int_to_date(inferred$inferred_D[[g]][which(missing_onset)] ))
   }
 }
 
@@ -242,8 +268,12 @@ for(g in 1:length(obs_dat))
 diff_inferred <- automatically_inferred - manually_inferred 
 names(diff_inferred) <- ids_inferred
 # check the very big ones
-dat[dat$id %in% names(diff_inferred)[1],]
-dat[dat$id %in% names(diff_inferred)[3],]
+idx <- 1
+dat[dat$id %in% names(diff_inferred)[idx],]
+int_to_date(automatically_inferred[idx])
+idx <- 4
+dat[dat$id %in% names(diff_inferred)[idx],]
+int_to_date(automatically_inferred[idx])
 
 par(mfrow = c(1, 1))
 plot(manually_inferred, automatically_inferred)

@@ -265,13 +265,17 @@ for(g in 1:4)
   image(t(inferred_all_thresholds[["0.95"]]$inferred_E_numeric[[g]]), col = c("grey", "white", "yellow", "orange", "red"))
 }
 
+# visualise the support for the erroneous / non erroneous dates according to consensus
+# can also help decide on thresholds in the future
+plot_support_for_error(aug_dat_true, consensus)
+
 ### Compute sensitivity and specificity of detecting errors in dates
 # remove missing dates from the denominator
 detec_dates <- compute_performance_per_date_from_inferred(aug_dat_true, inferred_all_thresholds[["0.95"]])
 
 detec_dates_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
   compute_performance_per_date_from_inferred(aug_dat_true, e))
-names(detec_all_thresholds) <- thresholds
+names(detec_dates_all_thresholds) <- thresholds
 
 sensitivity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(e) 
   e$sensitivity)
@@ -341,7 +345,7 @@ detec_indiv <- compute_performance_per_individual_from_inferred(aug_dat_true, in
 
 detec_indiv_all_thresholds <- lapply(inferred_all_thresholds, function(e) 
   compute_performance_per_individual_from_inferred(aug_dat_true, e))
-names(detec_all_thresholds) <- thresholds
+names(detec_indiv_all_thresholds) <- thresholds
 
 sensitivity_indiv_all_thresholds <- sapply(detec_indiv_all_thresholds, function(e) 
   e$sensitivity)

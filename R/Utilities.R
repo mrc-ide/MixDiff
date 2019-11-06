@@ -905,6 +905,50 @@ compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
               false_neg = false_neg))
 }
 
+#' Compute sensitivity and specificity of detecting errors in dates 
+#'
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param consensus the output of function \code{\link{get_consensus}}
+#' @return A boxplot of the distribution of posterior support for truly non erroneous and truly erroneous entries in each group
+#' @import ggplot2
+#' @export
+#' @examples
+#' # TO WRITE
+plot_support_for_error <- function(aug_dat_true, consensus)
+{
+  df <- NULL
+  ### could add a loop over several datasets here if we wanted to look at overall performance
+  for(g in 1:length(aug_dat_true$E))
+  {
+    E0_idx <- which(aug_dat_true$E[[g]] == 0, arr.ind = TRUE)
+    E1_idx <- which(aug_dat_true$E[[g]] == 1, arr.ind = TRUE)
+    
+    support_0 <- (consensus$consensus_E[[g]] == 0) * consensus$support_E[[g]] + (consensus$consensus_E[[g]] == 1) * (1 - consensus$support_E[[g]])
+    support_1 <- (consensus$consensus_E[[g]] == 1) * consensus$support_E[[g]] + (consensus$consensus_E[[g]] == 0) * (1 - consensus$support_E[[g]])
+    support <- support_0*NA
+    support[E0_idx] <- support_0[E0_idx]
+    support[E1_idx] <- support_1[E1_idx]
+    
+    df_tmp <- data.frame(support = as.vector(support), error = as.vector(aug_dat_true$E[[g]]), group = g)
+    df_tmp <- df_tmp[df_tmp$error != - 1,]
+    df <- rbind(df, df_tmp)
+  }
+  
+  df$error <- factor(df$error, labels = c("No error", "Error"))
+  df$group <- factor(df$group)
+  
+  
+  
+  p <- ggplot(df, aes(x=error, y=support, fill = group, color = group)) + 
+    geom_boxplot() +
+    scale_y_continuous(breaks = seq(0, 1, 0.1)) +
+    expand_limits(y = 0)
+  return(p)
+}
+
+# this is so that ggplot2 call from function plot_support_for_error is happy (i.e. knows that group and error should be recognised in ggplot call)
+globalVariables(c("group", "error"), "MixDiff", add = TRUE)
+
 #' Compute sensitivity and specificity of detecting at least one error in dates for each individual observed
 #'
 #' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 

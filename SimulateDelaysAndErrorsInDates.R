@@ -111,8 +111,8 @@ n_groups <- 4
 n_dates <- c(2, 3, 4, 4)
 
 theta <- list()
-theta$prop_missing_data <- 0.05 ### this is missing from the estimation model (directly available from the data so not explicitely modelled)
-theta$zeta <- 0.05 ### probability that, when not missing, the date is recorded with error
+theta$prop_missing_data <- 0.2 ### this is the proportion of missing data - in Tini's Ebola in West Africa Dataset this is 22% 
+theta$zeta <- 0.05 ### probability that, when not missing, the date is recorded with error --> taken roughly as in typo challenge proportion of dates entered wrongly but which are still dates
 theta$mu <- list(mean_onset_2_report, 
                  c(mean_onset_2_hosp + mean_hosp_2_death, mean_onset_2_report), 
                  c(mean_onset_2_hosp, mean_hosp_2_disch, mean_onset_2_report), 
@@ -122,7 +122,7 @@ theta$CV <- list(sd_onset_2_report/mean_onset_2_report,
                  c(sd_onset_2_hosp/mean_onset_2_hosp, sd_hosp_2_disch/mean_hosp_2_disch, sd_onset_2_report/mean_onset_2_report), 
                  c(sd_onset_2_hosp/mean_onset_2_hosp, sd_hosp_2_death/mean_hosp_2_death, sd_onset_2_report/mean_onset_2_report))
 n_per_group <- rep(100, n_groups)
-range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
+range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("31/12/2014", "%d/%m/%Y")))
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
 index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 

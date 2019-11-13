@@ -4,12 +4,15 @@
 \alias{plot_aug_dat_chains}
 \title{Plots the MCMC chains of augmented data}
 \usage{
-plot_aug_dat_chains(MCMCres, aug_dat_true = NULL)
+plot_aug_dat_chains(MCMCres, aug_dat_true = NULL,
+  n_plots_per_group = 5)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}
 
 \item{aug_dat_true}{A list containing the data to which the output chains should be compared. If not \code{NULL}, this should have the format of the output of function \code{\link{simul_true_data}}.}
+
+\item{n_plots_per_group}{The number of infividuals to plot augmented data chains for (for each group). Defaults to 5.}
 }
 \value{
 Nothing. Only performs a plot.

@@ -1,6 +1,9 @@
 ---
-title: "MixDiff: a framework to reconstruct dataset with missing or erroneous data for outbreaks intervention"
-output: html_document
+title: 'MixDiff: a framework to reconstruct dataset with missing or erroneous data
+  for outbreaks intervention'
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}

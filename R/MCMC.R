@@ -75,6 +75,13 @@ RunMCMC <- function(obs_dat,
   check_not_all_missing(obs_dat)
   
   ###############################################
+  ### convert index_dates to numeric so all other functions work using column numbers rather than column names ###
+  ###############################################
+  
+  index_dates_original <- index_dates
+  index_dates <- convert_index_dates_to_numeric(index_dates)
+  
+  ###############################################
   ### fix the random seed if appropriate ###
   ###############################################
   
@@ -374,10 +381,17 @@ RunMCMC <- function(obs_dat,
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-plot_parameter_chains <- function(MCMCres, theta_true=NULL) 
+plot_parameter_chains <- function(MCMCres, theta_true=NULL, index_dates) 
 {
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
   
   par(mfrow=c(2, 1 + n_groups),mar=c(5, 6, 1, 1))
   
@@ -390,30 +404,26 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   # looking at mean delay 
   for(group_idx in 1:n_groups)
   {
-    #"mean delays\n(non hospitalised-alive group)"
-    #"mean delays\n(non hospitalised-dead group)"
-    #"mean delays\n(hospitalised-alive group)"
-    #"mean delays\n(hospitalised-dead group)"
-    group_name <-  paste("Group", group_idx)
-    
+    group_name <-  group_names[group_idx]
     j <- 1
     mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
     plot(mu, type="l", xlab="Iterations", ylab=paste0("mean delays\n(",group_name,")"), ylim=c(0, 20))
     par(xpd=TRUE)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
     par(xpd=FALSE)
-    for(j in seq(2,(n_dates[group_idx]-1),1))
+    if(n_dates[group_idx]>2)
     {
-      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-      lines(mu, col=j)
-      par(xpd=TRUE)
-      if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
-      par(xpd=FALSE)
+      for(j in seq(2,(n_dates[group_idx]-1),1))
+      {
+        mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
+        lines(mu, col=j)
+        par(xpd=TRUE)
+        if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
+        par(xpd=FALSE)
+      }
     }
-    #legend("topright", "Onset-Report", lty=1, col=seq_len(n_dates[group_idx]))
-    #legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-    #legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-    #legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
+    legend("topright", apply(index_dates[[group_idx]], 2, paste, collapse = "-"),
+           lty=1, col=seq_len(n_dates[group_idx]))
   }
   
   # looking at zeta
@@ -425,29 +435,26 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   
   for(group_idx in 1:n_groups)
   {
-    #"mean delays\n(non hospitalised-alive group)"
-    #"mean delays\n(non hospitalised-dead group)"
-    #"mean delays\n(hospitalised-alive group)"
-    #"mean delays\n(hospitalised-dead group)"
-    group_name <-  paste("Group", group_idx)
-    
+    group_name <-  group_names[group_idx]
     j <- 1
     CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
     plot(CV, type="l", xlab="Iterations", ylab=paste0("CV delays\n(",group_name,")"), ylim=c(0, 2))
     par(xpd=TRUE)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
     par(xpd=FALSE)
-    for(j in seq(2,(n_dates[group_idx]-1), 1))
+    if(n_dates[group_idx] > 2)
     {
-      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-      lines(CV, col=j)
-      par(xpd=TRUE)
-      if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-      par(xpd=FALSE)
+      for(j in seq(2,(n_dates[group_idx]-1), 1))
+      {
+        CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
+        lines(CV, col=j)
+        par(xpd=TRUE)
+        if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
+        par(xpd=FALSE)
+      }
     }
-    #legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-    #legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-    #legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
+    legend("topright", apply(index_dates[[group_idx]], 2, paste, collapse = "-"),
+           lty=1, col=seq_len(n_dates[group_idx]))
   }
 }
 

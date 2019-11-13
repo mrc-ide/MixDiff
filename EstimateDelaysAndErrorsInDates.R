@@ -51,13 +51,42 @@ if(!USE_SIMULATED_DATA)
   name_place_to_load_simulated_data_from <- "83" # "1" # 
   where_to_load_from <- paste0("./SimulatedData/baseline_random_params/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
+  
+  ### add group names and column names ### in the future best to do this in simul function
+  group_names <- c("NoHosp-Alive", "NoHosp-Dead", "Hosp-Alive", "Hosp-Dead")
+  names(obs_dat) <- group_names
+  
+  colnames(obs_dat[[1]]) <- c("onset", "report")
+  colnames(obs_dat[[2]]) <- c("onset", "death", "report")
+  colnames(obs_dat[[3]]) <- c("onset", "hospitalisation", "discharge", "report")
+  colnames(obs_dat[[4]]) <- c("onset", "hospitalisation", "death", "report")
+  
 }
 
 ###############################################
 ### define index_dates ###
 ###############################################
 
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
+index_dates <- list(matrix(c(1, 2), nrow=2), 
+                    cbind(c(1, 2), c(1, 3)), 
+                    cbind(c(1, 2), c(2, 3), c(1, 4)), 
+                    cbind(c(1, 2), c(2, 3), c(1, 4)) )
+
+names(index_dates) <- names(obs_dat)
+
+index_dates_names <- index_dates
+index_dates_names[["NoHosp-Alive"]][,1] <- c("onset", "report")
+index_dates_names[["NoHosp-Dead"]][,1] <- c("onset", "death")
+index_dates_names[["NoHosp-Dead"]][,2] <- c("onset", "report")
+index_dates_names[["Hosp-Alive"]][,1] <- c("onset", "hospitalisation")
+index_dates_names[["Hosp-Alive"]][,2] <- c("hospitalisation", "discharge")
+index_dates_names[["Hosp-Alive"]][,3] <- c("onset", "report")
+index_dates_names[["Hosp-Dead"]][,1] <- c("onset", "hospitalisation")
+index_dates_names[["Hosp-Dead"]][,2] <- c("hospitalisation", "death")
+index_dates_names[["Hosp-Dead"]][,3] <- c("onset", "report")
+
+for(g in 1:length(index_dates_names))
+  colnames(index_dates_names[[g]]) <- paste("delay", 1:ncol(index_dates_names[[g]]), sep = "_")
 
 ###############################################
 ### MCMC settings ###
@@ -72,8 +101,8 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
                        #chain_properties=list(n_iter = 500, burnin = 1, record_every=1),
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2),
                        #chain_properties=list(n_iter = 5000, burnin = 500, record_every=10),
-                       chain_properties=list(n_iter = 5000, burnin = 1, record_every=1),
-                       #chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
+                       #chain_properties=list(n_iter = 5000, burnin = 1, record_every=1),
+                       chain_properties=list(n_iter = 10, burnin = 1, record_every=1),
                        tol = 1e-6)
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
@@ -100,7 +129,7 @@ system.time({
   MCMCres <- RunMCMC(obs_dat, 
                      MCMC_settings,
                      hyperparameters,
-                     index_dates, 
+                     index_dates = index_dates_names, 
                      seed = 2)
 })
 #Rprof(NULL)
@@ -153,7 +182,7 @@ if(USE_SIMULATED_DATA)
 
 ### plot parameter chains ###
 pdf(paste0(where_to_load_from,"/ParamConvergencePlots_",ext,".pdf"), width=14, height=7)
-plot_parameter_chains(MCMCres, theta_true)
+plot_parameter_chains(MCMCres, theta_true, index_dates)
 dev.off()
 
 ### plot augmented data chains ###

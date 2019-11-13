@@ -299,6 +299,11 @@ check_MCMC_settings <- function(MCMC_settings, index_dates)
     stop("tol should be a number between 0 and 1")
 }
 
+convert_index_dates_to_numeric <- function(index_dates_names) 
+{
+  index_dates <- index_dates_names
+  lapply(index_dates_names, function(idx) matrix(match(idx, unique(as.vector(idx))), nrow = nrow(idx)) )
+}
 
 infer_missing_dates <- function(D, 
                                 E = NULL, 

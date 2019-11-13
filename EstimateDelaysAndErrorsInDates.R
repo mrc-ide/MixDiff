@@ -198,7 +198,7 @@ dev.off()
 ###############################################
 
 cor_mu_CV <- compute_correlations_mu_CV(MCMCres, index_dates = index_dates_names)
-autocorr <- compute_autocorr(MCMCres)
+autocorr <- compute_autocorr(MCMCres, index_dates = index_dates_names)
 
 ###############################################
 ### Get and plot posterior estimates ###

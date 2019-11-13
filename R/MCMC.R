@@ -547,18 +547,19 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE, index_dates)
   for(group_idx in seq(1, n_groups, 1))
   {
     cor_mu_CV[[group_idx]] <- list()
-    for(j in seq_len(n_dates[[group_idx]]-1))
+    for(j in seq_len(n_dates[group_idx]-1))
     {
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
       if(plot) plot(mu, CV, type="l", col=j,
                     xlab = "mean delay",
-                    ylab = "CV delay", main = paste0(paste(index_dates[[group_idx]][,j], collapse = "-"), " \n(", names(index_dates)[group_idx], ")"))
+                    ylab = "CV delay", 
+                    main = paste0(paste(index_dates[[group_idx]][,j], collapse = "-"), " \n(", names(index_dates)[group_idx], ")"))
       cor_mu_CV[[group_idx]][[j]] <- cor.test(mu, CV)
     }
-    if(n_delays[[group_idx]] < max(n_delays))
+    if(n_delays[group_idx] < max(n_delays))
     {
-      for(j in n_dates[[group_idx]]:max(n_delays))
+      for(j in n_dates[group_idx]:max(n_delays))
       {
         plot.new()
       }
@@ -579,34 +580,56 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE, index_dates)
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_autocorr <- function(MCMCres)
+compute_autocorr <- function(MCMCres, index_dates)
 {
   autocorr <- list()
   autocorr$mu <- list()
   autocorr$CV <- list()
   
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_delays <- sapply(index_dates, ncol)
   n_groups <- length(n_dates)
   
-  par(mfrow=c(4, 5),mar=c(4, 4, 4, 0.5))
+  par(mfrow=c(1 + n_groups, max(n_delays)*2 ),mar=c(4, 4, 5, 0.5))
   
   iterations <- seq_len(length(MCMCres$theta_chain) )
+  
+  zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
+  autocorr$zeta <- acf(zeta, main="Probability of error")
+  
+  if(max(n_delays) > 1)
+  {
+    plot.new()
+    for(j in 2:max(n_delays))
+    {
+      plot.new()
+      plot.new()
+    }
+  }
   
   for(group_idx in seq(1, n_groups, 1))
   {
     autocorr$mu[[group_idx]] <- list()
     autocorr$CV[[group_idx]] <- list()
-    for(j in seq_len(n_dates[[group_idx]]-1))
+    for(j in seq_len(n_dates[group_idx]-1))
     {
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-      autocorr$mu[[group_idx]][[j]] <- acf(mu, main=sprintf("Mu, group %d, delay %d", group_idx, j))
-      autocorr$CV[[group_idx]][[j]] <- acf(CV, main=sprintf("CV, group %d, delay %d", group_idx, j))
+      autocorr$mu[[group_idx]][[j]] <- acf(mu, 
+                                           main = paste0("Mean ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
+                                           
+      autocorr$CV[[group_idx]][[j]] <- acf(CV, 
+                                           main = paste0("CV ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
+    }
+    if(n_delays[group_idx] < max(n_delays))
+    {
+      for(j in n_dates[group_idx]:max(n_delays))
+      {
+        plot.new()
+        plot.new()
+      }
     }
   }
-  
-  zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
-  autocorr$zeta <- acf(zeta, main="zeta")
   
   return(autocorr)
 }

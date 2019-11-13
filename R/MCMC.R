@@ -78,8 +78,8 @@ RunMCMC <- function(obs_dat,
   ### convert index_dates to numeric so all other functions work using column numbers rather than column names ###
   ###############################################
   
-  index_dates_original <- index_dates
-  index_dates <- convert_index_dates_to_numeric(index_dates)
+  index_dates_original <- process_index_dates(index_dates)
+  index_dates <- convert_index_dates_to_numeric(index_dates_original)
   
   ###############################################
   ### fix the random seed if appropriate ###

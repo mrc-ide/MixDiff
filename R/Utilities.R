@@ -299,10 +299,35 @@ check_MCMC_settings <- function(MCMC_settings, index_dates)
     stop("tol should be a number between 0 and 1")
 }
 
+process_index_dates <- function(index_dates) 
+{
+  if(is.null(names(index_dates)))
+  {
+    names(index_dates) <- paste("group", 1:length(index_dates), sep = "_")
+  }
+  # add names for delays if none already
+  for(g in 1:length(index_dates))
+  {
+    if(is.null(colnames(index_dates[[g]])))
+    {
+      colnames(index_dates[[g]]) <- paste("delay", 1:ncol(index_dates[[g]]), sep = "_")
+      
+    }
+    rownames(index_dates[[g]]) <- c("from", "to")
+  }
+  return(index_dates)
+}
+
 convert_index_dates_to_numeric <- function(index_dates_names) 
 {
-  index_dates <- index_dates_names
-  lapply(index_dates_names, function(idx) matrix(match(idx, unique(as.vector(idx))), nrow = nrow(idx)) )
+  index_dates <- lapply(index_dates_names, function(idx) matrix(match(idx, unique(as.vector(idx))), nrow = nrow(idx)) )
+  names(index_dates) <- names(index_dates_names)
+  for(g in 1:length(index_dates))
+  {
+    colnames(index_dates[[g]])  <- colnames(index_dates_names[[g]])
+    rownames(index_dates[[g]])  <- rownames(index_dates_names[[g]]) 
+  }
+  return(index_dates)
 }
 
 infer_missing_dates <- function(D, 

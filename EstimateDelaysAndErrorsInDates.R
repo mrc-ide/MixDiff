@@ -48,8 +48,9 @@ if(!USE_SIMULATED_DATA)
   obs_dat <- lapply(tmp, function(x) sapply(which(colSums(is.na(x))!=nrow(x)), function(j) date_to_int(x[,j]) )) ### converting obs_dat to be integers - easier to handle than dates
 } else
 {
-  name_place_to_load_simulated_data_from <- "83" # "1" # 
-  where_to_load_from <- paste0("./SimulatedData/baseline_random_params/",name_place_to_load_simulated_data_from)
+  name_place_to_load_simulated_data_from <- "1" 
+  #where_to_load_from <- paste0("./SimulatedData/baseline_random_params/",name_place_to_load_simulated_data_from)
+  where_to_load_from <- paste0("./SimulatedData/baseline_ebola_like/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
   
   ### add group names and column names ### in the future best to do this in simul function
@@ -182,7 +183,7 @@ if(USE_SIMULATED_DATA)
 
 ### plot parameter chains ###
 pdf(paste0(where_to_load_from,"/ParamConvergencePlots_",ext,".pdf"), width=14, height=7)
-plot_parameter_chains(MCMCres, theta_true, index_dates)
+plot_parameter_chains(MCMCres, theta_true, index_dates_names)
 dev.off()
 
 ### plot augmented data chains ###

@@ -501,22 +501,23 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL, n_plots_per_group = 
         points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
       }
       par(xpd=FALSE)
-      for(j in seq(2, (n_dates[group_idx]), 1))
+      if(n_dates[group_idx]>2)
       {
-        date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-        lines(date, col=j)
-        par(xpd=TRUE)
-        if(!is.null(aug_dat_true))
+        for(j in seq(2, (n_dates[group_idx]), 1))
         {
-          pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-          points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+          date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
+          lines(date, col=j)
+          par(xpd=TRUE)
+          if(!is.null(aug_dat_true))
+          {
+            pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+            points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+          }
+          par(xpd=FALSE)
         }
-        par(xpd=FALSE)
       }
-      #legend("topright", c("Onset","Report"), lty=1, col=seq_len(n_dates[group_idx]))
-      #legend("topright", c("Onset","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
-      #legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
-      #legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
+      if(!is.null(colnames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]])))
+        legend("topright", colnames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]]), lty=1, col=seq_len(n_dates[group_idx]), cex = 0.7)
     }
   }
 }

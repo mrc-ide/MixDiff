@@ -483,17 +483,26 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL, n_plots_per_group = 
     cex <- 1.5
   }
   
-  par(mfrow=c(n_groups, n_plots_per_group),mar=c(5, 6, 1, 1))
+  par(mfrow=c(n_groups, n_plots_per_group),mar=c(5, 6, 4, 1))
   
   for(group_idx in 1:n_groups)
   {
     # randomly pick 5 individuals in that group
     indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), n_plots_per_group)
+    if(!is.null(rownames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]])))
+    {
+      ids_indiv_to_plot <- rownames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]])[indiv_to_plot]
+    } else
+    {
+      ids_indiv_to_plot <- paste("Individual",indiv_to_plot)
+    }
     for(i in seq_len(length(indiv_to_plot)) )
     {
       j <- 1
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-      plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
+      plot(date, type="l", xlab="Iterations", ylab="", 
+           main = ids_indiv_to_plot[i],
+           ylim=c(min(date)-30, max(date)+30))
       par(xpd=TRUE)
       if(!is.null(aug_dat_true))
       {

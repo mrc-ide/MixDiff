@@ -930,8 +930,10 @@ compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
   tmp <- aug_dat_true$E
   aug_dat_true_E_no_missing <- tmp
   inferred$E_no_missing <- lapply(1:length(inferred$inferred_E), function(g) 1*sapply(1:ncol(inferred$inferred_E[[g]]), function(j) inferred$inferred_E[[g]][,j] %in% "error_high_support"))
+  names(inferred$E_no_missing) <- names(inferred$inferred_E)
   for(g in 1:length(tmp))
   {
+    colnames(inferred$E_no_missing[[g]]) <- colnames(inferred$inferred_E[[g]])
     aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
     inferred$E_no_missing[[g]] [inferred$inferred_E[[g]] %in% "missing_data"] <- NA
   }
@@ -958,6 +960,9 @@ compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
                               (inferred$E_no_missing[[g]]  == 0), # and are NOT detected as errors
                             arr.ind = TRUE)
   }
+  
+  names(sensitivity) <- names(specificity) <- names(aug_dat_true_E_no_missing)
+  names(false_pos) <- names(false_neg) <- names(aug_dat_true_E_no_missing)
   
   return(list(sensitivity = sensitivity,
               specificity = specificity,

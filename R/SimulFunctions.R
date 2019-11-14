@@ -68,8 +68,8 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
   }
   if(simul_error)
   {
-    observed_D <- simul_obs_dat(D, theta, range_dates)
-    return(list(true_dat=D, obs_dat=observed_D$obs_dat, E=observed_D$E))
+    observed_D <- simul_obs_dat(D, theta, range_dates, remove_allNA_indiv=remove_allNA_indiv)
+    return(list(true_dat=observed_D$D, obs_dat=observed_D$obs_dat, E=observed_D$E))
   }else{
     return(list(true_dat=D, obs_dat=NULL, E=NULL))
   }
@@ -135,11 +135,12 @@ simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=TRUE)
       if(length(exclude)>0)
       {
         obs_dat[[g]] <- obs_dat[[g]][-exclude,]
+        D[[g]] <- D[[g]][-exclude,]
         E[[g]] <- E[[g]][-exclude,]
       }
     }
   }
-  return(list(obs_dat=obs_dat, E=E))
+  return(list(obs_dat=obs_dat, D=D, E=E))
 }
 
 

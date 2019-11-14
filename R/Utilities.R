@@ -855,10 +855,12 @@ write_xlsx_inferred <- function(inferred,
     contents <- sapply(1:ncol(inferred$inferred_D[[g]]), 
                        function(j) as.character(int_to_date(inferred$inferred_D[[g]][,j])))
     colnames(contents) <- colnames(inferred$inferred_D[[g]])
+    idx_col <- 0
     if(!is.null(rownames(inferred$inferred_D[[g]])))
     {
       case_id <- rownames(inferred$inferred_D[[g]])
       contents <- cbind(case_id, contents)
+      idx_col <- 1
     } 
     writeData(wb, sheet_name, 
               contents, 
@@ -870,7 +872,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, greyStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g, greyStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 1))
@@ -879,7 +881,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, whiteStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g, whiteStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 2))
@@ -888,7 +890,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, yellowStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g, yellowStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 3))
@@ -896,7 +898,7 @@ write_xlsx_inferred <- function(inferred,
     for(kk in 1:max(tmp[,2]))
     {
       tmp_kk <- tmp[tmp[,2]==kk,1]
-      addStyle(wb, sheet = g, orangeStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+      addStyle(wb, sheet = g, orangeStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
     }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 4))
@@ -905,7 +907,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, redStyle, rows = tmp_kk, cols = kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g, redStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     setColWidths(wb, sheet = g, cols = 1:ncol(inferred$inferred_D[[g]]), 

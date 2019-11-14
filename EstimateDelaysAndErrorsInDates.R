@@ -52,22 +52,22 @@ if(!USE_SIMULATED_DATA)
   #where_to_load_from <- paste0("./SimulatedData/baseline_random_params/",name_place_to_load_simulated_data_from)
   where_to_load_from <- paste0("./SimulatedData/baseline_ebola_like/",name_place_to_load_simulated_data_from)
   obs_dat <- readRDS(normalizePath(paste0(where_to_load_from,"/SimulatedObsData.rds")))
-  
-  ### add group names and column names ### in the future best to do this in simul function
-  group_names <- c("NoHosp-Alive", "NoHosp-Dead", "Hosp-Alive", "Hosp-Dead")
-  names(obs_dat) <- group_names
-  
-  colnames(obs_dat[[1]]) <- c("onset", "report")
-  colnames(obs_dat[[2]]) <- c("onset", "death", "report")
-  colnames(obs_dat[[3]]) <- c("onset", "hosp.", "discharge", "report")
-  colnames(obs_dat[[4]]) <- c("onset", "hosp.", "death", "report")
-  
-  ### add ids for cases ### in the future best to do this in simul function
-  for(g in 1:length(obs_dat))
-  {
-    rownames(obs_dat[[g]]) <- paste(group_names[[g]], 1:nrow(obs_dat[[g]]), sep = "_")
-  }
-  
+  # 
+  # ### add group names and column names ### in the future best to do this in simul function
+  # group_names <- c("NoHosp-Alive", "NoHosp-Dead", "Hosp-Alive", "Hosp-Dead")
+  # names(obs_dat) <- group_names
+  # 
+  # colnames(obs_dat[[1]]) <- c("onset", "report")
+  # colnames(obs_dat[[2]]) <- c("onset", "death", "report")
+  # colnames(obs_dat[[3]]) <- c("onset", "hosp.", "discharge", "report")
+  # colnames(obs_dat[[4]]) <- c("onset", "hosp.", "death", "report")
+  # 
+  # ### add ids for cases ### in the future best to do this in simul function
+  # for(g in 1:length(obs_dat))
+  # {
+  #   rownames(obs_dat[[g]]) <- paste(group_names[[g]], 1:nrow(obs_dat[[g]]), sep = "_")
+  # }
+  # 
 }
 
 ###############################################

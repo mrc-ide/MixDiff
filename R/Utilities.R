@@ -1074,11 +1074,19 @@ compute_performance_per_individual_from_inferred <- function(aug_dat_true, infer
     false_pos[[g]] <- which((!at_least_one_error_observed[[g]]) & # are really NOT an error
                               at_least_one_error_inferred[[g]], # and are detected as errors
                             arr.ind = TRUE)
+    false_pos[[g]] <- cbind(false_pos[[g]], rownames(inferred$inferred_E[[g]])[false_pos[[g]]])
+    colnames(false_pos[[g]]) <- c("row_number", "case_id")
     
     false_neg[[g]] <- which(at_least_one_error_observed[[g]] & # are really  an error
                               (!at_least_one_error_inferred[[g]]), # and are NOT detected as errors
                             arr.ind = TRUE)
+    false_neg[[g]] <- cbind(false_neg[[g]], rownames(inferred$inferred_E[[g]])[false_neg[[g]]])
+    colnames(false_neg[[g]]) <- c("row_number", "case_id")
+    
   }
+  
+  names(sensitivity) <- names(specificity) <- names(inferred$inferred_E)
+  names(false_pos) <- names(false_neg) <- names(inferred$inferred_E)
   
   return(list(sensitivity = sensitivity,
               specificity = specificity,

@@ -54,6 +54,9 @@
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE, remove_allNA_indiv=FALSE)
 {
+  index_dates <- process_index_dates(index_dates)
+  column_names <- lapply(index_dates, function(idx) unique(as.vector(idx)))
+  index_dates <- convert_index_dates_to_numeric(index_dates, obs_dat = NULL)
   D <- list() 
   for(g in seq_len(length(theta$mu)) )
   {
@@ -65,7 +68,11 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
       delay <- rgamma(n_per_group[g], shape=params[1], scale=params[2])
       D[[g]][,index_dates[[g]][2,j]]  <- D[[g]][,index_dates[[g]][1,j]] + round(delay)
     }
+    colnames(D[[g]]) <- column_names[[g]]
+    rownames(D[[g]]) <- paste0("grp_", g, "_id_",1:nrow(D[[g]]))
   }
+  names(D) <- names(index_dates)
+  
   if(simul_error)
   {
     observed_D <- simul_obs_dat(D, theta, range_dates, remove_allNA_indiv=remove_allNA_indiv)

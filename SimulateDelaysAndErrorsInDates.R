@@ -123,19 +123,37 @@ theta$CV <- list(sd_onset_2_report/mean_onset_2_report,
                  c(sd_onset_2_hosp/mean_onset_2_hosp, sd_hosp_2_death/mean_hosp_2_death, sd_onset_2_report/mean_onset_2_report))
 n_per_group <- rep(100, n_groups)
 range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("31/12/2014", "%d/%m/%Y")))
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
-index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
 
+index_dates <- list(matrix(c(1, 2), nrow=2), 
+                    cbind(c(1, 2), c(1, 3)), 
+                    cbind(c(1, 2), c(2, 3), c(1, 4)), 
+                    cbind(c(1, 2), c(2, 3), c(1, 4)) )
+names(index_dates) <- c("NoHosp-Alive", "NoHosp-Dead", "Hosp-Alive", "Hosp-Dead")
+
+index_dates_names <- index_dates
+index_dates_names[["NoHosp-Alive"]][,1] <- c("onset", "report")
+index_dates_names[["NoHosp-Dead"]][,1] <- c("onset", "death")
+index_dates_names[["NoHosp-Dead"]][,2] <- c("onset", "report")
+index_dates_names[["Hosp-Alive"]][,1] <- c("onset", "hosp.")
+index_dates_names[["Hosp-Alive"]][,2] <- c("hosp.", "discharge")
+index_dates_names[["Hosp-Alive"]][,3] <- c("onset", "report")
+index_dates_names[["Hosp-Dead"]][,1] <- c("onset", "hosp.")
+index_dates_names[["Hosp-Dead"]][,2] <- c("hosp.", "death")
+index_dates_names[["Hosp-Dead"]][,3] <- c("onset", "report")
+
+for(g in 1:length(index_dates_names))
+  colnames(index_dates_names[[g]]) <- paste("delay", 1:ncol(index_dates_names[[g]]), sep = "_")
+
+index_dates_order <- compute_index_dates_order(index_dates)
+  
 for(name_place_to_save in 1:100)
 {
   
-  D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, remove_allNA_indiv=TRUE)
+  D <- simul_true_data(theta, n_per_group, range_dates, index_dates_names)
+  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates_names, simul_error = TRUE, remove_allNA_indiv=TRUE)
   tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
-  E <- tmp$E
   obs_dat <- tmp$obs_dat
-  
-  aug_dat <- list(D=D$true_dat, E=tmp$E)
+  aug_dat <- list(D=tmp$D, E=tmp$E)
   
   ####################################
   ### saving this somewhere ###

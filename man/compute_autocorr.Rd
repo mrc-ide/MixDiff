@@ -4,7 +4,7 @@
 \alias{compute_autocorr}
 \title{Compute autocorrelation for each parameter of the MCMC chains}
 \usage{
-compute_autocorr(MCMCres)
+compute_autocorr(MCMCres, index_dates)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}

@@ -4,7 +4,7 @@
 \alias{compute_correlations_mu_CV}
 \title{Compute correlation between the MCMC chains of mean and CV of each delay}
 \usage{
-compute_correlations_mu_CV(MCMCres, plot = TRUE)
+compute_correlations_mu_CV(MCMCres, plot = TRUE, index_dates)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}

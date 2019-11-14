@@ -4,8 +4,9 @@
 \alias{get_param_posterior_estimates}
 \title{Computes posterior estimates of parameters from the MCMC chain}
 \usage{
-get_param_posterior_estimates(MCMCres, central = c("median", "mean"),
-  CrI = 0.95, theta_true = NULL, plot = TRUE, cex.axis = 1)
+get_param_posterior_estimates(MCMCres, index_dates, central = c("median",
+  "mean"), CrI = 0.95, theta_true = NULL, plot = TRUE,
+  cex.axis = 1)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}

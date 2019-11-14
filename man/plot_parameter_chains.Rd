@@ -4,7 +4,7 @@
 \alias{plot_parameter_chains}
 \title{Plots the MCMC chains of parameters}
 \usage{
-plot_parameter_chains(MCMCres, theta_true = NULL)
+plot_parameter_chains(MCMCres, theta_true = NULL, index_dates)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}

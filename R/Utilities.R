@@ -327,7 +327,13 @@ convert_index_dates_to_numeric <- function(index_dates_names, obs_dat)
     index_dates <- index_dates_names
   }else
   {
-    index_dates <- lapply(1:length(index_dates), function(g) matrix(match(index_dates_names[[g]], colnames(obs_dat[[g]])), nrow = nrow(index_dates_names[[g]])))
+    if(!is.null(obs_dat))
+    {
+      index_dates <- lapply(1:length(index_dates), function(g) matrix(match(index_dates_names[[g]], colnames(obs_dat[[g]])), nrow = nrow(index_dates_names[[g]])))
+    } else
+    {
+      index_dates <- lapply(index_dates_names, function(idx) matrix(match(idx, unique(as.vector(idx))), nrow = nrow(idx)) )
+    }
     if(any(sapply(index_dates, function(idx) any(is.na(idx)))))
     {
       stop("index_dates contains non numerical values which do not appear in the column names of obs_dat.")

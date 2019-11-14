@@ -963,10 +963,14 @@ compute_performance_per_date_from_inferred <- function(aug_dat_true, inferred)
     false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
                               (inferred$E_no_missing[[g]]  == 1), # and are detected as errors
                             arr.ind = TRUE)
+    false_pos[[g]] <- cbind(false_pos[[g]], colnames(inferred$E_no_missing[[g]])[false_pos[[g]][,2]])
+    colnames(false_pos[[g]]) <- c("row_number", "col_number", "col_name")
     
     false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
                               (inferred$E_no_missing[[g]]  == 0), # and are NOT detected as errors
                             arr.ind = TRUE)
+    false_neg[[g]] <- cbind(false_neg[[g]], colnames(inferred$E_no_missing[[g]])[false_neg[[g]][,2]])
+    colnames(false_neg[[g]]) <- c("row_number", "col_number", "col_name")
   }
   
   names(sensitivity) <- names(specificity) <- names(aug_dat_true_E_no_missing)

@@ -322,7 +322,7 @@ process_index_dates <- function(index_dates)
 
 convert_index_dates_to_numeric <- function(index_dates_names, obs_dat) 
 {
-  if(all(sapply(index_dates, function(idx) all(is.numeric(idx)))))
+  if(all(sapply(index_dates_names, function(idx) all(is.numeric(idx)))))
   {
     index_dates <- index_dates_names
   }else

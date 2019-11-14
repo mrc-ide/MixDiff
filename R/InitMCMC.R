@@ -68,8 +68,8 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
     D[[g]] <- obs_dat[[g]]
     for(e in seq_len(nrow(D[[g]])))
     {
-      # if(g==4 & e == 5)
-      # {
+       #if(g==1 & e == 2)
+       #{
       #   browser()
       # }
       #print(paste("individual", e))
@@ -78,6 +78,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       for(j in seq_len(ncol(index_dates_order[[g]])))
       {
         #print(paste("date", j))
+        #print(D[[g]][e,index_dates_order[[g]][,j]])
         if(!any(is.na(D[[g]][e,index_dates_order[[g]][,j]])))
         {
           # there is a problem if the dates have too short or too long delay
@@ -97,8 +98,11 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
               must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
             }
             D[[g]][e,must_be_wrong] <- NA
+            #while_idx = 0
             while(!(must_be_wrong %in% index_dates_order[[g]][,j]))
             {
+              #while_idx <- while_idx + 1
+              #print(paste("while_idx:", while_idx))
               # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
               tmp <- table(as.vector(index_dates_order[[g]][,sapply(seq_len(ncol(index_dates_order[[g]])), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
               if(any(tmp>1))
@@ -126,6 +130,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
   for(g in seq_len(n_groups) )
   {
     colnames(D[[g]]) <- colnames(obs_dat[[g]])
+    rownames(D[[g]]) <- rownames(obs_dat[[g]])
   }
   
   # compute E accordingly
@@ -146,6 +151,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
   for(g in seq_len(n_groups) )
   {
     colnames(E[[g]]) <- colnames(obs_dat[[g]])
+    rownames(E[[g]]) <- rownames(obs_dat[[g]])
   }
   
   aug_dat <- list(D = D,

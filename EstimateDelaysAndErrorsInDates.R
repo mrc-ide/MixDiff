@@ -62,6 +62,12 @@ if(!USE_SIMULATED_DATA)
   colnames(obs_dat[[3]]) <- c("onset", "hosp.", "discharge", "report")
   colnames(obs_dat[[4]]) <- c("onset", "hosp.", "death", "report")
   
+  ### add ids for cases ### in the future best to do this in simul function
+  for(g in 1:length(obs_dat))
+  {
+    rownames(obs_dat[[g]]) <- paste(group_names[[g]], 1:nrow(obs_dat[[g]]), sep = "_")
+  }
+  
 }
 
 ###############################################

@@ -845,9 +845,18 @@ write_xlsx_inferred <- function(inferred,
   {
     sheet_name <- group_names[g]
     addWorksheet(wb, sheet_name)
+    
+    contents <- sapply(1:ncol(inferred$inferred_D[[g]]), 
+                       function(j) as.character(int_to_date(inferred$inferred_D[[g]][,j])))
+    colnames(contents) <- colnames(inferred$inferred_D[[g]])
+    if(!is.null(rownames(inferred$inferred_D[[g]])))
+    {
+      case_id <- rownames(inferred$inferred_D[[g]])
+      contents <- cbind(case_id, contents)
+    } 
     writeData(wb, sheet_name, 
-              sapply(1:ncol(inferred$inferred_D[[g]]), function(j) as.character(int_to_date(inferred$inferred_D[[g]][,j]))), 
-              colNames=TRUE) 
+              contents, 
+              colNames = TRUE) 
     
     if(any(inferred$inferred_E_numeric[[g]] == 0))
     {

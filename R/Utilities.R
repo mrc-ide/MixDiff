@@ -989,15 +989,23 @@ plot_support_for_error <- function(aug_dat_true, consensus)
     support[E0_idx] <- support_0[E0_idx]
     support[E1_idx] <- support_1[E1_idx]
     
-    df_tmp <- data.frame(support = as.vector(support), error = as.vector(aug_dat_true$E[[g]]), group = g)
+    if(!is.null(names(aug_dat_true$E)))
+    {
+      group <- names(aug_dat_true$E)[g]
+    } else
+    {
+      group <- g
+    }
+    
+    df_tmp <- data.frame(support = as.vector(support), 
+                         error = as.vector(aug_dat_true$E[[g]]), 
+                         group = group)
     df_tmp <- df_tmp[df_tmp$error != - 1,]
     df <- rbind(df, df_tmp)
   }
   
   df$error <- factor(df$error, labels = c("No error", "Error"))
   df$group <- factor(df$group)
-  
-  
   
   p <- ggplot(df, aes(x=error, y=support, fill = group, color = group)) + 
     geom_boxplot() +

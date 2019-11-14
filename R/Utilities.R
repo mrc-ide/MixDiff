@@ -320,14 +320,24 @@ process_index_dates <- function(index_dates)
   return(index_dates)
 }
 
-convert_index_dates_to_numeric <- function(index_dates_names) 
+convert_index_dates_to_numeric <- function(index_dates_names, obs_dat) 
 {
-  index_dates <- lapply(index_dates_names, function(idx) matrix(match(idx, unique(as.vector(idx))), nrow = nrow(idx)) )
-  names(index_dates) <- names(index_dates_names)
-  for(g in 1:length(index_dates))
+  if(all(sapply(index_dates, function(idx) all(is.numeric(idx)))))
   {
-    colnames(index_dates[[g]])  <- colnames(index_dates_names[[g]])
-    rownames(index_dates[[g]])  <- rownames(index_dates_names[[g]]) 
+    index_dates <- index_dates_names
+  }else
+  {
+    index_dates <- lapply(1:length(index_dates), function(g) matrix(match(index_dates_names[[g]], colnames(obs_dat[[g]])), nrow = nrow(index_dates_names[[g]])))
+    if(any(sapply(index_dates, function(idx) any(is.na(idx)))))
+    {
+      stop("index_dates contains non numerical values which do not appear in the column names of obs_dat.")
+    }
+    names(index_dates) <- names(index_dates_names)
+    for(g in 1:length(index_dates))
+    {
+      colnames(index_dates[[g]])  <- colnames(index_dates_names[[g]])
+      rownames(index_dates[[g]])  <- rownames(index_dates_names[[g]]) 
+    }
   }
   return(index_dates)
 }
@@ -735,7 +745,7 @@ get_consensus <- function(MCMCres, posterior = c("mode", "median"))
 #' @examples
 #' # TO WRITE
 get_inferred_from_consensus <- function(consensus, 
-                          threshold_error_support = 0.5)
+                                        threshold_error_support = 0.5)
 {
   if(!is.numeric(threshold_error_support) | threshold_error_support<0.5 | threshold_error_support>1)
   {
@@ -810,10 +820,10 @@ get_inferred_from_consensus <- function(consensus,
 #' @examples
 #' # TO WRITE
 write_xlsx_inferred <- function(inferred,
-                                 file = "consensus.xlsx",
-                                 where = "./",
-                                 col_width = 10,
-                                 overwrite = FALSE)
+                                file = "consensus.xlsx",
+                                where = "./",
+                                col_width = 10,
+                                overwrite = FALSE)
 {
   # colours used for the cells:
   whiteStyle <- createStyle(fontColour = "#000000", fgFill = "#FFFFFF")

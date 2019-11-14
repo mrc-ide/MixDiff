@@ -79,7 +79,7 @@ RunMCMC <- function(obs_dat,
   ###############################################
   
   index_dates_original <- process_index_dates(index_dates)
-  index_dates <- convert_index_dates_to_numeric(index_dates_original)
+  index_dates <- convert_index_dates_to_numeric(index_dates_original, obs_dat) # matches the names of columns from obs_dat
   
   ###############################################
   ### fix the random seed if appropriate ###

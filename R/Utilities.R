@@ -832,13 +832,22 @@ write_xlsx_inferred <- function(inferred,
   orangeStyle <- createStyle(fontColour = "#000000", fgFill = "#FF8000")
   redStyle <- createStyle(fontColour = "#000000", fgFill = "#FF0000")
   
+  if(is.null(names(inferred$consensus_D)))
+  {
+    group_names <- paste("Group", 1:length(inferred$consensus_D))
+  } else
+  {
+    group_names <- names(inferred$consensus_D)
+  }
+  
   wb <- createWorkbook()
   for(g in 1:length(inferred$inferred_E_numeric))
   {
-    sheet_name <- paste0("group_", g,"_color_code")
+    sheet_name <- group_names[g]
     addWorksheet(wb, sheet_name)
     writeData(wb, sheet_name, 
-              sapply(1:ncol(inferred$inferred_D[[g]]), function(j) as.character(int_to_date(inferred$inferred_D[[g]][,j]))), colNames=FALSE) 
+              sapply(1:ncol(inferred$inferred_D[[g]]), function(j) as.character(int_to_date(inferred$inferred_D[[g]][,j]))), 
+              colNames=TRUE) 
     
     if(any(inferred$inferred_E_numeric[[g]] == 0))
     {

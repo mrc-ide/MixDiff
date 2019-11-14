@@ -106,7 +106,7 @@ RunMCMC <- function(obs_dat,
   ### define parameters to be used for initialisation of the chain ###
   ###############################################
   
-  theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
+  theta <- initialise_theta_from_aug_dat(aug_dat, index_dates_original)
   
   ###############################################
   ### Initalise the MCMC chains ###
@@ -583,8 +583,8 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE, index_dates)
 compute_autocorr <- function(MCMCres, index_dates)
 {
   autocorr <- list()
-  autocorr$mu <- list()
-  autocorr$CV <- list()
+  autocorr$mean_delays <- list()
+  autocorr$CV_delays <- list()
   
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_delays <- sapply(index_dates, ncol)
@@ -595,7 +595,7 @@ compute_autocorr <- function(MCMCres, index_dates)
   iterations <- seq_len(length(MCMCres$theta_chain) )
   
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
-  autocorr$zeta <- acf(zeta, main="Probability of error")
+  autocorr$prob_error <- acf(zeta, main="Probability of error")
   
   if(max(n_delays) > 1)
   {
@@ -609,18 +609,20 @@ compute_autocorr <- function(MCMCres, index_dates)
   
   for(group_idx in seq(1, n_groups, 1))
   {
-    autocorr$mu[[group_idx]] <- list()
-    autocorr$CV[[group_idx]] <- list()
+    autocorr$mean_delays[[group_idx]] <- list()
+    autocorr$CV_delays[[group_idx]] <- list()
     for(j in seq_len(n_dates[group_idx]-1))
     {
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-      autocorr$mu[[group_idx]][[j]] <- acf(mu, 
+      autocorr$mean_delays[[group_idx]][[j]] <- acf(mu, 
                                            main = paste0("Mean ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
                                            
-      autocorr$CV[[group_idx]][[j]] <- acf(CV, 
+      autocorr$CV_delays[[group_idx]][[j]] <- acf(CV, 
                                            main = paste0("CV ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
     }
+    names(autocorr$mean_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
+    names(autocorr$CV_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
     if(n_delays[group_idx] < max(n_delays))
     {
       for(j in n_dates[group_idx]:max(n_delays))
@@ -630,6 +632,10 @@ compute_autocorr <- function(MCMCres, index_dates)
       }
     }
   }
+  
+  names(autocorr$mean_delays) <- names(index_dates)
+  names(autocorr$CV_delays) <- names(index_dates)
+  
   
   return(autocorr)
 }
@@ -664,11 +670,22 @@ compute_autocorr <- function(MCMCres, index_dates)
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), CrI=0.95, theta_true=NULL, plot=TRUE, cex.axis=1)
+get_param_posterior_estimates <- function(MCMCres, 
+                                          index_dates, 
+                                          central=c("median","mean"), CrI=0.95, 
+                                          theta_true=NULL, plot=TRUE, cex.axis=1)
 {
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
   n_indiv_per_group <- sapply(MCMCres$aug_dat_chain[[1]]$D, nrow )
+  
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
   
   par(mfrow=c(2, 1 + n_groups),mar=c(3, 5, 0.5, 0.5))
   
@@ -689,15 +706,8 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   # looking at mean delay 
   for(group_idx in 1:n_groups)
   {
-    #"mean delays\n(non hospitalised-alive group)"
-    #"mean delays\n(non hospitalised-dead group)"
-    #"mean delays\n(hospitalised-alive group)"
-    group_name <-  paste("Group", group_idx)
-    #"Onset-Report"
-    #c("Onset-Death", "Onset-Report")
-    #c("Onset-Hosp", "Hosp-Disch", "Onset-Report")
-    #c("Onset-Hosp", "Hosp-Death", "Onset-Report")
-    delays_names <- paste("delay", seq_len(n_dates[group_idx]-1))
+    group_name <-  group_names[group_idx]
+    delays_names <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
     mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
     output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
     if(plot)
@@ -713,8 +723,8 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
   if(plot)
   {
-    boxplot(zeta, axes=FALSE, ylab="zeta")
-    axis(side=1, at=1, labels="zeta", tick=FALSE, cex.axis=cex.axis)
+    boxplot(zeta, axes=FALSE, ylab="prob error")
+    axis(side=1, at=1, labels="prob error", tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
     if(!is.null(theta_true)) points(theta_true$zeta, pch=8, lwd=2, cex=2)
   }
@@ -722,20 +732,13 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   # looking at CV delay 
   for(group_idx in 1:n_groups)
   {
-    #"mean delays\n(non hospitalised-alive group)"
-    #"mean delays\n(non hospitalised-dead group)"
-    #"mean delays\n(hospitalised-alive group)"
-    group_name <-  paste("Group", group_idx)
-    #"Onset-Report"
-    #c("Onset-Death", "Onset-Report")
-    #c("Onset-Hosp", "Hosp-Disch", "Onset-Report")
-    #c("Onset-Hosp", "Hosp-Death", "Onset-Report")
-    delays_names <- paste("delay", seq_len(n_dates[group_idx]-1))
+    group_name <-  group_names[group_idx]
+    delays_names <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
     CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
     output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
     if(plot)
     {
-      boxplot(CV, ylab="CV delays\n(non hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+      boxplot(CV, ylab=paste0("CV delays\n(",group_name,")"), main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
       axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=delays_names, tick=FALSE, cex.axis=cex.axis)
       axis(side=2)
       if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))

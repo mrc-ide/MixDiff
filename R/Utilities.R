@@ -148,8 +148,10 @@ compute_delta <- function(D, index_dates)
     {
       m[,j] <- D[[g]][,index_dates[[g]][,j][2]] - D[[g]][,index_dates[[g]][,j][1]]
     }
+    colnames(m) <- apply(index_dates[[g]], 2, paste, collapse = "-")
     return(m)
   })
+  names(Delta) <- names(index_dates)
   return(Delta)
 }
 
@@ -1113,8 +1115,10 @@ are_true_param_in_95perc_post <- function(MCMCres, theta_true)
   param_post <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) unlist(MCMCres$theta_chain[[e]]))
   param_post_summary <- apply(param_post, 1, summary)
   param_post_summary <- rbind(param_post_summary, apply(param_post, 1, quantile, c(0.025, 0.975)))
-  unlist(theta_true[-match("prop_missing_data", names(theta_true))]) >= param_post_summary["2.5%", ] & 
+  res <- unlist(theta_true[-match("prop_missing_data", names(theta_true))]) >= param_post_summary["2.5%", ] & 
     unlist(theta_true[-match("prop_missing_data", names(theta_true))]) <= param_post_summary["97.5%", ]
+  names(res) <- colnames(param_post_summary)
+  return(res)
 }
 
 check_not_all_missing <- function(obs_dat)

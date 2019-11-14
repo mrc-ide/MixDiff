@@ -123,6 +123,10 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
     }
   }
   names(D) <- names(obs_dat)
+  for(g in seq_len(n_groups) )
+  {
+    colnames(D[[g]]) <- colnames(obs_dat[[g]])
+  }
   
   # compute E accordingly
   E <- list()
@@ -139,9 +143,14 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
     names(E[[g]]) <- names(obs_dat[[g]])
   }
   names(E) <- names(obs_dat)
+  for(g in seq_len(n_groups) )
+  {
+    colnames(E[[g]]) <- colnames(obs_dat[[g]])
+  }
   
   aug_dat <- list(D = D,
                   E = E)
+  
   
   return(aug_dat)
 }

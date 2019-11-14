@@ -59,8 +59,8 @@ if(!USE_SIMULATED_DATA)
   
   colnames(obs_dat[[1]]) <- c("onset", "report")
   colnames(obs_dat[[2]]) <- c("onset", "death", "report")
-  colnames(obs_dat[[3]]) <- c("onset", "hospitalisation", "discharge", "report")
-  colnames(obs_dat[[4]]) <- c("onset", "hospitalisation", "death", "report")
+  colnames(obs_dat[[3]]) <- c("onset", "hosp.", "discharge", "report")
+  colnames(obs_dat[[4]]) <- c("onset", "hosp.", "death", "report")
   
 }
 
@@ -79,11 +79,11 @@ index_dates_names <- index_dates
 index_dates_names[["NoHosp-Alive"]][,1] <- c("onset", "report")
 index_dates_names[["NoHosp-Dead"]][,1] <- c("onset", "death")
 index_dates_names[["NoHosp-Dead"]][,2] <- c("onset", "report")
-index_dates_names[["Hosp-Alive"]][,1] <- c("onset", "hospitalisation")
-index_dates_names[["Hosp-Alive"]][,2] <- c("hospitalisation", "discharge")
+index_dates_names[["Hosp-Alive"]][,1] <- c("onset", "hosp.")
+index_dates_names[["Hosp-Alive"]][,2] <- c("hosp.", "discharge")
 index_dates_names[["Hosp-Alive"]][,3] <- c("onset", "report")
-index_dates_names[["Hosp-Dead"]][,1] <- c("onset", "hospitalisation")
-index_dates_names[["Hosp-Dead"]][,2] <- c("hospitalisation", "death")
+index_dates_names[["Hosp-Dead"]][,1] <- c("onset", "hosp.")
+index_dates_names[["Hosp-Dead"]][,2] <- c("hosp.", "death")
 index_dates_names[["Hosp-Dead"]][,3] <- c("onset", "report")
 
 for(g in 1:length(index_dates_names))
@@ -205,7 +205,10 @@ autocorr <- compute_autocorr(MCMCres, index_dates = index_dates_names)
 ###############################################
 
 pdf(paste0(where_to_load_from,"/PosteriorDistrPlots_",ext,".pdf"), width=14, height=7)
-MCMCres_summary <- get_param_posterior_estimates(MCMCres, theta_true=theta_true, cex.axis=0.8)
+MCMCres_summary <- get_param_posterior_estimates(MCMCres, 
+                                                 index_dates = index_dates_names, 
+                                                 theta_true=theta_true, 
+                                                 cex.axis=0.8)
 dev.off()
 
 ###############################################
@@ -314,8 +317,6 @@ specificity_dates_all_thresholds <- sapply(detec_dates_all_thresholds, function(
 
 ROC_dates <- ROC_per_date(MCMCres, aug_dat_true, thresholds)
 
-plot_ROC(ROC_dates, xlim = c(0, 0.1), ylim = c(0, 1))
-
 plot_ROC <- function(ROC_dates, 
                      mfrow = c(2, 2), 
                      xlim = c(0, 1), ylim = c(0, 1), 
@@ -334,6 +335,8 @@ plot_ROC <- function(ROC_dates,
          ...)
   }
 }
+
+plot_ROC(ROC_dates, xlim = c(0, 0.1), ylim = c(0, 1))
 
 ###### IDEAS: 
 # ROC curve to show how threshold for posterior support affects 

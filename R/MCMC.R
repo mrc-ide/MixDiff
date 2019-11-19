@@ -77,7 +77,7 @@ RunMCMC <- function(obs_dat,
   ###############################################
   ### convert index_dates to numeric so all other functions work using column numbers rather than column names ###
   ###############################################
-
+  
   index_dates_original <- process_index_dates(index_dates)
   index_dates <- convert_index_dates_to_numeric(index_dates_original, obs_dat) # matches the names of columns from obs_dat
   
@@ -625,10 +625,10 @@ compute_autocorr <- function(MCMCres, index_dates)
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
       autocorr$mean_delays[[group_idx]][[j]] <- acf(mu, 
-                                           main = paste0("Mean ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
-                                           
+                                                    main = paste0("Mean ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
+      
       autocorr$CV_delays[[group_idx]][[j]] <- acf(CV, 
-                                           main = paste0("CV ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
+                                                  main = paste0("CV ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
     }
     names(autocorr$mean_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
     names(autocorr$CV_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
@@ -756,6 +756,138 @@ get_param_posterior_estimates <- function(MCMCres,
   
   # TO DO: here suggest to add all inputs into the list output so you can recover what data this was based on and what MCMC settings etc. 
   return(output)
+  
+}
+
+#' Plots the posterior estimates of the delay distributions
+#' 
+#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param theta_true A list of parameters to which the output chains should be compared. If not \code{NULL}, this should contain:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups=length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of \code{mu} should be a scalar or vector giving the mean delay(s) in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param time_unit the time unit to display in the x axes of the plots ("days" by default).
+#' @param max_quantile_to_plot the quantile of the delay distributions to use to determine where to stop the x axes. 
+#' @param dt the time step to use for plotting the pdf of the delays
+#' @param legend a boolean indicating whether a legend should be added (only added to the first plot)
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
+#' @return Nothing. Only performs a series of plots of the pdf of the delay distributions.
+#' @import graphics
+#' @import scales
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+plot_estimated_continuous_delay_distributions <- function(MCMCres, 
+                                                          theta_true=NULL, 
+                                                          index_dates, 
+                                                          time_unit = "days",
+                                                          max_quantile_to_plot = 0.9,
+                                                          dt = 0.01, 
+                                                          legend = TRUE) 
+{
+  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_delays <- sapply(index_dates, ncol)
+  n_groups <- length(n_dates)
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
+  
+  par(mfrow=c(n_groups, max(n_delays)),mar=c(5, 6, 1, 1))
+  
+  iterations <- seq_len(length(MCMCres$theta_chain))
+  
+  # looking at the delays for each group 
+  for(group_idx in 1:n_groups)
+  {
+    group_name <-  group_names[group_idx]
+    for(j in seq(1,(n_delays[group_idx]), 1))
+    {
+      params <- as.data.frame(t(sapply(iterations, function(e) 
+        unlist(epitrix::gamma_mucv2shapescale(MCMCres$theta_chain[[e]]$mu[[group_idx]][j], 
+                                              MCMCres$theta_chain[[e]]$CV[[group_idx]][j])))))
+      max_delay_for_ploting <- ceiling(max(sapply(iterations, function(e) 
+        qgamma(max_quantile_to_plot, shape = params$shape[e],  scale = params$scale[e]))))
+      ### code for the discrete plots:
+      # x <- seq_len(max_delay_for_ploting)
+      # naive discretisation:
+      #y <- sapply(iterations, function(e) 
+      #  pgamma(x, shape = params$shape[e],  scale = params$scale[e]) - pgamma(x - 1, shape = params$shape[e],  scale = params$scale[e]))
+      # discretisation similar to that in the likelihood we use (see Cori et al. AJE 2013):
+      # y <- sapply(iterations, function(e) 
+      #   MixDiff:::DiscrGamma(x-1, 
+      #                        mu = MCMCres$theta_chain[[e]]$mu[[group_idx]][j],  
+      #                        CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j],  
+      #                        log = FALSE))
+      ### code for the continuous plots:
+      x <- seq(dt, max_delay_for_ploting, dt)
+      y <- sapply(iterations, function(e) dgamma(x, shape = params$shape[e],  
+                                                 scale = params$scale[e]))
+      y_low <- apply(y, 1, quantile, 0.025)
+      y_up <- apply(y, 1, quantile, 0.975)
+      y_median <- apply(y, 1, quantile, 0.5)             
+      y_mode_posterior <- y[,which.max(MCMCres$logpost_chain)]
+      if(!is.null(theta_true))
+      {
+        params_true <- epitrix::gamma_mucv2shapescale(theta_true$mu[[group_idx]][j], 
+                                                      theta_true$CV[[group_idx]][j])
+        y_true <- dgamma(x, shape = params_true$shape,  
+                         scale = params_true$scale)
+      }
+      
+      plot(x, y_median, type = "l", lty = 2,
+           ylim = c(0, max(apply(y, 1, max))),
+           xlab = paste0("Delay ", 
+                       apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                       " (", time_unit,")",
+                       "\n(",group_name,")"),
+           ylab = "pdf")
+      polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
+              col = alpha("grey", 0.5), 
+              border = NA)
+      lines(x, y_mode_posterior)
+      if(!is.null(theta_true))
+      {
+        lines(x, y_true, col = "red")
+        if(legend & group_idx == 1 & j == 1)
+        {
+          legend("topright", c("Median", "Mode", "95%CrI", "True"), 
+                 lty = c(2, 1, -1, 1), pch = c(-1, -1, 15, -1),
+                 pt.cex = c(1, 1, 2.5, 1),
+                 col = c("black", "black", alpha("grey", 0.5), "red"), 
+                 bty = "n")
+        }
+      }
+      else
+      {
+        if(legend & group_idx == 1 & j == 1)
+        {
+          legend("topright", c("Median", "Mode", "95%Cri"), 
+                 lty = c(2, 1, -1), pch = c(-1, -1, 15),
+                 pt.cex = c(1, 1, 2.5),
+                 col = c("black", "black", alpha("grey", 0.5)), 
+                 bty = "n")
+        }
+      }
+    }
+    if((n_delays[group_idx]) < max(n_delays))
+    {
+      for(j in seq(n_delays[group_idx] + 1, max(n_delays), 1))
+      {
+        plot.new()
+      }
+    }
+  }
   
 }
 

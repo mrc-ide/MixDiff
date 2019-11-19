@@ -329,7 +329,7 @@ convert_index_dates_to_numeric <- function(index_dates_names, obs_dat)
   {
     if(!is.null(obs_dat))
     {
-      index_dates <- lapply(1:length(index_dates), function(g) matrix(match(index_dates_names[[g]], colnames(obs_dat[[g]])), nrow = nrow(index_dates_names[[g]])))
+      index_dates <- lapply(1:length(index_dates_names), function(g) matrix(match(index_dates_names[[g]], colnames(obs_dat[[g]])), nrow = nrow(index_dates_names[[g]])))
     } else
     {
       index_dates <- lapply(index_dates_names, function(idx) matrix(match(idx, unique(as.vector(idx))), nrow = nrow(idx)) )
@@ -726,12 +726,12 @@ get_consensus <- function(MCMCres, posterior = c("mode", "median"))
 #' @param threshold_error_support a numeric value between 0.5 and 1 used to determine the threshold required to classify an error as "almost certain". 
 #' @return A list with the following objects: 
 #' \itemize{
-#' \item{\code{consensus_D}}{: the same as consensus$consensus_D (see function \code{\link{get_consensus})}
-#' \item{\code{consensus_E}}{: the same as consensus$consensus_E (see function \code{\link{get_consensus})}
-#' \item{\code{support_D}}{: the same as consensus$support_D (see function \code{\link{get_consensus})}
-#' \item{\code{support_E}}{: the same as consensus$support_E (see function \code{\link{get_consensus})}
-#' \item{\code{consensus_D_if_erroneous}}{: the same as consensus$consensus_D_if_erroneous (see function \code{\link{get_consensus})}
-#' \item{\code{consensus_D_if_non_erroneous}}{: the same as consensus$consensus_D_if_non_erroneous (see function \code{\link{get_consensus})}
+#' \item{\code{consensus_D}}{: the same as consensus$consensus_D (see function \code{\link{get_consensus})}}
+#' \item{\code{consensus_E}}{: the same as consensus$consensus_E (see function \code{\link{get_consensus})}}
+#' \item{\code{support_D}}{: the same as consensus$support_D (see function \code{\link{get_consensus})}}
+#' \item{\code{support_E}}{: the same as consensus$support_E (see function \code{\link{get_consensus})}}
+#' \item{\code{consensus_D_if_erroneous}}{: the same as consensus$consensus_D_if_erroneous (see function \code{\link{get_consensus})}}
+#' \item{\code{consensus_D_if_non_erroneous}}{: the same as consensus$consensus_D_if_non_erroneous (see function \code{\link{get_consensus})}}
 #' \item{\code{inferred_D}}{: A list similar to obs_dat, but where missing dates have been replaced by the mode or median posterior, and when the posteior support for error is larger than \code{threshold_error_support},
 #' i.e. the error is almost certain, the observed dates have been replaced by the mode or median of the posterior dates conditional on presencen of error. }
 #' \item{\code{inferred_E}}{: A list structured similarly to \code{consensus_E}, containing the following codes:

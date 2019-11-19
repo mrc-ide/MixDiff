@@ -217,6 +217,16 @@ MCMCres_summary <- get_param_posterior_estimates(MCMCres,
                                                  cex.axis=0.8)
 dev.off()
 
+### plot estimated delays ###
+pdf(paste0(where_to_load_from,"/PosteriorDelayDistrPlots_",ext,".pdf"), width=14, height=7)
+plot_estimated_continuous_delay_distributions(MCMCres, 
+                                                          theta_true=theta_true, 
+                                                          index_dates = index_dates_names, 
+                                                          time_unit = "days",
+                                                          max_quantile_to_plot = 0.9,
+                                                          dt = 0.01) 
+dev.off()
+
 ###############################################
 ### Investigating issue with estimation of mean delay from onset to hosp in group 3 ###
 ###############################################

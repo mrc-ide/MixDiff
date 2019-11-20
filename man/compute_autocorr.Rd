@@ -4,16 +4,26 @@
 \alias{compute_autocorr}
 \title{Compute autocorrelation for each parameter of the MCMC chains}
 \usage{
-compute_autocorr(MCMCres, index_dates)
+compute_autocorr(MCMCres, index_dates, plot = TRUE)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}
+
+\item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+
+\item{plot}{A boolean indicating whether to plot the autocorrelations or not}
 }
 \value{
 A list of results of autocorrelation results (obtained from the function \code{\link{acf}}).
 }
 \description{
 Compute autocorrelation for each parameter of the MCMC chains
+}
+\details{
+\code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+
+If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
 }
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###

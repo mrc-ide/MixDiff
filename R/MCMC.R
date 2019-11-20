@@ -376,6 +376,12 @@ RunMCMC <- function(obs_dat,
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return Nothing. Only performs a plot.
 #' @import graphics
 #' @export
@@ -534,14 +540,20 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL, n_plots_per_group = 
 #' Compute correlation between the MCMC chains of mean and CV of each delay
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param plot A boolean indicating whether to plot the correlations or not
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return A list of results of correlation test (obtained from the function \code{\link{cor.test}}) between the posterior mean and the posterior CV for each delay. 
 #' @import graphics
 #' @import stats
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_correlations_mu_CV <- function(MCMCres, plot=TRUE, index_dates)
+compute_correlations_mu_CV <- function(MCMCres, index_dates, plot=TRUE)
 {
   cor_mu_CV <- list()
   
@@ -566,11 +578,14 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE, index_dates)
                     main = paste0(paste(index_dates[[group_idx]][,j], collapse = "-"), " \n(", names(index_dates)[group_idx], ")"))
       cor_mu_CV[[group_idx]][[j]] <- cor.test(mu, CV)
     }
-    if(n_delays[group_idx] < max(n_delays))
+    if(plot) 
     {
-      for(j in n_dates[group_idx]:max(n_delays))
+      if(n_delays[group_idx] < max(n_delays))
       {
-        plot.new()
+        for(j in n_dates[group_idx]:max(n_delays))
+        {
+          plot.new()
+        }
       }
     }
     names(cor_mu_CV[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
@@ -583,13 +598,20 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE, index_dates)
 #' Compute autocorrelation for each parameter of the MCMC chains 
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param plot A boolean indicating whether to plot the autocorrelations or not
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return A list of results of autocorrelation results (obtained from the function \code{\link{acf}}). 
 #' @import graphics
 #' @import stats
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_autocorr <- function(MCMCres, index_dates)
+compute_autocorr <- function(MCMCres, index_dates, plot=TRUE)
 {
   autocorr <- list()
   autocorr$mean_delays <- list()
@@ -599,20 +621,23 @@ compute_autocorr <- function(MCMCres, index_dates)
   n_delays <- sapply(index_dates, ncol)
   n_groups <- length(n_dates)
   
-  par(mfrow=c(1 + n_groups, max(n_delays)*2 ),mar=c(4, 4, 5, 0.5))
+  if(plot) par(mfrow=c(1 + n_groups, max(n_delays)*2 ),mar=c(4, 4, 5, 0.5))
   
   iterations <- seq_len(length(MCMCres$theta_chain) )
   
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
-  autocorr$prob_error <- acf(zeta, main="Probability of error")
+  autocorr$prob_error <- acf(zeta, main="Probability of error", plot = plot)
   
-  if(max(n_delays) > 1)
+  if(plot) 
   {
-    plot.new()
-    for(j in 2:max(n_delays))
+    if(max(n_delays) > 1)
     {
       plot.new()
-      plot.new()
+      for(j in 2:max(n_delays))
+      {
+        plot.new()
+        plot.new()
+      }
     }
   }
   
@@ -625,19 +650,24 @@ compute_autocorr <- function(MCMCres, index_dates)
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
       autocorr$mean_delays[[group_idx]][[j]] <- acf(mu, 
+                                                    plot = plot,
                                                     main = paste0("Mean ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
       
-      autocorr$CV_delays[[group_idx]][[j]] <- acf(CV, 
+      autocorr$CV_delays[[group_idx]][[j]] <- acf(CV,  
+                                                  plot = plot,
                                                   main = paste0("CV ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
     }
     names(autocorr$mean_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
     names(autocorr$CV_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
-    if(n_delays[group_idx] < max(n_delays))
+    if(plot) 
     {
-      for(j in n_dates[group_idx]:max(n_delays))
+      if(n_delays[group_idx] < max(n_delays))
       {
-        plot.new()
-        plot.new()
+        for(j in n_dates[group_idx]:max(n_delays))
+        {
+          plot.new()
+          plot.new()
+        }
       }
     }
   }
@@ -649,10 +679,10 @@ compute_autocorr <- function(MCMCres, index_dates)
   return(autocorr)
 }
 
-
 #' Computes posterior estimates of parameters from the MCMC chain
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param central A character specifying what the central estimate should be (median or mean posterior)
 #' @param CrI A scalar in [0;1] used to compute the posterior credible intervals. For 95\% credible intervals, use CrI=0.95.
 #' @param theta_true A list of parameters to which the output chains should be compared. If not \code{NULL}, this should contain:
@@ -664,6 +694,11 @@ compute_autocorr <- function(MCMCres, index_dates)
 #' The posterior distributions of parameters are then plotted together with \code{theta_true}. 
 #' @param plot A boolean specifying whether to plot boxplots of the posterior estimates or not
 #' @param cex.axis A numerical value giving the amount by which x axis labels should be magnified relative to the default.
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return A list containing two elements: the posterior estimates of parameters:
 #' \itemize{
 #'  \item{\code{logpost}}{: A vector of three values giving the central log-posterior estimate (first value) and quantiles corresponding to CrI (second and third values). }
@@ -814,8 +849,8 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
     for(j in seq(1,(n_delays[group_idx]), 1))
     {
       params <- as.data.frame(t(sapply(iterations, function(e) 
-        unlist(epitrix::gamma_mucv2shapescale(MCMCres$theta_chain[[e]]$mu[[group_idx]][j], 
-                                              MCMCres$theta_chain[[e]]$CV[[group_idx]][j])))))
+        find_params_gamma(mean = MCMCres$theta_chain[[e]]$mu[[group_idx]][j], 
+                                 CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j]))))
       max_delay_for_ploting <- ceiling(max(sapply(iterations, function(e) 
         qgamma(max_quantile_to_plot, shape = params$shape[e],  scale = params$scale[e]))))
       ### code for the discrete plots:
@@ -840,10 +875,10 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
       y_max <-  max(apply(y, 1, max))
       if(!is.null(theta_true))
       {
-        params_true <- epitrix::gamma_mucv2shapescale(theta_true$mu[[group_idx]][j], 
-                                                      theta_true$CV[[group_idx]][j])
-        y_true <- dgamma(x, shape = params_true$shape,  
-                         scale = params_true$scale)
+        params_true <- find_params_gamma(mean = theta_true$mu[[group_idx]][j], 
+                                         CV = theta_true$CV[[group_idx]][j])
+        y_true <- dgamma(x, shape = params_true["shape"],  
+                         scale = params_true["scale"])
         y_max <- max(c(y_max, y_true))
       }
       
@@ -869,8 +904,7 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
                  col = c("black", "black", alpha("grey", 0.5), "red"), 
                  bty = "n")
         }
-      }
-      else
+      } else
       {
         if(legend & group_idx == 1 & j == 1)
         {
@@ -907,6 +941,10 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
 #' @param max_quantile_to_plot the quantile of the delay distributions to use to determine where to stop the x axes. 
 #' @param dt the time step to use for plotting the pdf of the delays
 #' @param legend a boolean indicating whether a legend should be added (only added to the first plot)
+#' @param central which central estimate of the delays pdf to plot; 
+#' one of "mode" (the default, uses the mode of the posterior), 
+#' "median" (plots for each t, the median of all pdfs(t)),
+#' "none" (no central estimate is plotted).
 #' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
 #' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
 #' 
@@ -940,7 +978,7 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
     group_names <- names(n_dates)
   }
   
-  par(mfrow=c(n_groups, max(n_delays)),mar=c(5, 6, 1, 1))
+  par(mfrow=c(n_groups, max(n_delays)), mar=c(5, 6, 1, 1))
   
   iterations <- seq_len(length(MCMCres[[1]]$theta_chain))
   
@@ -951,13 +989,13 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
     for(j in seq(1,(n_delays[group_idx]), 1))
     {
       params <- as.data.frame(t(sapply(iterations, function(e) 
-        unlist(epitrix::gamma_mucv2shapescale(MCMCres[[1]]$theta_chain[[e]]$mu[[group_idx]][j], 
-                                              MCMCres[[1]]$theta_chain[[e]]$CV[[group_idx]][j])))))
+        find_params_gamma(mean = MCMCres[[1]]$theta_chain[[e]]$mu[[group_idx]][j], 
+                                 CV = MCMCres[[1]]$theta_chain[[e]]$CV[[group_idx]][j]))))
       for(k in 2:length(MCMCres))
       {
         params <- rbind(params, as.data.frame(t(sapply(iterations, function(e) 
-          unlist(epitrix::gamma_mucv2shapescale(MCMCres[[k]]$theta_chain[[e]]$mu[[group_idx]][j], 
-                                                MCMCres[[k]]$theta_chain[[e]]$CV[[group_idx]][j]))))))
+          find_params_gamma(mean = MCMCres[[k]]$theta_chain[[e]]$mu[[group_idx]][j], 
+                                   CV = MCMCres[[k]]$theta_chain[[e]]$CV[[group_idx]][j])))))
       }
       idx <- unlist(sapply(1:length(MCMCres), function(k) rep(k, length(MCMCres[[k]]$theta_chain))))
       
@@ -992,10 +1030,10 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
       y_max <-  max(apply(y, 1, max))
       if(!is.null(theta_true))
       {
-        params_true <- epitrix::gamma_mucv2shapescale(theta_true$mu[[group_idx]][j], 
-                                                      theta_true$CV[[group_idx]][j])
-        y_true <- dgamma(x, shape = params_true$shape,  
-                         scale = params_true$scale)
+        params_true <- find_params_gamma(mean = theta_true$mu[[group_idx]][j], 
+                                         CV = theta_true$CV[[group_idx]][j])
+        y_true <- dgamma(x, shape = params_true["shape"],  
+                         scale = params_true["scale"])
         y_max <- max(c(y_max, y_true))
       }
       
@@ -1067,10 +1105,10 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
           if(central != "none")
           {
             legend("topright", legend_txt, 
-                 lty = c(2, -1), pch = c(-1, 15),
-                 pt.cex = c(1, 2.5),
-                 col = c("black", alpha("grey", 0.5)), 
-                 bty = "n")
+                   lty = c(2, -1), pch = c(-1, 15),
+                   pt.cex = c(1, 2.5),
+                   col = c("black", alpha("grey", 0.5)), 
+                   bty = "n")
           }else
           {
             legend("topright", "95%CrI", 

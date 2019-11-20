@@ -70,7 +70,9 @@ find_params_gamma <- function(mean, sigma=mean*CV, CV) # function to determine p
 {
   shape <- (mean/sigma)^2
   scale <- sigma^2/(mean)
-  return(c(shape, scale))
+  res <- c(shape, scale)
+  names(res) <- c("shape", "scale")
+  return(res)
 }
 
 ###############################################

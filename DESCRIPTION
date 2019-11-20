@@ -1,7 +1,7 @@
 Package: MixDiff
 Type: Package
 Title: MixDiff: A framework to reconstruct dataset with missing or erroneous data for outbreaks intervention
-Version: 0.1.1
+Version: 0.1.2
 Author: Anne Cori and Marc Baguelin
 Maintainer: Anne Cori <a.cori@imperial.ac.uk> or Marc Baguelin <Marc.Baguelin@phe.gov.uk>
 Description: Reconstruct dataset with missing or erroneous data for outbreaks intervention, and estimate key delay distributions as well as proportion of erroneous data at the same time. 

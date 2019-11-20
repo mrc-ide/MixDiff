@@ -815,7 +815,6 @@ get_param_posterior_estimates <- function(MCMCres,
 #' 
 #' @return Nothing. Only performs a series of plots of the pdf of the delay distributions.
 #' @import graphics
-#' @import scales
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
@@ -890,7 +889,7 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
                          "\n(",group_name,")"),
            ylab = "pdf")
       polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
-              col = alpha("grey", 0.5), 
+              col = "#00000077", 
               border = NA)
       lines(x, y_mode_posterior)
       if(!is.null(theta_true))
@@ -901,7 +900,7 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
           legend("topright", c("Median", "Mode", "95%CrI", "True"), 
                  lty = c(2, 1, -1, 1), pch = c(-1, -1, 15, -1),
                  pt.cex = c(1, 1, 2.5, 1),
-                 col = c("black", "black", alpha("grey", 0.5), "red"), 
+                 col = c("black", "black", "#00000077", "red"), 
                  bty = "n")
         }
       } else
@@ -911,7 +910,7 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
           legend("topright", c("Median", "Mode", "95%Cri"), 
                  lty = c(2, 1, -1), pch = c(-1, -1, 15),
                  pt.cex = c(1, 1, 2.5),
-                 col = c("black", "black", alpha("grey", 0.5)), 
+                 col = c("black", "black", "#00000077"), 
                  bty = "n")
         }
       }
@@ -952,7 +951,6 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
 #' 
 #' @return Nothing. Only performs a series of plots of the pdf of the delay distributions.
 #' @import graphics
-#' @import scales
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
@@ -1062,7 +1060,7 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
              ylab = "pdf")
       }
       polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
-              col = alpha("grey", 0.5), 
+              col = "#00000077", 
               border = NA)
       if(!is.null(theta_true))
       {
@@ -1081,14 +1079,14 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
             legend("topright", legend_txt, 
                    lty = c(2, -1, 1), pch = c(-1, 15, -1),
                    pt.cex = c(1, 2.5, 1),
-                   col = c("black", alpha("grey", 0.5), "red"), 
+                   col = c("black", "#00000077", "red"), 
                    bty = "n")
           } else
           {
             legend("topright", c("95%CrI", "True") , 
                    lty = c(-1, 1), pch = c(15, -1),
                    pt.cex = c(2.5, 1),
-                   col = c(alpha("grey", 0.5), "red"), 
+                   col = c("#00000077", "red"), 
                    bty = "n")
           }
         }
@@ -1107,14 +1105,14 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
             legend("topright", legend_txt, 
                    lty = c(2, -1), pch = c(-1, 15),
                    pt.cex = c(1, 2.5),
-                   col = c("black", alpha("grey", 0.5)), 
+                   col = c("black", "#00000077"), 
                    bty = "n")
           }else
           {
             legend("topright", "95%CrI", 
                    lty = c(-1), pch = c(15),
                    pt.cex = c(2.5),
-                   col = c(alpha("grey", 0.5)), 
+                   col = c("#00000077"), 
                    bty = "n")
           }
         }

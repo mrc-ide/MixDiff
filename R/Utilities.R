@@ -805,6 +805,7 @@ get_inferred_from_consensus <- function(consensus,
       }
     }
   }
+  consensus$threshold <- threshold_error_support
   return(consensus)
 }
 
@@ -869,10 +870,10 @@ write_xlsx_inferred <- function(inferred,
             "For all other dates, the colour coding helps identify potential issues but the dates are as in the original dataset.")
   col2 <- c(rep(NA, 5),
             "Grey cells correspond to missing dates: for those the entry is the median posterior date inferred",
-            "White cells correspond to dates which have high support (>95%) for correct entry: for those the entry is the date as in the original dataset",
-            "Yellow cells correspond to dates which have moderate support (50%-95%) for correct entry: for those the entry is the date as in the original dataset",
-            "Orange cells correspond to dates which have moderate support (50%-95%) for erroneous entry: for those the entry is the date as in the original dataset",
-            "Red cells correspond to dates which have high support (>95%) for erroneous entry: for those the entry is the median posterior date inferred, conditional on error",
+            paste0("White cells correspond to dates which have high support (>",100*inferred$threshold,"%) for correct entry: for those the entry is the date as in the original dataset"),
+            paste0("Yellow cells correspond to dates which have moderate support (50%-",100*inferred$threshold,"%) for correct entry: for those the entry is the date as in the original dataset"),
+            paste0("Orange cells correspond to dates which have moderate support (50%-",100*inferred$threshold,"%) for erroneous entry: for those the entry is the date as in the original dataset"),
+            paste0("Red cells correspond to dates which have high support (>",100*inferred$threshold,"%) for erroneous entry: for those the entry is the median posterior date inferred, conditional on error"),
             rep(NA, 2),
             "Missing dates (grey cells)",
             "Highly likely erroneous dates (red cells)",

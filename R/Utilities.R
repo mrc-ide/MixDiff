@@ -840,6 +840,8 @@ write_xlsx_inferred <- function(inferred,
   orangeStyle <- createStyle(fontColour = "#000000", fgFill = "#FF8000")
   redStyle <- createStyle(fontColour = "#000000", fgFill = "#FF0000")
   
+  n_groups <- length(inferred$inferred_E_numeric)
+  
   if(is.null(names(inferred$consensus_D)))
   {
     group_names <- paste("Group", 1:length(inferred$consensus_D))
@@ -849,7 +851,49 @@ write_xlsx_inferred <- function(inferred,
   }
   
   wb <- createWorkbook()
-  for(g in 1:length(inferred$inferred_E_numeric))
+  
+  ### add a README sheet
+  
+  sheet_name <- "README"
+  addWorksheet(wb, sheet_name)
+  
+  col1 <- c("This file contains the inferred dates for each individual in each group.",
+            "Each group is shown in a separate sheet. ",
+            "For each group, each row represents an individual in that group, and each column a date relevant to individuals in that group (except the first column which can store individual's identifiers if relevant). ",
+            "",
+            "Cells are coloured according to the posterior support for erroneous date, with the following colour coding: ",
+            rep(NA, 5),
+            "",
+            "Compared to the original dataset, the only values that have been modified are the following:",
+            rep("-", 2),
+            "For all other dates, the colour coding helps identify potential issues but the dates are as in the original dataset.")
+  col2 <- c(rep(NA, 5),
+            "Grey cells correspond to missing dates: for those the entry is the median posterior date inferred",
+            "White cells correspond to dates which have high support (>95%) for correct entry: for those the entry is the date as in the original dataset",
+            "Yellow cells correspond to dates which have moderate support (50%-95%) for correct entry: for those the entry is the date as in the original dataset",
+            "Orange cells correspond to dates which have moderate support (50%-95%) for erroneous entry: for those the entry is the date as in the original dataset",
+            "Red cells correspond to dates which have high support (>95%) for erroneous entry: for those the entry is the median posterior date inferred, conditional on error",
+            rep(NA, 2),
+            "Missing dates (grey cells)",
+            "Highly likely erroneous dates (red cells)",
+            NA)
+  
+  contents <- cbind(col1, col2)
+  idx_col <- 0
+  
+  writeData(wb, sheet_name, 
+            contents, 
+            colNames = FALSE) 
+  
+  addStyle(wb, sheet = 1, greyStyle, rows = 6, cols = 1, gridExpand = TRUE)
+  addStyle(wb, sheet = 1, whiteStyle, rows = 7, cols = 1, gridExpand = TRUE)
+  addStyle(wb, sheet = 1, yellowStyle, rows = 8, cols = 1, gridExpand = TRUE)
+  addStyle(wb, sheet = 1, orangeStyle, rows = 9, cols = 1, gridExpand = TRUE)
+  addStyle(wb, sheet = 1, redStyle, rows = 10, cols = 1, gridExpand = TRUE)
+  
+  ### create and fill in the other sheets
+  
+  for(g in 1:n_groups)
   {
     sheet_name <- group_names[g]
     addWorksheet(wb, sheet_name)
@@ -874,7 +918,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, greyStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g + 1, greyStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 1))
@@ -883,7 +927,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, whiteStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g + 1, whiteStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 2))
@@ -892,7 +936,7 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, yellowStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g + 1, yellowStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 3))
@@ -900,7 +944,7 @@ write_xlsx_inferred <- function(inferred,
     for(kk in 1:max(tmp[,2]))
     {
       tmp_kk <- tmp[tmp[,2]==kk,1]
-      addStyle(wb, sheet = g, orangeStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
+      addStyle(wb, sheet = g + 1, orangeStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
     }
     }
     if(any(inferred$inferred_E_numeric[[g]] == 4))
@@ -909,13 +953,14 @@ write_xlsx_inferred <- function(inferred,
       for(kk in 1:max(tmp[,2]))
       {
         tmp_kk <- tmp[tmp[,2]==kk,1]
-        addStyle(wb, sheet = g, redStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
+        addStyle(wb, sheet = g + 1, redStyle, rows = 1 + tmp_kk, cols = idx_col + kk, gridExpand = TRUE)
       }
     }
     setColWidths(wb, sheet = g, cols = 1:ncol(inferred$inferred_D[[g]]), 
                  widths = col_width)
   }
   
+  ### save workbook where needed
   if(substr(where, nchar(where), nchar(where)) != "/") 
     where <- paste0(where, "/")
   saveWorkbook(wb, file.path(where, file), overwrite = overwrite)

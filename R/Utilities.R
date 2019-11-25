@@ -749,6 +749,7 @@ get_consensus <- function(MCMCres, posterior = c("mode", "median"))
 #' 3 = erroneous date but without high support,
 #' 4 = erroneous date with high support}
 #' }
+#' \item{threshold}{: the value of \code{threshold_error_support}}
 #' @export
 #' @examples
 #' # TO WRITE

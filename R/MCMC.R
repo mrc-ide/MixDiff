@@ -765,6 +765,7 @@ get_param_posterior_estimates <- function(MCMCres,
   
   # looking at zeta
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
+  output$theta$zeta <- c(get(central)(zeta), quantile(zeta, c((1-CrI)/2, CrI+(1-CrI)/2)) ) 
   if(plot)
   {
     boxplot(zeta, axes=FALSE, ylab="prob error")

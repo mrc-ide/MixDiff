@@ -230,7 +230,29 @@ Metropolis algorithm with Lognormal proposal.
 
 ## Simulation study
 
-TO DESCRIBE
+I order to assess the ability of our model to correctly estimate delay
+distributions while at the same time inferring missing dates and identifying and
+correcting erroneous dates, we performed an extensive simulation study. 
+
+The simulation study was designed to mimick an Ebola like dataset. We considered 
+4 groups of individuals defined by their combination of hospitalisation status
+(hospitalised or not) and their outcome (dead / alive). For each group, we 
+considered a timeline which included date of symtpom onset and date of report 
+(for all groups), date of hospitalisation (for those hospitalised), date of 
+discharge (for those who were hospitalised and survived) and date of death (for
+ those who died). Relationship between these dates were defined through the 
+ directed acyclic graphs (DAGs) shown in Figure XXX, where a directed edge 
+ between two dates defines both an order between the edge (an edge from date 1
+ to date 2 indicating that date 2 is after date 1) as well as an 
+ epidemiologically relevant delay (from date 1 to date 2 in the previous 
+ example). 
+
+We defined different simulation scenarios as variations of a baseline scenario. 
+In the baseline scenario, we simulated 100 individuals in each of the 4 groups. 
+For each individual, a date of symptom onset was then randomly drawn uniformly 
+between 1st January and 31st December 2014. 
+
+TO BE CONTINUED
 
 ## Performance of the model on simulated data
 
@@ -243,6 +265,10 @@ TO DESCRIBE
 ### Detection of erroneous data entries
 
 TO DESCRIBE
+
+### Estimation of the missing dates
+
+TO DO ?!?! AND DESCRIBE
 
 ## Error model
 

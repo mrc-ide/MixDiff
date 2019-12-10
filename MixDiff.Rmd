@@ -232,6 +232,18 @@ Metropolis algorithm with Lognormal proposal.
 
 TO DESCRIBE
 
+## Performance of the model on simulated data
+
+TO DESCRIBE
+
+### Estimation of the delay distributions
+
+TO DESCRIBE
+
+### Detection of erroneous data entries
+
+TO DESCRIBE
+
 ## Error model
 
 * We assume that the data entries are correct typewise, i.e. they are actual date (so "45/10/2012" is not an option)
@@ -245,21 +257,14 @@ TO DESCRIBE
 
 ## Website
 
-* Think about a reward -> "unlock" a donation to MSF?
-* Frame the whole operation as the "Typing challenge"
-* Promotional film, kickstarter style
-* Maria Piggin? public involvement? LSHTM media people? ask about potential for tweet etc of how to reach the maximum amount of people
-* Short question about ID and how to grab from the browser information (e.g. keyboard?)
-* Option tick for email in order to give feedback
-* We will have 5 possible ways of proposing a date
+* We have 5 possible ways of proposing a date
 1. Plain writing e.g. "Thursday 24th June 2014"
 2. American way e.g. June 24th 2014
 3. Month of calendar (image) with a date circle in rate
-4. Relative day, e.g, "last Monday"
+4. Relative day, e.g, "last Monday" [I DON'T THINK WE DID THIS BUT COULD ADD TO THE DISCUSSION]
 5. Use image database of handwriting training set to generate a "handwritten" data in the right format (reading error)
-* Timer to perturbate people?
-* First entry should not be too challenging,
-* We should store the response entry and the proposed things to read, we can do regression to see if particular entries are associate with particular error (or simply more errors)
+
+Regression to see if particular entries are associate with particular error (or simply more errors)
 
 # Plan d'attaque
 

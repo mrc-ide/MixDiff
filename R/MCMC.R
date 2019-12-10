@@ -809,6 +809,10 @@ get_param_posterior_estimates <- function(MCMCres,
 #' @param max_quantile_to_plot the quantile of the delay distributions to use to determine where to stop the x axes. 
 #' @param dt the time step to use for plotting the pdf of the delays
 #' @param legend a boolean indicating whether a legend should be added (only added to the first plot)
+#' @param central which central estimate of the delays pdf to plot; 
+#' one of "mode" (the default, uses the mode of the posterior of \code{MCMCres}), 
+#' "median" (plots for each t, the median pdf(t) across \code{MCMCres}),
+#' "both" (both median and mode are plotted).
 #' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
 #' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
 #' 
@@ -825,7 +829,8 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
                                                           time_unit = "days",
                                                           max_quantile_to_plot = 0.9,
                                                           dt = 0.01, 
-                                                          legend = TRUE) 
+                                                          legend = TRUE,
+                                                          central = c("mode", "median", "both")) 
 {
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_delays <- sapply(index_dates, ncol)
@@ -850,7 +855,7 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
     {
       params <- as.data.frame(t(sapply(iterations, function(e) 
         find_params_gamma(mean = MCMCres$theta_chain[[e]]$mu[[group_idx]][j], 
-                                 CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j]))))
+                          CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j]))))
       max_delay_for_ploting <- ceiling(max(sapply(iterations, function(e) 
         qgamma(max_quantile_to_plot, shape = params$shape[e],  scale = params$scale[e]))))
       ### code for the discrete plots:
@@ -882,37 +887,88 @@ plot_estimated_continuous_delay_distributions <- function(MCMCres,
         y_max <- max(c(y_max, y_true))
       }
       
-      plot(x, y_median, type = "l", lty = 2,
-           ylim = c(0, y_max),
-           xlab = paste0("Delay ", 
-                         apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
-                         " (", time_unit,")",
-                         "\n(",group_name,")"),
-           ylab = "pdf")
-      polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
-              col = "#00000055", 
-              border = NA)
-      lines(x, y_mode_posterior)
+      if(central %in% c("median", "both"))
+      {
+        plot(x, y_median, type = "l", lty = 2,
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+        polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
+                col = "#00000055", 
+                border = NA)
+        if(central %in% "both")
+          lines(x, y_mode_posterior)
+      } else if(central %in% "mode")
+      {
+        plot(x, y_mode_posterior, type = "l",
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+        polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
+                col = "#00000055", 
+                border = NA)
+      }
+      
       if(!is.null(theta_true))
       {
         lines(x, y_true, col = "red")
         if(legend & group_idx == 1 & j == 1)
         {
-          legend("topright", c("Median", "Mode", "95%CrI", "True"), 
-                 lty = c(2, 1, -1, 1), pch = c(-1, -1, 15, -1),
-                 pt.cex = c(1, 1, 2.5, 1),
-                 col = c("black", "black", "#00000055", "red"), 
-                 bty = "n")
+          if(central %in% "both")
+          {
+            legend("topright", c("Median", "Mode", "95%CrI", "True"), 
+                   lty = c(2, 1, -1, 1), pch = c(-1, -1, 15, -1),
+                   pt.cex = c(1, 1, 2.5, 1),
+                   col = c("black", "black", "#00000055", "red"), 
+                   bty = "n")
+          } else if(central %in% "median")
+          {
+            legend("topright", c("Median", "95%CrI", "True"), 
+                   lty = c(2, -1, 1), pch = c(-1, 15, -1),
+                   pt.cex = c(1, 2.5, 1),
+                   col = c("black", "#00000055", "red"), 
+                   bty = "n")
+          } else if(central %in% "mode")
+          {
+            legend("topright", c("Mode", "95%CrI", "True"), 
+                   lty = c(1, -1, 1), pch = c(-1, 15, -1),
+                   pt.cex = c(1, 2.5, 1),
+                   col = c("black", "#00000055", "red"), 
+                   bty = "n")
+          }
         }
       } else
       {
         if(legend & group_idx == 1 & j == 1)
         {
-          legend("topright", c("Median", "Mode", "95%Cri"), 
-                 lty = c(2, 1, -1), pch = c(-1, -1, 15),
-                 pt.cex = c(1, 1, 2.5),
-                 col = c("black", "black", "#00000055"), 
-                 bty = "n")
+          if(central %in% "both")
+          {
+            legend("topright", c("Median", "Mode", "95%Cri"), 
+                   lty = c(2, 1, -1), pch = c(-1, -1, 15),
+                   pt.cex = c(1, 1, 2.5),
+                   col = c("black", "black", "#00000055"), 
+                   bty = "n")
+          } else if(central %in% "median")
+          {
+            legend("topright", c("Median", "95%CrI"), 
+                   lty = c(2, -1), pch = c(-1, 15),
+                   pt.cex = c(1, 2.5),
+                   col = c("black", "#00000055"), 
+                   bty = "n")
+          } else if(central %in% "mode")
+          {
+            legend("topright", c("Mode", "95%CrI"), 
+                   lty = c(1, -1), pch = c(-1, 15),
+                   pt.cex = c(1, 2.5),
+                   col = c("black", "#00000055"), 
+                   bty = "n")
+          }
         }
       }
     }
@@ -994,12 +1050,12 @@ plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres,
     {
       params <- as.data.frame(t(sapply(iterations, function(e) 
         find_params_gamma(mean = MCMCres[[1]]$theta_chain[[e]]$mu[[group_idx]][j], 
-                                 CV = MCMCres[[1]]$theta_chain[[e]]$CV[[group_idx]][j]))))
+                          CV = MCMCres[[1]]$theta_chain[[e]]$CV[[group_idx]][j]))))
       for(k in 2:length(MCMCres))
       {
         params <- rbind(params, as.data.frame(t(sapply(iterations, function(e) 
           find_params_gamma(mean = MCMCres[[k]]$theta_chain[[e]]$mu[[group_idx]][j], 
-                                   CV = MCMCres[[k]]$theta_chain[[e]]$CV[[group_idx]][j])))))
+                            CV = MCMCres[[k]]$theta_chain[[e]]$CV[[group_idx]][j])))))
       }
       idx <- as.vector(unlist(sapply(1:length(MCMCres), function(k) rep(k, length(MCMCres[[k]]$theta_chain)))))
       

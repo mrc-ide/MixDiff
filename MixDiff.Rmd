@@ -12,9 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Method
 
-##Pathways
+## Pathways
 
-There exist four different pathays depending if the case has been hospitalised and/or survived. The date associated with the four health seeking pathways are given in the following table: 
+There exist four different pathays depending if the case has been hospitalised 
+and/or survived. The date associated with the four health seeking pathways are 
+given in the following table: 
 
 |                  | Onset | Hospitalisation | Death | Discharge | Report |
 |------------------|-------|-----------------|-------|-----------|--------|
@@ -25,43 +27,78 @@ There exist four different pathays depending if the case has been hospitalised a
 
 ## Notations
 
-For each individual $i$, we denote $y_i^k$ $(k=1, \ldots, n_{g_i})$ the observed data for that individual. 
-The number of observed data $n_{g_i}$ can depend on characteristics of the individual, defined by a grouping so that individual $i$ is in group $g_i$. 
+For each individual $i$, we denote $y_i^k$ $(k=1, \ldots, n_{g_i})$ the observed 
+data for that individual. 
+The number of observed data $n_{g_i}$ can depend on characteristics of the 
+individual, defined by a grouping so that individual $i$ is in group $g_i$. 
 
-Here, we consider observed data as being epidemiologically relevant dates, which depend on the path of the individual (see table above): if the individual was hospitalised and died ($g_i=HD$) or was hospitalised and did not die ($g_i=H\bar{D}$), $n_{g_i}=4$; if the individual was not hospitalised and died ($g_i=\bar{H}D$), $n_{g_i}=3$; if the individual was not hospitalised and died ($g_i=\bar{H}\bar{D}$), $n_{g_i}=2$.
+Here, we consider observed data as being epidemiologically relevant dates, which 
+depend on the path of the individual (see table above): if the individual was 
+hospitalised and died ($g_i=HD$) or was hospitalised and did not die 
+($g_i=H\bar{D}$), $n_{g_i}=4$; if the individual was not hospitalised and died 
+($g_i=\bar{H}D$), $n_{g_i}=3$; if the individual was not hospitalised and died 
+($g_i=\bar{H}\bar{D}$), $n_{g_i}=2$.
 
-We are interested in inferring the timing of the different steps of the healthcare pathways depending on the group $g_{i}$. To fully describe the healthcare pathway, we need to define the onset of the disease (no other date should be anterior) and then $n_{g_i}-1$ delays to reach the $n_{g_i}-1$ remaining enpoints. Any pairs of points can be chosen, providing that there exists a path from the origin to the endpoints. For example, in the case of the group $HD$, (onset -> hospitalisation, hospitalisation -> death, onset -> report) is a valid representation, while (onset -> hospitalisation, hospitalisation -> Death, onset -> report)
-$\Delta_i^k$ the delay taken by individual $i$ for the $k$th delay distribution 
+We are interested in inferring the timing of the different steps of the 
+healthcare pathways depending on the group $g_{i}$. To fully describe the 
+healthcare pathway, we need to define the onset of the disease (no other date 
+should be anterior) and then $n_{g_i}-1$ delays to reach the $n_{g_i}-1$ 
+remaining enpoints. Any pairs of points can be chosen, providing that there 
+exists a path from the origin to the endpoints. For example, in the case of the 
+group $HD$, (onset -> hospitalisation, hospitalisation -> death, onset -> report) 
+is a valid representation, while (onset -> hospitalisation, 
+hospitalisation -> Death, onset -> report)
+$\Delta_i^k$ the delay taken by individual $i$ for the $k$th delay distribution. 
 
-We assume that each data (here date) can have been recorded with error, or can be missing in the observations. Hence we introduce augmented data $D_i^k$ $(k=1, \ldots, n_{g_i})$, where $D_i^k$ is the true data corresponding to the observed data $y_i^k$. 
+We assume that each data (here date) can have been recorded with error, or can 
+be missing in the observations. Hence we introduce augmented data $D_i^k$ 
+$(k=1, \ldots, n_{g_i})$, where $D_i^k$ is the true data corresponding to the 
+observed data $y_i^k$. 
 
 ## Likelihood
 
 ### Observation level
 
-The data from the healthcare pathways can be missing or recorded, and, if recorded, can be correct or erroneous. To each observed data entry $y_i^k$ is thus associated an indicator function $E_i^k \in \{-1,0,1 \}$ (missing, recorded and no error, recorded and erroneous). We have
+The data from the healthcare pathways can be missing or recorded, and, if 
+recorded, can be correct or erroneous. To each observed data entry $y_i^k$ is 
+thus associated an indicator function $E_i^k \in \{-1,0,1 \}$ (missing, recorded 
+and no error, recorded and erroneous). We have
 $$P(E_i^k=1|E_i^k \neq -1)= Bernoulli(\zeta)$$
-with $\zeta$ the error probability. The likelihood associated with the observed data $y_i^k$ conditional on the true data $D_i^k$ is thus:
+with $\zeta$ the error probability. The likelihood associated with the observed 
+data $y_i^k$ conditional on the true data $D_i^k$ is thus:
 $$P(y_i^k|D_i^k,E_i^k=0)=\delta_{y_i^k,D_i^k}$$
 $$P(y_i^k|D_i^k,E_i^k=1)=h_{\theta_h}\left(D_i^k\right)$$
 $$P(y_i^k|D_i^k,E_i^k=-1)=1$$
 
-Here we assume that any date between $T$ and $T_{0}$ are equally likely to be recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$.
+Here we assume that any date between $T$ and $T_{0}$ are equally likely to be 
+recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$.
 
-NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as error on onset date > error on death date. Also think about the space of possible errors - if wider than h is smaller and moves towards E=1 might be difficult to achieve. What happens if T_0 is ridiculously early or T ridiculously late in the dataset - this will affect the likelihood. 
+NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as 
+error on onset date > error on death date. Also think about the space of possible 
+errors - if wider than h is smaller and moves towards E=1 might be difficult to 
+achieve. What happens if T_0 is ridiculously early or T ridiculously late in the 
+dataset - this will affect the likelihood. 
+
+??? Probably need a prior for p(D, E), which will include the 
+$$P(E_i^k=1|E_i^k \neq -1)= Bernoulli(\zeta)$$ but also requires a p(D) ?
 
 ### Difference level
 
 This level describes the difference between two observations: 
 for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}, g_i\right) = f_{k-1, k}^{g_i}\left(D_i^{k}-D_i^{k-1}\right)$. 
 
-We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with mean and coefficient of variation (before discretisation) being noted respectively $\mu_{k-1, k}^{g_i}$ and $CV_{k-1, k}^{g_i}$. 
+We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with mean and 
+coefficient of variation (before discretisation) being noted respectively 
+$\mu_{k-1, k}^{g_i}$ and $CV_{k-1, k}^{g_i}$. 
 
-<!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
+<!--In our example, we assume that the distribution of the delay between exposure 
+and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT 
+FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
 
 ### Full posterior distribution
 
-The joint posteior distribution of parameters and augmented data given observed data is:
+The joint posteior distribution of parameters and augmented data given observed 
+data is:
 
 $\begin{aligned}
 P\left(\zeta, \mu, CV, D, E | g, y\right) \propto& P\left(\zeta, \mu, CV, D, E, g, y\right) \\
@@ -71,16 +108,125 @@ P\left(\zeta, \mu, CV, D, E | g, y\right) \propto& P\left(\zeta, \mu, CV, D, E, 
 
 where $P\left(D | \zeta, \mu, CV, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \mu, CV, g \right)$ (assuming a uniform prior for $D_i^1$). 
 
-## Priors
+## Inference
 
-We use an informative beta prior for $\zeta$, and uninformative flat exponential priors for $\mu$ and $CV$, the mean and coefficient of variation of all delays. 
+Inference is made in a Bayesian framework using Markov Chain Monte Carlo (MCMC). 
 
-## Moves
+### Priors
 
-TO WRITE BETTER
-Metropolis algorithm with Lognormal proposal for $\mu$, $CV$
-Beta Gibbs sampler for $\zeta$
-Independant metropolis algorithm for dates $D$, where for each date $D$ we propose a new value drawn in one of the marginal posterior delays this particular date is involved, with $E$ being automatically updated accordingly. Only a fraction of dates (1/10 at the moment) updated at each iteration. 
+We use an informative beta prior for $\zeta$, and uninformative flat exponential 
+priors for $\mu$ and $CV$, the mean and coefficient of variation of all delays. 
+
+### Initialisation of the Markov Chain
+
+We first initialise the augmented data as follows. 
+We start by setting $E = -1$ for all missing dates. 
+We then assume that all other dates are correctly recorded i.e. $D = y$ and 
+$E = 0$.
+We define a maximum delay (100 days by default), so that delays which are either
+strictly negative or above this maximum delay are considered unrealistic.
+For each group, we identify dates involved in any unrealistic delay. 
+For each unrealistic delay identified, we decide on which date involved in this 
+delay is most likely to be incorrectly recorded with the following priority 
+rules: dates involved in several unrealistic delays are more likely to be 
+recorded erroneously; dates furthest away from the median of all recorded dates
+are more likely to be erroneous. Dates identified as erroenously recorded
+through this process are first set to be incorrectly recorded ($E = 1$) and we 
+temporarily assume that the corresponding dates are $D = NA$.
+This process of identification of erroneously recorded dates is repeated 
+recursively until no more unrealistic delays can be identified. 
+The true dates $D$ correspondigng to the observations identified as erroneous, 
+as well as those corresponding to the missing observations
+are then drawn (one at a time) uniformly among a plausible range of dates. 
+For each group and each date, such range of dates is defined from the 
+combination of 
+i) the graph (which defines an ordering between dates), 
+ii) the set of observed dates for this individual (which combined with the graph 
+may impose some bounds on the date under consideration), and 
+ii) setting an absolute minimum and maximum range for all dates (by default the 
+minimum and maximum observed dates across the entire dataset). 
+
+We then initialise the parameters of the model conditional on the augmented data
+as follows. 
+The probability of error $\zeta$ is set to a given value between 0 and 1 
+(0.1 by default); this value does not matter as zeta is then updated using a 
+Gibbs sampler. 
+The mean and coefficient of variation of each delay are set to the observed mean 
+and coefficient of variation for the corresponding augmented dates $D$. 
+
+### Moves
+
+At each iteration of the MCMC, the following movements are performed: 
+
+1) Move a fraction of the dates $D$. For each group of individuals and for each 
+date in that group, a given fraction (1/10 by default) of cases are randomly 
+selected. For each of them, the corresponding date $D$ is updated using an 
+independant Metropolis algorithm, with a candidate value drawn in the marginal 
+mixture distribution of posterior delays this particular date is directly 
+involved in (i.e. is directly connected to in the underlying timeline graph for 
+that group). 
+The error status for that date, $E$, is automatically updated accordingly. 
+We then accept or reject the candidate pair $D$ and $E$. The acceptance 
+probability accounts for the asymetry in the proposal distribution. 
+
+2) Move a fraction of the error statuses $E$. For each group of individuals and 
+for each date in that group, a given fraction (1/10 by default) of cases are 
+randomly selected. For each of them, the corresponding error status $E$, if the 
+corresponding recorded date $y$ is not missing ($E \neq -1$), we update $E$ 
+using a Metropolis algorithm with the candidate value calculated as 
+$E_{proposed} = 1 - E_{current}$.
+If $E_{proposed} = 0$ then the corresponding date  $D$ is automatically updated 
+so that $D = y$. If $E_{proposed} = 1$ then the corresponding date $D$ is 
+updated with a candidate value drawn in the marginal mixture distribution of 
+posterior delays this particular date is directly involved in (i.e. is directly 
+connected to in the underlying timeline graph for that group), excluding the 
+value $D = y$. 
+We then accept or reject the candidate pair $D$ and $E$. The acceptance 
+probability accounts for the asymetry in the proposal distribution for $D$. 
+
+3) Swap error statuses $E$ for a fraction of individuals. First, for each group,
+we identify all individuals who, in the current state of the augmented data 
+chain, have at least one erroneous ($E = -1$) and one non erroneous ($E = 0$) 
+dates. For each of these individuals (one at a time), 
+[COULD PERHAPS DO ONLY A FRACTION HERE?] 
+we then propose to change all error statuses for non missing 
+dates using a Matropolis algorithm. 
+First, we propose to update all currently
+incorrectly recorded dates ($E = 1$) to a be correctly recorded ($E = 0$). The 
+corresponding dates $D$ are then updated so that $D = y$. 
+Second, if the individual has any missing dates ($E = -1$), we update the 
+corresponding dates $D$ one at a time by drawing a candidate value in the 
+marginal mixture distribution of posterior delays this particular date is 
+directly involved in (i.e. is directly connected to in the underlying timeline 
+graph for that group), but ignoring delays involving dates which were either 
+i) correctly recorded ($E = 0$) as we will switch them to $E = 1$ just after, 
+and therefore don't want to rely on their corresponding $D$ values or 
+ii) missing and have not yet been updated, as the corresponding current $D$ 
+values dependent on the dates in i). 
+Finally, we propose to update all currently
+correctly recorded dates ($E = 0$) to a be incorrectly recorded ($E = 1$). 
+We update the corresponding dates $D$ one at a time by drawing a candidate value 
+in the marginal mixture distribution of posterior delays this particular date is 
+directly involved in (i.e. is directly connected to in the underlying timeline 
+graph for that group), but as before, ignoring delays involving dates which were
+currently correctly recorded ($E = 0$) and have not yet been updated to $E = 1$.
+We then accept or reject the candidate set of dates $D$ and error statuses $E$
+for that individual. The acceptance probability accounts for the asymetry in 
+the proposal distribution. 
+[FOR THE ABOVE TO WORK I THINK WE NEED TO HAVE A FULLY CONNECTED GRAPH. 
+IF THAT'S NOT THE CASE, THE SWAPPING NEEDS TO HAPPEN INDEPENDENTLY ON EACH
+PORTION OF THE GRAPH]
+
+4) Move the probability of error $\zeta$. This is done using a Gibbs sampler, 
+drawing from the marginal Beta distribution. 
+
+5) Move the mean delays. For each group and each delay in that group, we update
+the mean corresponding delay $\mu$ using a Metropolis algorithm with Lognormal 
+proposal. 
+
+6) Move the coeeficient of variation of the delays. For each group and each 
+delay in that group, we update the mean corresponding delay $CV$ using a 
+Metropolis algorithm with Lognormal proposal. 
 
 ## Simulation study
 

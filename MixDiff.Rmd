@@ -8,15 +8,47 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# load relevant libraries
+library(kableExtra)
+library(captioner)
+
+# set up captions for figures and tables
+table_captions <- captioner::captioner(prefix="Table S", auto_space = FALSE)
+figure_captions <- captioner::captioner(prefix="Figure S", auto_space = FALSE)
+
+t.ref <- function(label){
+  stringr::str_extract(table_captions(label), "[^:]*")
+}
+
+f.ref <- function(label){
+  stringr::str_extract(figure_captions(label), "[^:]*")
+}
+
 ```
+
+<!-- ```{r chunk_creating_one_figure, echo=FALSE, fig.cap=figure_captions("one_figure", "figure label")} -->
+<!-- plot(1) -->
+<!-- ``` -->
+
+<!-- As shown in figure `r f.ref("one_figure")` -->
+
 
 # Method
 
 ## Pathways
 
+```{r}
+pathways_tab_caption <- table_captions(
+  name = "pathways_tab", 
+  caption = "Clinical pathways relevant for an Ebola like disease")
+```
+
 There exist four different pathays depending if the case has been hospitalised 
 and/or survived. The date associated with the four health seeking pathways are 
-given in the following table: 
+given in `r t.ref("pathways_tab")`.
+
+`r pathways_tab_caption`
 
 |                  | Onset | Hospitalisation | Death | Discharge | Report |
 |------------------|-------|-----------------|-------|-----------|--------|
@@ -247,22 +279,84 @@ discharge (for those who were hospitalised and survived) and date of death (for
  epidemiologically relevant delay (from date 1 to date 2 in the previous 
  example). 
 
+```{r}
+delay_tab_caption <- table_captions(
+  name = "delay_tab", 
+  caption = "Epidemiological delays used for the baseline Ebola simulation")
+```
+
 We defined different simulation scenarios as variations of a baseline scenario. 
 In the baseline scenario, we simulated 100 individuals in each of the 4 groups. 
 For each individual, a date of symptom onset was randomly drawn uniformly 
 between 1st January and 31st December 2014. Delays defined by the DAGs (or 
 timeline) for the relevant group were then were then drawn from Gamma 
 distributions with parameters reflecting the epidemiological delays estimated
-for Ebola in the 2013-16 West African epidemic 
+for Ebola in the first year of the 2013-16 West African epidemic 
 [REF https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true], 
-shown in table XXX. 
+shown in `r t.ref("delay_tab")`. 
 
-Delay                         | Mean (days)   | Sd (days)     | Groups using delay    
------------------------------ | ------------- | ------------- | ----------------------------------------------
-Onset to hospitalisation      | 5.0           | 4.4           | $HD$, $H\bar{D}$  
-Hospitalisation to discharge  | 11.2          | 7.2           | $H\bar{D}$  
-Hospitalisation to death      | 4.3           | 4.0           | $HD$  
-Onset to report               | 5.5           | 5.2           | $HD$, $H\bar{D}$, $\bar{H}D$, $\bar{H}\bar{D}$
+```{r ebola_delays, echo = FALSE}
+### values for simulation from the NEJM one year [USED]
+# https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true
+# numbers below are actually from supplement: 
+# https://www.nejm.org/doi/suppl/10.1056/NEJMc1414992/suppl_file/nejmc1414992_appendix.pdf
+
+# mean / CI (for the mean) for all countries, Dec 2013 to 25 Nov 2014
+# sd / CI (for the sd) for all countries, Dec 2013 to 25 Nov 2014
+# for confirmed and probable cases
+
+### onset to hosp 
+# 5.0 / 4.9-5.1
+mean_onset_2_hosp <- 5.0
+# 4.4 / 4.3-4.6
+sd_onset_2_hosp <- 4.4
+
+### hosp to discharge
+# 11.2 / 10.8-11.7
+mean_hosp_2_disch <- 11.2
+# 7.2 / 6.8-7.6
+sd_hosp_2_disch <- 7.2
+
+### hosp to death
+# 4.3 / 4.1-4.5
+mean_hosp_2_death <- 4.3
+# 4.0 / 3.8-4.3
+sd_hosp_2_death <- 4.0
+
+### onset to report (not reported in main text?)
+# 5.5 / 5.4-5.7
+mean_onset_2_report <- 5.5
+# 5.2 / 5.1-5.3
+sd_onset_2_report <- 5.2
+
+tab <- data.frame(
+  "Delay" = c("Onset to hospitalisation", 
+              "Hospitalisation to discharge", 
+              "Hospitalisation to death", 
+              "Onset to report"),
+  "Mean (days)" = c(mean_onset_2_hosp, 
+                    mean_hosp_2_disch,
+                    mean_hosp_2_death,
+                    mean_onset_2_report),
+  "Sd (days)" = c(sd_onset_2_hosp, 
+                  sd_hosp_2_disch,
+                  sd_hosp_2_death,
+                  sd_onset_2_report),
+  "Groups using delay" = c("$HD$, $H\\bar{D}$", 
+                           "$H\\bar{D}$", 
+                           "$HD$", 
+                           "$HD$, $H\\bar{D}$, $\\bar{H}D$, $\\bar{H}\\bar{D}$")
+)
+names(tab) <- c("Delays", "Mean (days)", "Sd (days)", "Groups using delay")
+```
+
+`r delay_tab_caption`
+```{r ebola_delays_table, echo = FALSE}
+
+kableExtra::kable(
+  tab, format = "markdown")
+                  
+```
 
 TO BE CONTINUED
 

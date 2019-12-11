@@ -2,7 +2,9 @@
 title: 'MixDiff: a framework to reconstruct dataset with missing or erroneous data
   for outbreaks intervention'
 output:
-  pdf_document: default
+  pdf_document:
+    includes:
+      in_header: header.tex
   html_document: default
 ---
 
@@ -377,13 +379,36 @@ A set of simulation scenarios was then explored to assess the model performance
 in contexts which differed from this baseline scenario in several aspects; all 
 simulation scenarios are summarised in `r t.ref("simul_tab")`.
 
+\newpage
+\blandscape
+
 `r simulation_scenarios_tab_caption`
 
-| Simulation scenario | Group size | Mean delays                     | Sd delays                         | Parametric form delays | Missingness rate | Error rate | Error model    |
-|-------------------- | ---------- | -----------                     | ---------                         | ---------------------- | ---------------- | ---------- | -----------    |
-| Baseline            | 100        | as in in `r t.ref("simul_tab")` |   as in in `r t.ref("simul_tab")` | Discretised Gamma      | $20\%$           | $5\%$      | Typo challenge |       
+| Simulation scenario        | Group size | Mean delays                     | CV delays                       | Parametric form delays | Missingness rate | Error rate | Error model    |
+|--------------------        | ---------- | -----------                     | ---------                       | ---------------------- | ---------------- | ---------- | -----------    |
+| Baseline                   | 100        | as in in `r t.ref("simul_tab")` | as in in `r t.ref("simul_tab")` | Discretised Gamma      | $20\%$           | $5\%$      | Typo challenge |       
+| Low missingess             | *          | *                               | *                               | *                      | $5\%$            | $2\%$      | *              |       
+| Low error                  | *          | *                               | *                               | *                      | *                | $2\%$      | *              |       
+| High error                 | *          | *                               | *                               | *                      | *                | $20\%$     | *              |
+| Lognormal delays           | *          | *                               | *                               | Discretised Lognormal  | *                | *          | *              |
+| Weibull delays             | *          | *                               | *                               | Discretised Weibull    | *                | *          | *              |
+| Very small sample size     | 10         | *                               | *                               | *                      | *                | *          | *              |
+| Small sample size          | 20         | *                               | *                               | *                      | *                | *          | *              |
+| Moderate sample size       | 50         | *                               | *                               | *                      | *                | *          | *              |
+| Very large sample size     | 500        | *                               | *                               | *                      | *                | *          | *              |
+| XXX Uniform error model    | *          | *                               | *                               | *                      | *                | *          | XXX Uniform    |
+| XXX?? other error model    | *          | *                               | *                               | *                      | *                | *          | XXX???         |
+| Long delays                | *          | Twice as long as baseline       | *                               | *                      | *                | *          | *              |
+| short delays               | *          | Half as long as baseline        | *                               | *                      | *                | *          | *              |
+| High variability in delays | *          | *                               | Twice the CVs in baseline       | *                      | *                | *          | *              |
+| Low variability in delays  | *          | *                               | *                               | *                      | *                | *          | *              |
 
+*: as baseline
+CV: coefficient of variation (i.e. standard deviation / mean)
 
+\elandscape
+
+\newpage
 
 TO BE CONTINUED
 

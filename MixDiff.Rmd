@@ -249,10 +249,27 @@ discharge (for those who were hospitalised and survived) and date of death (for
 
 We defined different simulation scenarios as variations of a baseline scenario. 
 In the baseline scenario, we simulated 100 individuals in each of the 4 groups. 
-For each individual, a date of symptom onset was then randomly drawn uniformly 
-between 1st January and 31st December 2014. 
+For each individual, a date of symptom onset was randomly drawn uniformly 
+between 1st January and 31st December 2014. Delays defined by the DAGs (or 
+timeline) for the relevant group were then were then drawn from Gamma 
+distributions with parameters reflecting the epidemiological delays estimated
+for Ebola in the 2013-16 West African epidemic 
+[REF https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true], 
+shown in table XXX. 
+
+Delay                         | Mean (days)   | Sd (days)     | Groups using delay    
+----------------------------- | ------------- | ------------- | ----------------------------------------------
+Onset to hospitalisation      | 5.0           | 4.4           | $HD$, $H\bar{D}$  
+Hospitalisation to discharge  | 11.2          | 7.2           | $H\bar{D}$  
+Hospitalisation to death      | 4.3           | 4.0           | $HD$  
+Onset to report               | 5.5           | 5.2           | $HD$, $H\bar{D}$, $\bar{H}D$, $\bar{H}\bar{D}$
 
 TO BE CONTINUED
+
+[THINK ABOUT WHETHER WE COULD HAVE SEVERAL ARROWS WITH THE SAME DATE 2?? 
+IF SO WILL NEED TO ACCOUNT FOR THIS IN THE SIMULATION AS AT THE MOMENT WE ASSUME
+EACH DATE IS DEFINED AS THE TIP OF THE ARROW OF A SINGLE OTHER DATE - WHICH
+MAKES SIMULATION EASIER AS CAN DRAW FROM A SINGLE GAMMA RATHER THAN A MIXTURE]
 
 ## Performance of the model on simulated data
 

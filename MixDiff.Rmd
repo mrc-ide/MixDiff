@@ -399,18 +399,17 @@ simulation scenarios are summarised in `r t.ref("simul_tab")`.
 | XXX Uniform error model    | *          | *                               | *                               | *                      | *                | *          | XXX Uniform    |
 | XXX?? other error model    | *          | *                               | *                               | *                      | *                | *          | XXX???         |
 | Long delays                | *          | Twice as long as baseline       | *                               | *                      | *                | *          | *              |
-| short delays               | *          | Half as long as baseline        | *                               | *                      | *                | *          | *              |
+| Short delays               | *          | Half as long as baseline        | *                               | *                      | *                | *          | *              |
 | High variability in delays | *          | *                               | Twice the CVs in baseline       | *                      | *                | *          | *              |
 | Low variability in delays  | *          | *                               | *                               | *                      | *                | *          | *              |
 
 *: as baseline
+
 CV: coefficient of variation (i.e. standard deviation / mean)
 
 \elandscape
 
 \newpage
-
-TO BE CONTINUED
 
 [THINK ABOUT WHETHER WE COULD HAVE SEVERAL ARROWS WITH THE SAME DATE 2?? 
 IF SO WILL NEED TO ACCOUNT FOR THIS IN THE SIMULATION AS AT THE MOMENT WE ASSUME
@@ -419,7 +418,11 @@ MAKES SIMULATION EASIER AS CAN DRAW FROM A SINGLE GAMMA RATHER THAN A MIXTURE]
 
 ## Performance of the model on simulated data
 
-TO DESCRIBE
+For each simulation scenario, we simulated a set of 100 datasets, which we 
+analysed using the framework described in this study. We measured the 
+performance of our approach on each simulated dataset by assessing the model's
+ability to correclty i) estimate the delay distributions; ii) identify erroneous
+date entries and iii) infer missing dates. 
 
 ### Estimation of the delay distributions
 

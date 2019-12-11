@@ -303,7 +303,10 @@ and $5\%$ of the recorded dates were recorded erroneously. The missingness and
 erroneous status was drawn independently for each date using Bernoulli 
 distributions. For erroneously recorded dates, an observed date was drawn based 
 on the "true" date according to the error model described in XXXXXXXX, designed
-from the Typo Challenge data. 
+from the Typo Challenge data. We ketp track of both the true dates and the 
+recorded dates for each person in each group, so that we could later assess the
+ability of our approach to correctly identify which dates were correctly or 
+erroneously recorded. 
 
 ```{r ebola_delays, echo = FALSE}
 ### values for simulation from the NEJM one year [USED]
@@ -441,11 +444,34 @@ Finally, we measured the relative error between the "true" value and the median
 estimate obtained from this unique joint posterior sample. The relative error
 was defined as (median estimate - true value) / true value. 
 
+[NEED TO ACTUALLY DO THE WORK FOR INDICATORS 2 AND 3...]
+
 ### Detection of erroneous data entries
 
+For each date which was not missing in a dataset ($E \neq -1$), our approach 
+provided a posterior distribution of the erroneous status for this date. The 
+frequency of $E = 1$ in the posterior sample for that date therefore defined 
+a posterior support for error for that specific date. For a given threshold $T$
+($0.5 \leq T \leq 1$), we could therefore classify dates as erroneously recorded
+if their posterior support for error is $\geq T$ and correctly recorded 
+otherwise. This binary classification can then be compared to the "true" 
+corresponding error status in the simulated dataset, to classify each date
+as "true positives" ($TP$, when our method correctly identified an erroneous date), 
+"true negatives" ($TN$, when our method correctly identified a date as non erroneous),
+"false positives" ($FP$, when out method incorrectly identified a date as erroneous)" 
+and "dalse negatives" ($FN$, when our method did not detect an errouneous date). 
+For a given threshold $T$, we therefore measured the sensitivity of our 
+approach as
+$Se(t) = \frac{TP}{TP + FN}$
+and the specificity as
+$Sp(t) = \frac{TN}{TN + FP}$.
+
+### Detection of individuals with at least one erroneous data entry
+
+EXPLAIN ISSUE IN SENSITIVITY AND NEW APPROACH TO LOOK AT INDIVIDUALS WITH AT LEAST ONE DATE RECORDED
 TO DESCRIBE
 
-### Estimation of the missing dates
+### Estimation of the missing and erroneously recorded dates
 
 TO DO ?!?! AND DESCRIBE
 

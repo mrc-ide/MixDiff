@@ -426,7 +426,20 @@ date entries and iii) infer missing dates.
 
 ### Estimation of the delay distributions
 
-TO DESCRIBE
+We measured the ability of our approach to correctly estimate the delay 
+distributions through three indicators. 
+First, for each delay we measured the 
+proportion of simulated datasets for which the 95% credible interval (95%CrI) 
+of the mean (respectively of the coefficient of variation) contained the "true 
+value" (i.e. that used for simulation. 
+Second, we considered a binary indicator measuring whether 
+or not, when aggregating the samples from the posterior distribution of the mean 
+(respectively the coefficient of variation) obtained for each individual 
+dataset, the interval between the 2.5% and the 97.5% quantile of this joint 
+sample did contain the "true value". 
+Finally, we measured the relative error between the "true" value and the median
+estimate obtained from this unique joint posterior sample. The relative error
+was defined as (median estimate - true value) / true value. 
 
 ### Detection of erroneous data entries
 

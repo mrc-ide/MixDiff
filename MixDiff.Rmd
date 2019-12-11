@@ -38,7 +38,7 @@ f.ref <- function(label){
 
 ## Pathways
 
-```{r}
+```{r, echo = FALSE}
 pathways_tab_caption <- table_captions(
   name = "pathways_tab", 
   caption = "Clinical pathways relevant for an Ebola like disease")
@@ -279,7 +279,7 @@ discharge (for those who were hospitalised and survived) and date of death (for
  epidemiologically relevant delay (from date 1 to date 2 in the previous 
  example). 
 
-```{r}
+```{r, echo = FALSE}
 delay_tab_caption <- table_captions(
   name = "delay_tab", 
   caption = "Epidemiological delays used for the baseline Ebola simulation")
@@ -288,12 +288,20 @@ delay_tab_caption <- table_captions(
 We defined different simulation scenarios as variations of a baseline scenario. 
 In the baseline scenario, we simulated 100 individuals in each of the 4 groups. 
 For each individual, a date of symptom onset was randomly drawn uniformly 
-between 1st January and 31st December 2014. Delays defined by the DAGs (or 
-timeline) for the relevant group were then were then drawn from Gamma 
-distributions with parameters reflecting the epidemiological delays estimated
-for Ebola in the first year of the 2013-16 West African epidemic 
+between 1st January and 31st December 2014. Dates of hospitalisation, discharge, 
+death and report were drawn for the relevant groups by sampling delays defined 
+by the DAGs (or timeline) from Gamma distributions with parameters reflecting 
+the epidemiological delays estimated for Ebola in the first year of the 2013-16 
+West African epidemic 
 [REF https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true], 
-shown in `r t.ref("delay_tab")`. 
+shown in `r t.ref("delay_tab")`.
+We assumed $20\%$ of dates were missing (approximately as in 
+[REF https://royalsocietypublishing.org/doi/abs/10.1098/rstb.2016.0308])
+and $5\%$ of the recorded dates were recorded erroneously. The missingness and
+erroneous status was drawn independently for each date using Bernoulli 
+distributions. For erroneously recorded dates, an observed date was drawn based 
+on the "true" date according to the error model described in XXXXXXXX, designed
+from the Typo Challenge data. 
 
 ```{r ebola_delays, echo = FALSE}
 ### values for simulation from the NEJM one year [USED]
@@ -357,6 +365,25 @@ kableExtra::kable(
   tab, format = "markdown")
                   
 ```
+
+
+```{r, echo = FALSE}
+simulation_scenarios_tab_caption <- table_captions(
+  name = "simul_tab", 
+  caption = "Ebola-like simulation scenarios")
+```
+
+A set of simulation scenarios was then explored to assess the model performance
+in contexts which differed from this baseline scenario in several aspects; all 
+simulation scenarios are summarised in `r t.ref("simul_tab")`.
+
+`r simulation_scenarios_tab_caption`
+
+| Simulation scenario | Group size | Mean delays                     | Sd delays                         | Parametric form delays | Missingness rate | Error rate | Error model    |
+|-------------------- | ---------- | -----------                     | ---------                         | ---------------------- | ---------------- | ---------- | -----------    |
+| Baseline            | 100        | as in in `r t.ref("simul_tab")` |   as in in `r t.ref("simul_tab")` | Discretised Gamma      | $20\%$           | $5\%$      | Typo challenge |       
+
+
 
 TO BE CONTINUED
 

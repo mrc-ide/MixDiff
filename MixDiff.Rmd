@@ -419,6 +419,8 @@ IF SO WILL NEED TO ACCOUNT FOR THIS IN THE SIMULATION AS AT THE MOMENT WE ASSUME
 EACH DATE IS DEFINED AS THE TIP OF THE ARROW OF A SINGLE OTHER DATE - WHICH
 MAKES SIMULATION EASIER AS CAN DRAW FROM A SINGLE GAMMA RATHER THAN A MIXTURE]
 
+SAY THAT FOR EACH SCENARIO WE MEASURED PERFORMANCE AGAINST SEVERAL ERROR MODELS - AND DO IT!
+
 ## Performance of the model on simulated data
 
 For each simulation scenario, we simulated a set of 100 datasets, which we 
@@ -462,18 +464,55 @@ as "true positives" ($TP$, when our method correctly identified an erroneous dat
 and "dalse negatives" ($FN$, when our method did not detect an errouneous date). 
 For a given threshold $T$, we therefore measured the sensitivity of our 
 approach as
-$Se(t) = \frac{TP}{TP + FN}$
+$Se_{date}(t) = \frac{TP}{TP + FN}$
 and the specificity as
-$Sp(t) = \frac{TN}{TN + FP}$.
+$Sp_{date}(t) = \frac{TN}{TN + FP}$.
 
 ### Detection of individuals with at least one erroneous data entry
 
-EXPLAIN ISSUE IN SENSITIVITY AND NEW APPROACH TO LOOK AT INDIVIDUALS WITH AT LEAST ONE DATE RECORDED
-TO DESCRIBE
+It is clear that for individuals who, because of missing data, have only one 
+date recorded, our approach will not be able to identify that this date is 
+erroneous. 
+Similarly, for individuals with only two recorded dates (either because their
+pathway involves only two dates as in the $\bar{H}\bar{D}$ group in our example,
+or because they have some missing data), if one of the two dates is incorrectly
+recorded, our approach should be able to identify that one of the two dates is 
+erroneous, but may not be able to identify which of the two. 
+
+For this reason, we also measured the performance of our approach in terms of 
+its ability to correctly identify, among individuals with at least two dates
+recorded, individuals with at least one erroneous date. This is again based on
+choosing a threshold $T$ so that dates with posterior support for error above 
+that threshold are classified as erroneous, and comparing this classification 
+with the true error status. 
+
+For a given threshold $T$, we therefore measured the sensitivity of our 
+approach as
+$Se_{indiv}(t) = \frac{TP_{indiv}}{TP_{indiv} + FN_{indiv}}$
+and the specificity as
+$Sp_{indiv}(t) = \frac{TN_{indiv}}{TN_{indiv} + FP_{indiv}}$, 
+
+where 
+$TP_{indiv}$ is the number of individuals who are true positives, i.e. 
+correctly identified by our method as having at least one erroneous date 
+recorded; 
+$TN_{indiv}$ is the number of individuals who are true negatives, i.e. 
+correctly identified by our method as having no erroneous date recorded; 
+$FP_{indiv}$ is the number of individuals who are false positives, i.e. 
+wrongly identified by our method as having at least one erroneous date recorded;
+and finally 
+$FN_{indiv}$ is the number of individuals who are false negatives, i.e. 
+wrongly identified by our method as having no erroneous date recorded
+(all of these measured only among individuals with at least two recorded dates).
+
+NEED TO CHECK / CHANGE CODE SO THAT DENOMINATOR FOR SENSITIVITY/SPECIFICITY BY INDIVIDUAL
+IS CORRECTLY CALCULATED IE RESTRICTED TO THOSE WITH AT LEAST TWO RECORDED DATES
 
 ### Estimation of the missing and erroneously recorded dates
 
 TO DO ?!?! AND DESCRIBE
+
+### TO DO AND WRITE: how do delay distributions differ from those estimated from the raw data - especially when high error rate
 
 ## Error model
 

@@ -4,7 +4,8 @@
 \alias{simul_obs_dat}
 \title{Introduces missingness and errors in data}
 \usage{
-simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE)
+simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE,
+  remove_indiv_at_most_one_date_recorded = TRUE)
 }
 \arguments{
 \item{D}{A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.}
@@ -14,6 +15,8 @@ simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE)
 \item{range_dates}{Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)}
 
 \item{remove_allNA_indiv}{A boolean stating whether individuals with only NA dates should be removed or not.}
+
+\item{remove_indiv_at_most_one_date_recorded}{A boolean stating whether individuals with at most one recorded date should be removed or not.}
 }
 \value{
 A list with two elements: 

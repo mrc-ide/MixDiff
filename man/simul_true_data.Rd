@@ -5,7 +5,8 @@
 \title{Simulates data; see details}
 \usage{
 simul_true_data(theta, n_per_group, range_dates, index_dates,
-  simul_error = FALSE, remove_allNA_indiv = FALSE)
+  simul_error = FALSE, remove_allNA_indiv = FALSE,
+  remove_indiv_at_most_one_date_recorded = FALSE)
 }
 \arguments{
 \item{theta}{List of parameters; see details.}
@@ -19,6 +20,8 @@ simul_true_data(theta, n_per_group, range_dates, index_dates,
 \item{simul_error}{A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 
 \item{remove_allNA_indiv}{A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).}
+
+\item{remove_indiv_at_most_one_date_recorded}{A boolean stating whether individuals with at most one recorded date should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 }
 \value{
 A list of three items. 

@@ -10,6 +10,7 @@
 #' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
 #' @param simul_error A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @param remove_allNA_indiv A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
+#' @param remove_indiv_at_most_one_date_recorded  A boolean stating whether individuals with at most one recorded date should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -52,7 +53,7 @@
 #' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE, remove_allNA_indiv=FALSE)
+simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE, remove_allNA_indiv=FALSE, remove_indiv_at_most_one_date_recorded=FALSE)
 {
   index_dates <- process_index_dates(index_dates)
   column_names <- lapply(index_dates, function(idx) unique(as.vector(idx)))
@@ -75,7 +76,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
   
   if(simul_error)
   {
-    observed_D <- simul_obs_dat(D, theta, range_dates, remove_allNA_indiv=remove_allNA_indiv)
+    observed_D <- simul_obs_dat(D, theta, range_dates, remove_allNA_indiv=remove_allNA_indiv, remove_indiv_at_most_one_date_recorded=remove_indiv_at_most_one_date_recorded)
     return(list(true_dat=observed_D$D, obs_dat=observed_D$obs_dat, E=observed_D$E))
   }else{
     return(list(true_dat=D, obs_dat=NULL, E=NULL))
@@ -88,6 +89,8 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
 #' @param theta A list of parameters; see details.
 #' @param range_dates Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)
 #' @param remove_allNA_indiv A boolean stating whether individuals with only NA dates should be removed or not. 
+#' @param remove_indiv_at_most_one_date_recorded  A boolean stating whether individuals with at most one recorded date should be removed or not.
+
 #' @details \code{theta} should be a list containing
 #' \itemize{
 #'  \item{\code{prop_missing_data}}{: A scalar in [0;1] giving the probability of each data point being missing.}
@@ -123,7 +126,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
 #' ### (some individuals with only missing data do not appear in the observed dataset)
 #' nrow(D$true_dat[[1]])
 #' nrow(observed_D$obs_dat[[1]])
-simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=TRUE)
+simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=TRUE, remove_indiv_at_most_one_date_recorded=TRUE)
 {
   E <- D
   obs_dat <- D
@@ -139,6 +142,16 @@ simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=TRUE)
     if(remove_allNA_indiv)
     {
       exclude <- which(rowSums(is.na(obs_dat[[g]]))==ncol(obs_dat[[g]]))
+      if(length(exclude)>0)
+      {
+        obs_dat[[g]] <- obs_dat[[g]][-exclude,]
+        D[[g]] <- D[[g]][-exclude,]
+        E[[g]] <- E[[g]][-exclude,]
+      }
+    }
+    if(remove_indiv_at_most_one_date_recorded)
+    {
+      exclude <- which(rowSums(is.na(obs_dat[[g]]))>=ncol(obs_dat[[g]]) - 1)
       if(length(exclude)>0)
       {
         obs_dat[[g]] <- obs_dat[[g]][-exclude,]

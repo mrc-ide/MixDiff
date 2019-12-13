@@ -1369,3 +1369,14 @@ check_not_all_missing <- function(obs_dat)
     stop("Your dataset contains individuals with only missing dates. Please discard them. ")
   }
 }
+
+check_at_least_two_dates_per_indiv <- function(obs_dat)
+{
+  problem <- lapply(1:length(obs_dat), function(g) 
+    which(apply(is.na(obs_dat[[g]]), 1, sum) >= ncol(obs_dat[[g]]) - 1)
+  )
+  if(any(lengths(problem)>0))
+  {
+    stop("Your dataset contains individuals with only missing dates or only one recorded date. Please discard them. ")
+  }
+}

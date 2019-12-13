@@ -1207,7 +1207,7 @@ ROC_per_individual <- function(MCMCres, aug_dat_true, thresholds)
               specificity = specificity_indiv_all_thresholds))
 }
 
-#' Checks whether the true parameter values are within the corresponding reestimated 95% credible intervals
+#' Checks whether the true parameter values are within the corresponding reestimated 95 percent credible intervals
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
 #' @param theta_true A list of parameters to which the output chains should be compared. This should contain:
@@ -1216,7 +1216,7 @@ ROC_per_individual <- function(MCMCres, aug_dat_true, thresholds)
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
-#' @return A vector of logical values indicating for each parameter, whether the true parameter value is inside the posterior 95% credible interval
+#' @return A vector of logical values indicating for each parameter, whether the true parameter value is inside the posterior 95\% credible interval
 #' @export
 #' @examples
 #' # TO WRITE
@@ -1231,11 +1231,11 @@ are_true_param_in_95perc_post <- function(MCMCres, theta_true)
   return(res)
 }
 
-#' Computes, for each group, the proportion of missing dates for which the true (unrecorded) date is within the corresponding reestimated 95% credible intervals
+#' Computes, for each group, the proportion of missing dates for which the true (unrecorded) date is within the corresponding reestimated 95\% credible intervals
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
 #' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
-#' @return A vector of numerical values indicating for each group of individuals, the fraction of missing dates for which the true date is inside the posterior 95% credible interval of the corresponding estimated augmented date
+#' @return A vector of numerical values indicating for each group of individuals, the fraction of missing dates for which the true date is inside the posterior 95\% credible interval of the corresponding estimated augmented date
 #' @export
 #' @examples
 #' # TO WRITE
@@ -1279,7 +1279,7 @@ error_missing_dates <- function(MCMCres, aug_dat_true)
     {
       est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
                               function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
-      est_date_miss_mode <- apply(est_date_miss, 1, MixDiff:::my_mode)
+      est_date_miss_mode <- apply(est_date_miss, 1, my_mode)
       true_date_miss <- aug_dat_true$D[[g]][miss]
       res <- true_date_miss - est_date_miss_mode
     } else
@@ -1290,12 +1290,12 @@ error_missing_dates <- function(MCMCres, aug_dat_true)
   })
 }
 
-#' Computes, for each group, the proportion of erroneous dates (identified using a given threshold for the posterior support for error) for which the true (erroneously recorded) date is within the corresponding reestimated 95% credible intervals
+#' Computes, for each group, the proportion of erroneous dates (identified using a given threshold for the posterior support for error) for which the true (erroneously recorded) date is within the corresponding reestimated 95\% credible intervals
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
 #' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
 #' @param inferred An object as returned by \code{\link{get_inferred_from_consensus}}.
-#' @return A vector of numerical values indicating for each group of individuals, the fraction of erroneous dates for which the true date is inside the posterior 95% credible interval of the corresponding estimated augmented date (among dates identified as erroneous only)
+#' @return A vector of numerical values indicating for each group of individuals, the fraction of erroneous dates for which the true date is inside the posterior 95\% credible interval of the corresponding estimated augmented date (among dates identified as erroneous only)
 #' @export
 #' @examples
 #' # TO WRITE
@@ -1348,7 +1348,7 @@ error_erroneous_dates <- function(MCMCres, aug_dat_true, inferred)
                                  tmp_res[MCMCres$aug_dat_chain[[e]]$E[[g]][error] != 1] <- NA
                                  tmp_res
                                })
-      est_date_error_mode <- apply(est_date_error, 1, MixDiff:::my_mode)
+      est_date_error_mode <- apply(est_date_error, 1, my_mode)
       true_date_error <- aug_dat_true$D[[g]][error]
       res <- true_date_error - est_date_error_mode
     } else

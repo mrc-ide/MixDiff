@@ -144,6 +144,9 @@ system.time({
 # 2 Dec --> n_iter = 5000, burnin = 500, record_every=10 takes 596secs
 # 21 Oct --> n_iter = 5000, burnin = 500, record_every=10 takes 35mins
 
+# MCMCres_all_simul <- readRDS("./SimulatedData/results_from_cluster/MCMCresults_20-11-2019.rds")
+# MCMCres <- MCMCres_all_simul[[1]]$MCMCres
+
 ###############################################
 ### save results ###
 ###############################################
@@ -411,7 +414,11 @@ are_true_param_in_95perc_post(MCMCres, theta_true)
 
 #### reestimated missing dates ####
 prop_missing_dates_in_95perc_post(MCMCres, aug_dat_true)
+error_missing_dates(MCMCres, aug_dat_true)
 
 #### reestimated erroneous dates identified as such ####
 prop_erroneous_dates_in_95perc_post(MCMCres, aug_dat_true, inferred_all_thresholds[["0.5"]])
 prop_erroneous_dates_in_95perc_post(MCMCres, aug_dat_true, inferred_all_thresholds[["0.95"]])
+error_erroneous_dates(MCMCres, aug_dat_true, inferred_all_thresholds[["0.95"]])
+
+

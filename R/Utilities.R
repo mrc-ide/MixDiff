@@ -1263,6 +1263,33 @@ prop_missing_dates_in_95perc_post <- function(MCMCres, aug_dat_true)
   })
 }
 
+#' Computes, for each group, the distance between the true dates that were missing in the dataset and the mode of the corresponding posterior distribution
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @return A list containing, for each group, the distances between the true dates that were missing in that group and and the mode of the corresponding posterior distribution
+#' @export
+#' @examples
+#' # TO WRITE
+error_missing_dates <- function(MCMCres, aug_dat_true)
+{
+  sapply(1:length(MCMCres$aug_dat_chain[[1]]$E), function(g){
+    miss <- which(MCMCres$aug_dat_chain[[1]]$E[[g]] == -1)
+    if(length(miss)>0)
+    {
+      est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
+                              function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
+      est_date_miss_mode <- apply(est_date_miss, 1, MixDiff:::my_mode)
+      true_date_miss <- aug_dat_true$D[[g]][miss]
+      res <- true_date_miss - est_date_miss_mode
+    } else
+    {
+      res <- integer()
+    }
+    return(res)
+  })
+}
+
 #' Computes, for each group, the proportion of erroneous dates (identified using a given threshold for the posterior support for error) for which the true (erroneously recorded) date is within the corresponding reestimated 95% credible intervals
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
@@ -1295,6 +1322,38 @@ prop_erroneous_dates_in_95perc_post <- function(MCMCres, aug_dat_true, inferred)
     } else
     {
       res <- NA
+    }
+    return(res)
+  })
+}
+
+#' Computes, for each group, the distance between the true dates that were identified as erroneous in the dataset and the mode of the corresponding posterior distribution
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param inferred An object as returned by \code{\link{get_inferred_from_consensus}}.
+#' @return A list containing, for each group, the distances between the true dates that were identified as erroneous in that group and the mode of the corresponding posterior distribution
+#' @export
+#' @examples
+#' # TO WRITE
+error_erroneous_dates <- function(MCMCres, aug_dat_true, inferred)
+{
+  sapply(1:length(MCMCres$aug_dat_chain[[1]]$E), function(g){
+    error <- which(inferred$inferred_E[[g]] == "error_high_support")
+    if(length(error)>0)
+    {
+      est_date_error <- sapply(1:length(MCMCres$aug_dat_chain), 
+                               function(e) {
+                                 tmp_res <- MCMCres$aug_dat_chain[[e]]$D[[g]][error]
+                                 tmp_res[MCMCres$aug_dat_chain[[e]]$E[[g]][error] != 1] <- NA
+                                 tmp_res
+                               })
+      est_date_error_mode <- apply(est_date_error, 1, MixDiff:::my_mode)
+      true_date_error <- aug_dat_true$D[[g]][error]
+      res <- true_date_error - est_date_error_mode
+    } else
+    {
+      res <- integer()
     }
     return(res)
   })

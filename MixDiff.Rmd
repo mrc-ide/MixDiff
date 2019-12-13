@@ -513,9 +513,6 @@ IS CORRECTLY CALCULATED IE RESTRICTED TO THOSE WITH AT LEAST TWO RECORDED DATES
 TO DO ?!?! AND DESCRIBE
 PROPOSED MEASURES (NOT OBVIOUS AS DISCRETE VARAIBLES...): 
 for each simulation: 
-1) proportion of missing dates (respectively erroneous dates identified as such 
-with 50% threshold for posterior support for error) for which the true date has 
-non zero posterior probability 
 2) proportion of missing dates (respectively erroneous dates identified as such 
 with 50% threshold for posterior support for error) for which the true date is 
 within the 95% credible interval of the corresponding augmented date. 
@@ -525,6 +522,7 @@ mode of the posterior augmented date and the true date
 means the model is doing a great job) - issue if model is not doing well for 
 some dates --> there will be some -inf values...
 
+TO DO: remove from datasets individuals with less than 2 dates recorded. 
 
 ### TO DO AND WRITE: how do delay distributions differ from those estimated from the raw data - especially when high error rate
 

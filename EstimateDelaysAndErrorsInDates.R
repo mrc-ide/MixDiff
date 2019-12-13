@@ -411,3 +411,7 @@ are_true_param_in_95perc_post(MCMCres, theta_true)
 
 #### reestimated missing dates ####
 prop_missing_dates_in_95perc_post(MCMCres, aug_dat_true)
+
+#### reestimated erroneous dates identified as such ####
+prop_erroneous_dates_in_95perc_post(MCMCres, aug_dat_true, inferred_all_thresholds[["0.5"]])
+prop_erroneous_dates_in_95perc_post(MCMCres, aug_dat_true, inferred_all_thresholds[["0.95"]])

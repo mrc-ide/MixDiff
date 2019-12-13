@@ -1207,7 +1207,7 @@ ROC_per_individual <- function(MCMCres, aug_dat_true, thresholds)
               specificity = specificity_indiv_all_thresholds))
 }
 
-#' Compute sensitivity and specificity of detecting at least one error per individual for a variety of posterior thresholds
+#' Checks whether the true parameter values are within the corresponding reestimated 95% credible intervals
 #'
 #' @param MCMCres the output of function \code{\link{RunMCMC}}
 #' @param theta_true A list of parameters to which the output chains should be compared. This should contain:
@@ -1231,20 +1231,72 @@ are_true_param_in_95perc_post <- function(MCMCres, theta_true)
   return(res)
 }
 
+#' Computes, for each group, the proportion of missing dates for which the true (unrecorded) date is within the corresponding reestimated 95% credible intervals
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @return A vector of numerical values indicating for each group of individuals, the fraction of missing dates for which the true date is inside the posterior 95% credible interval of the corresponding estimated augmented date
+#' @export
+#' @examples
+#' # TO WRITE
 prop_missing_dates_in_95perc_post <- function(MCMCres, aug_dat_true)
 {
   sapply(1:length(MCMCres$aug_dat_chain[[1]]$E), function(g){
     miss <- which(MCMCres$aug_dat_chain[[1]]$E[[g]] == -1)
-    est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
-                            function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
-    est_date_miss_summary <- apply(est_date_miss, 1, summary)
-    est_date_miss_summary <- rbind(
-      est_date_miss_summary, 
-      apply(est_date_miss, 1, quantile, c(0.025, 0.975)))
-    true_date_miss <- aug_dat_true$D[[g]][miss]
-    res <- true_date_miss >= est_date_miss_summary["2.5%", ] & 
-      true_date_miss <= est_date_miss_summary["97.5%", ]
-    return(sum(res) / length(res))
+    if(length(miss)>0)
+    {
+      est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
+                              function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
+      est_date_miss_summary <- apply(est_date_miss, 1, summary)
+      est_date_miss_summary <- rbind(
+        est_date_miss_summary, 
+        apply(est_date_miss, 1, quantile, c(0.025, 0.975)))
+      true_date_miss <- aug_dat_true$D[[g]][miss]
+      res <- true_date_miss >= est_date_miss_summary["2.5%", ] & 
+        true_date_miss <= est_date_miss_summary["97.5%", ]
+      res <- sum(res) / length(res)
+    } else
+    {
+      res <- NA
+    }
+    return(res)
+  })
+}
+
+#' Computes, for each group, the proportion of erroneous dates (identified using a given threshold for the posterior support for error) for which the true (erroneously recorded) date is within the corresponding reestimated 95% credible intervals
+#'
+#' @param MCMCres the output of function \code{\link{RunMCMC}}
+#' @param aug_dat_true A list of true data, in the format returned by \code{\link{simul_true_data}}. 
+#' @param inferred An object as returned by \code{\link{get_inferred_from_consensus}}.
+#' @return A vector of numerical values indicating for each group of individuals, the fraction of erroneous dates for which the true date is inside the posterior 95% credible interval of the corresponding estimated augmented date (among dates identified as erroneous only)
+#' @export
+#' @examples
+#' # TO WRITE
+prop_erroneous_dates_in_95perc_post <- function(MCMCres, aug_dat_true, inferred)
+{
+  sapply(1:length(MCMCres$aug_dat_chain[[1]]$E), function(g){
+    error <- which(inferred$inferred_E[[g]] == "error_high_support")
+    if(length(error)>0)
+    {
+      est_date_error <- sapply(1:length(MCMCres$aug_dat_chain), 
+                               function(e) {
+                                 tmp_res <- MCMCres$aug_dat_chain[[e]]$D[[g]][error]
+                                 tmp_res[MCMCres$aug_dat_chain[[e]]$E[[g]][error] != 1] <- NA
+                                 tmp_res
+                               })
+      est_date_error_summary <- apply(est_date_error, 1, function(ee) summary(ee[!is.na(ee)]))
+      est_date_error_summary <- rbind(
+        est_date_error_summary, 
+        apply(est_date_error, 1, quantile, c(0.025, 0.975), na.rm = TRUE))
+      true_date_error <- aug_dat_true$D[[g]][error]
+      res <- true_date_error >= est_date_error_summary["2.5%", ] & 
+        true_date_error <= est_date_error_summary["97.5%", ]
+      res <- sum(res) / length(res)
+    } else
+    {
+      res <- NA
+    }
+    return(res)
   })
 }
 

@@ -409,4 +409,5 @@ plot_ROC(ROC_indiv, xlim = c(0, 0.1), ylim = c(0, 1))
 #### examining parameter values ####
 are_true_param_in_95perc_post(MCMCres, theta_true)
 
-
+#### reestimated missing dates ####
+prop_missing_dates_in_95perc_post(MCMCres, aug_dat_true)

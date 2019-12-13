@@ -1231,6 +1231,23 @@ are_true_param_in_95perc_post <- function(MCMCres, theta_true)
   return(res)
 }
 
+prop_missing_dates_in_95perc_post <- function(MCMCres, aug_dat_true)
+{
+  sapply(1:length(MCMCres$aug_dat_chain[[1]]$E), function(g){
+    miss <- which(MCMCres$aug_dat_chain[[1]]$E[[g]] == -1)
+    est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
+                            function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
+    est_date_miss_summary <- apply(est_date_miss, 1, summary)
+    est_date_miss_summary <- rbind(
+      est_date_miss_summary, 
+      apply(est_date_miss, 1, quantile, c(0.025, 0.975)))
+    true_date_miss <- aug_dat_true$D[[g]][miss]
+    res <- true_date_miss >= est_date_miss_summary["2.5%", ] & 
+      true_date_miss <= est_date_miss_summary["97.5%", ]
+    return(sum(res) / length(res))
+  })
+}
+
 check_not_all_missing <- function(obs_dat)
 {
   problem <- lapply(1:length(obs_dat), function(g) 

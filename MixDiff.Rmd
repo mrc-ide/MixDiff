@@ -510,19 +510,13 @@ IS CORRECTLY CALCULATED IE RESTRICTED TO THOSE WITH AT LEAST TWO RECORDED DATES
 
 ### Estimation of the missing and erroneously recorded dates
 
-TO DO ?!?! AND DESCRIBE
 PROPOSED MEASURES (NOT OBVIOUS AS DISCRETE VARAIBLES...): 
 for each simulation: 
-2) proportion of missing dates (respectively erroneous dates identified as such 
+1) proportion of missing dates (respectively erroneous dates identified as such 
 with 50% threshold for posterior support for error) for which the true date is 
 within the 95% credible interval of the corresponding augmented date. 
-3) correlation coefficient / R2 / other measures of the residual between the
-mode of the posterior augmented date and the true date
-4) log-score: average logposterior probability of the true date (close to 0 
-means the model is doing a great job) - issue if model is not doing well for 
-some dates --> there will be some -inf values...
-
-TO DO: remove from datasets individuals with less than 2 dates recorded. 
+2) residual between the inferred augmented date (for a given threshold for
+support) and the true date
 
 ### TO DO AND WRITE: how do delay distributions differ from those estimated from the raw data - especially when high error rate
 

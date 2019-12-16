@@ -421,4 +421,32 @@ prop_erroneous_dates_in_95perc_post(MCMCres, aug_dat_true, inferred_all_threshol
 prop_erroneous_dates_in_95perc_post(MCMCres, aug_dat_true, inferred_all_thresholds[["0.95"]])
 error_erroneous_dates(MCMCres, aug_dat_true, inferred_all_thresholds[["0.95"]])
 
+### compare naively estimated delays to those from MixDiff
+naive_delays <- naive_estim_delays(obs_dat, index_dates)
+true_delays_this_dataset <- naive_estim_delays(aug_dat_true$D, index_dates)
+
+mu_true <- true_delays_this_dataset$mu
+#mu_true <- theta_true$mu
+mu_naive <- naive_delays$mu
+mu_mixdiff <- lapply(MCMCres_summary$theta$mu, function(e) e[1,])
+
+par(mfrow = c(1, 2))
+xlim <- c(0, max(c(unlist(mu_true), unlist(mu_naive), unlist(mu_mixdiff)))*1.1)
+plot(unlist(mu_true), unlist(mu_naive), col = "red", pch = 19, xlim = xlim, ylim = xlim)
+points(unlist(mu_true), unlist(mu_mixdiff), col = "darkgreen", pch = 19)
+abline(0, 1)
+cor(unlist(mu_true), unlist(mu_naive))^2
+cor(unlist(mu_true), unlist(mu_mixdiff))^2
+
+CV_true <- true_delays_this_dataset$CV
+CV_true <- theta_true$CV
+CV_naive <- naive_delays$CV
+CV_mixdiff <- lapply(MCMCres_summary$theta$CV, function(e) e[1,])
+
+xlim <- c(0, max(c(unlist(CV_true), unlist(CV_naive), unlist(CV_mixdiff)))*1.1)
+plot(unlist(CV_true), unlist(CV_naive), col = "red", pch = 19, xlim = xlim, ylim = xlim)
+points(unlist(CV_true), unlist(CV_mixdiff), col = "darkgreen", pch = 19)
+abline(0, 1)
+cor(unlist(CV_true), unlist(CV_naive))^2
+cor(unlist(CV_true), unlist(CV_mixdiff))^2
 

@@ -1380,3 +1380,38 @@ check_at_least_two_dates_per_indiv <- function(obs_dat)
     stop("Your dataset contains individuals with only missing dates or only one recorded date. Please discard them. ")
   }
 }
+
+#' Compute the naive estimated delays (for comparison with those from MixDiff)
+#' 
+#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param index_dates A list containing indications on which delays to consider in the simulation. 
+#' @return A list of two components coresponding to the reestimated mean and CV of the relevant delays in each group. 
+#' @import epitrix
+#' @export
+#' @examples
+#' # TO WRITE
+naive_estim_delays <- function(obs_dat, index_dates)
+{
+  res <- list()
+  res$mu <- list()
+  res$CV <- list()
+  for(g in 1:length(index_dates))
+  {
+    res$mu[[g]] <- vector()
+    res$CV[[g]] <- vector()
+    for(j in 1:ncol(index_dates[[g]]))
+    {
+      x <- obs_dat[[g]][,index_dates[[g]][,j][2]] - 
+        obs_dat[[g]][,index_dates[[g]][,j][1]]
+      # remove NAs
+      x <- as.numeric(x[which(!is.na(x))])
+      # need to remove negative values
+      x <- x[x>=0]
+      tmp <- fit_disc_gamma(x, w = 0.5)
+      res$mu[[g]][j] <- tmp$mu
+      res$CV[[g]][j] <- tmp$cv
+    }
+  }
+  return(res)
+}
+

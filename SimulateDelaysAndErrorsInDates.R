@@ -150,7 +150,13 @@ for(name_place_to_save in 1:100)
 {
   
   D <- simul_true_data(theta, n_per_group, range_dates, index_dates_names)
-  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates_names, simul_error = TRUE, remove_allNA_indiv=TRUE)
+  # D_with_error <- simul_true_data(theta, n_per_group, range_dates, 
+  #                                 index_dates_names, simul_error = TRUE, 
+  #                                 remove_allNA_indiv=TRUE)
+  D_with_error <- simul_true_data(theta, n_per_group, range_dates, 
+                                  index_dates_names, simul_error = TRUE, 
+                                  remove_allNA_indiv = TRUE, 
+                                  remove_indiv_at_most_one_date_recorded=TRUE)
   tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
   obs_dat <- tmp$obs_dat
   aug_dat <- list(D=tmp$D, E=tmp$E)

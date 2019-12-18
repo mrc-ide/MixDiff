@@ -5,7 +5,8 @@
 \title{Simulates data; see details}
 \usage{
 simul_true_data(theta, n_per_group, range_dates, index_dates,
-  simul_error = FALSE, remove_allNA_indiv = FALSE,
+  delay_dist = c("gamma", "weibull", "lognormal"), simul_error = FALSE,
+  remove_allNA_indiv = FALSE,
   remove_indiv_at_most_one_date_recorded = FALSE)
 }
 \arguments{
@@ -16,6 +17,8 @@ simul_true_data(theta, n_per_group, range_dates, index_dates,
 \item{range_dates}{Range of integers in which to draw the first set of dates (these will ve drawn unifromly in that range)}
 
 \item{index_dates}{A list containing indications on which delays to consider in the simulation, see details.}
+
+\item{delay_dist}{One of "gamma" (the default), "weibull" or "lognormal", used to draw the delays from}
 
 \item{simul_error}{A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 

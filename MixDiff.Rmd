@@ -390,7 +390,7 @@ simulation scenarios are summarised in `r t.ref("simul_tab")`.
 | Simulation scenario        | Group size | Mean delays                     | CV delays                       | Parametric form delays | Missingness rate | Error rate | Error model    |
 |--------------------        | ---------- | -----------                     | ---------                       | ---------------------- | ---------------- | ---------- | -----------    |
 | Baseline                   | 100        | as in in `r t.ref("simul_tab")` | as in in `r t.ref("simul_tab")` | Discretised Gamma      | $20\%$           | $5\%$      | Typo challenge |       
-| Low missingess             | *          | *                               | *                               | *                      | $5\%$            | $2\%$      | *              |       
+| Low missingess             | *          | *                               | *                               | *                      | $5\%$            | *          | *              |       
 | Low error                  | *          | *                               | *                               | *                      | *                | $2\%$      | *              |       
 | High error                 | *          | *                               | *                               | *                      | *                | $20\%$     | *              |
 | Lognormal delays           | *          | *                               | *                               | Discretised Lognormal  | *                | *          | *              |

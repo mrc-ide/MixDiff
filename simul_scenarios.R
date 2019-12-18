@@ -101,4 +101,72 @@ simul_scenarios[["hardly_variable_delays"]]$sd_delays <-
   simul_scenarios[["hardly_variable_delays"]]$mean_delays * 
   simul_scenarios[["hardly_variable_delays"]]$CV_delays
 
+### make theta for each scenario
 
+default_index_dates <- function()
+{
+  index_dates <- list(matrix(c(1, 2), nrow=2), 
+                      cbind(c(1, 2), c(1, 3)), 
+                      cbind(c(1, 2), c(2, 3), c(1, 4)), 
+                      cbind(c(1, 2), c(2, 3), c(1, 4)) )
+  names(index_dates) <- c("NoHosp-Alive", "NoHosp-Dead", "Hosp-Alive", "Hosp-Dead")
+  index_dates
+}
+
+default_index_dates_names <- function()
+{
+  index_dates_names <- index_dates
+  index_dates_names[["NoHosp-Alive"]][,1] <- c("onset", "report")
+  index_dates_names[["NoHosp-Dead"]][,1] <- c("onset", "death")
+  index_dates_names[["NoHosp-Dead"]][,2] <- c("onset", "report")
+  index_dates_names[["Hosp-Alive"]][,1] <- c("onset", "hosp.")
+  index_dates_names[["Hosp-Alive"]][,2] <- c("hosp.", "discharge")
+  index_dates_names[["Hosp-Alive"]][,3] <- c("onset", "report")
+  index_dates_names[["Hosp-Dead"]][,1] <- c("onset", "hosp.")
+  index_dates_names[["Hosp-Dead"]][,2] <- c("hosp.", "death")
+  index_dates_names[["Hosp-Dead"]][,3] <- c("onset", "report")
+  
+  for(g in 1:length(index_dates_names))
+    colnames(index_dates_names[[g]]) <- paste("delay", 1:ncol(index_dates_names[[g]]), sep = "_")
+  
+  index_dates_names
+}
+
+set_up_simul <- function(scenario_name, simul_scenarios, n_groups = 4, 
+                         n_dates = c(2, 3, 4, 4),
+                         range_dates = date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("31/12/2014", "%d/%m/%Y"))),
+                         index_dates = default_index_dates(),
+                         index_dates_names = default_index_dates_names())
+{
+  
+  theta <- list()
+  theta$prop_missing_data <- simul_scenarios[[scenario_name]]$prop_missing_data
+  theta$zeta <-  simul_scenarios[[scenario_name]]$prop_error
+  theta$mu <- list(simul_scenarios[[scenario_name]]$mean_delays$onset_2_report, 
+                   c(simul_scenarios[[scenario_name]]$mean_delays$onset_2_hosp + simul_scenarios[[scenario_name]]$mean_delays$hosp_2_death, simul_scenarios[[scenario_name]]$mean_delays$onset_2_report), 
+                   c(simul_scenarios[[scenario_name]]$mean_delays$onset_2_hosp, simul_scenarios[[scenario_name]]$mean_delays$hosp_2_disch, simul_scenarios[[scenario_name]]$mean_delays$onset_2_report), 
+                   c(simul_scenarios[[scenario_name]]$mean_delays$onset_2_hosp, simul_scenarios[[scenario_name]]$mean_delays$hosp_2_death, simul_scenarios[[scenario_name]]$mean_delays$onset_2_report))
+  theta$CV <- list(simul_scenarios[[scenario_name]]$CV_delays$onset_2_report, 
+                   c(simul_scenarios[[scenario_name]]$CV_delays$onset_2_hosp + simul_scenarios[[scenario_name]]$CV_delays$hosp_2_death, simul_scenarios[[scenario_name]]$CV_delays$onset_2_report), 
+                   c(simul_scenarios[[scenario_name]]$CV_delays$onset_2_hosp, simul_scenarios[[scenario_name]]$CV_delays$hosp_2_disch, simul_scenarios[[scenario_name]]$CV_delays$onset_2_report), 
+                   c(simul_scenarios[[scenario_name]]$CV_delays$onset_2_hosp, simul_scenarios[[scenario_name]]$CV_delays$hosp_2_death, simul_scenarios[[scenario_name]]$CV_delays$onset_2_report))
+  n_per_group <- rep(simul_scenarios[[scenario_name]]$group_size, n_groups)
+  
+  index_dates_order <- compute_index_dates_order(index_dates)
+  
+  res <- list(theta = theta, n_per_group = n_per_group, range_dates = range_dates, index_dates_names = index_dates_names)
+  return(res)
+}
+
+### baseline scenario
+scenario_name <- "baseline" 
+scenario_param <- set_up_simul(scenario_name, simul_scenarios)
+# make one simulation 
+D <- simul_true_data(scenario_param$theta, scenario_param$n_per_group, scenario_param$range_dates, scenario_param$index_dates_names)
+D_with_error <- simul_true_data(scenario_param$theta, scenario_param$n_per_group, scenario_param$range_dates, 
+                                scenario_param$index_dates_names, simul_error = TRUE, 
+                                remove_allNA_indiv = TRUE, 
+                                remove_indiv_at_most_one_date_recorded = TRUE)
+tmp <- simul_obs_dat(D$true_dat, scenario_param$theta, scenario_param$range_dates)
+obs_dat <- tmp$obs_dat
+aug_dat <- list(D=tmp$D, E=tmp$E)

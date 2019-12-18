@@ -8,6 +8,7 @@
 #' @param n_per_group Vector containing the number of individuals to simulate in each group
 #' @param range_dates Range of integers in which to draw the first set of dates (these will ve drawn unifromly in that range)
 #' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
+#' @param delay_dist One of "gamma" (the default), "weibull" or "lognormal", used to draw the delays from
 #' @param simul_error A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @param remove_allNA_indiv A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @param remove_indiv_at_most_one_date_recorded  A boolean stating whether individuals with at most one recorded date should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
@@ -53,8 +54,13 @@
 #' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE, remove_allNA_indiv=FALSE, remove_indiv_at_most_one_date_recorded=FALSE)
+simul_true_data <- function(theta, n_per_group, range_dates, index_dates, 
+                            delay_dist = c("gamma", "weibull", "lognormal"),
+                            simul_error=FALSE, 
+                            remove_allNA_indiv=FALSE, 
+                            remove_indiv_at_most_one_date_recorded=FALSE)
 {
+  delay_dist <- match.arg(delay_dist)
   index_dates <- process_index_dates(index_dates)
   column_names <- lapply(index_dates, function(idx) unique(as.vector(idx)))
   index_dates <- convert_index_dates_to_numeric(index_dates, obs_dat = NULL)
@@ -65,8 +71,19 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_
     D[[g]][,1] <- sample(seq(range_dates[1],range_dates[2],1), n_per_group[g], replace = TRUE)
     for(j in seq_len(ncol(index_dates[[g]])) )
     {
-      params <- find_params_gamma(theta$mu[[g]][j], CV=theta$CV[[g]][j])
-      delay <- rgamma(n_per_group[g], shape=params[1], scale=params[2])
+      params_gamma <- find_params_gamma(theta$mu[[g]][j], CV=theta$CV[[g]][j])
+      params_weibull <- find_params_weibull(theta$mu[[g]][j], CV=theta$CV[[g]][j])
+      params_lognormal <- find_params_lognormal(theta$mu[[g]][j], CV=theta$CV[[g]][j])
+      if(delay_dist == "gamma")
+      {
+        delay <- rgamma(n_per_group[g], shape=params_gamma[1], scale=params_gamma[2])
+      } else if(delay_dist == "weibull")
+      {
+        delay <- rweibull(n_per_group[g], shape=params_weibull[1], scale=params_weibull[2])
+      } else if(delay_dist == "lognormal")
+      {
+        delay <- rlnorm(n_per_group[g], meanlog=params_lognormal[1], sdlog=params_lognormal[2])
+      }
       D[[g]][,index_dates[[g]][2,j]]  <- D[[g]][,index_dates[[g]][1,j]] + round(delay)
     }
     colnames(D[[g]]) <- column_names[[g]]

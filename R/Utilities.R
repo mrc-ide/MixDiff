@@ -58,7 +58,7 @@ find_params_beta <- function(mean, var) # function to determine parameters of th
 #' 
 #' @param mean Mean of the gamma distribution
 #' @param sigma Standard deviation of the gamma distribution
-#' @param CV An alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
+#' @param CV An alternative way to specify the standard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
 #' @return A vector containing the shape and scale parameters of the gamma distribution.
 #' @export
 #' @examples
@@ -71,6 +71,48 @@ find_params_gamma <- function(mean, sigma=mean*CV, CV) # function to determine p
   shape <- (mean/sigma)^2
   scale <- sigma^2/(mean)
   res <- c(shape, scale)
+  names(res) <- c("shape", "scale")
+  return(res)
+}
+
+#' Finds the parameters of the lognormal distribution, given a mean and standard deviation
+#' 
+#' @param mean Mean of the distribution
+#' @param sigma Standard deviation of the distribution
+#' @param CV An alternative way to specify the standard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
+#' @return A vector containing the meanlog and sdlog parameters of the lognormal distribution.
+#' @export
+#' @examples
+#' param_lognormal <- find_params_lognormal(mean=0.1, sigma=0.05)
+#' sample_lognormal <- rlnorm(1000, meanlog=param_lognormal[1], sdlog=param_lognormal[2])
+#' mean(sample_lognormal) # compare to 0.1
+#' sd(sample_lognormal) # compare to 0.05
+find_params_lognormal <- function(mean, sigma=mean*CV, CV) # function to determine parameters of the lognormal distribution corresponding to a given mean and std
+{
+  sdlog <- sqrt(log(sigma^2/(mean^2) + 1))
+  meanlog = log(mean) - sdlog^2 / 2
+  res <- c(meanlog, sdlog)
+  names(res) <- c("meanlog", "sdlog")
+  return(res)
+}
+
+#' Finds the parameters of the Weibull distribution, given a mean and standard deviation
+#' 
+#' @param mean Mean of the distribution
+#' @param sigma Standard deviation of the distribution
+#' @param CV An alternative way to specify the standard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
+#' @return A vector containing the shape and scale parameters of the Weibull distribution.
+#' @import mixdist
+#' @export
+#' @examples
+#' param_weibull <- find_params_weibull(mean=0.1, sigma=0.05)
+#' sample_weibull <- rweibull(1000, shape=param_weibull[1], scale=param_weibull[2])
+#' mean(sample_weibull) # compare to 0.1
+#' sd(sample_weibull) # compare to 0.05
+find_params_weibull <- function(mean, sigma=mean*CV, CV) # function to determine parameters of the Weibull distribution corresponding to a given mean and std
+{
+  tmp <- weibullpar(mean, sigma)
+  res <- c(tmp$shape, tmp$scale)
   names(res) <- c("shape", "scale")
   return(res)
 }

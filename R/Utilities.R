@@ -1289,6 +1289,10 @@ prop_missing_dates_in_95perc_post <- function(MCMCres, aug_dat_true)
     {
       est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
                               function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
+      if(length(miss) == 1)
+      {
+        est_date_miss <- t(as.data.frame(est_date_miss))
+      } 
       est_date_miss_summary <- apply(est_date_miss, 1, summary)
       est_date_miss_summary <- rbind(
         est_date_miss_summary, 
@@ -1321,6 +1325,10 @@ error_missing_dates <- function(MCMCres, aug_dat_true)
     {
       est_date_miss <- sapply(1:length(MCMCres$aug_dat_chain), 
                               function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][miss])
+      if(length(miss) == 1)
+      {
+        est_date_miss <- t(as.data.frame(est_date_miss))
+      } 
       est_date_miss_mode <- apply(est_date_miss, 1, my_mode)
       true_date_miss <- aug_dat_true$D[[g]][miss]
       res <- true_date_miss - est_date_miss_mode
@@ -1394,6 +1402,10 @@ error_erroneous_dates <- function(MCMCres, aug_dat_true, inferred)
                                  tmp_res[MCMCres$aug_dat_chain[[e]]$E[[g]][error] != 1] <- NA
                                  tmp_res
                                })
+      if(length(error) == 1)
+      {
+        est_date_error <- t(as.data.frame(est_date_error))
+      } 
       est_date_error_mode <- apply(est_date_error, 1, my_mode)
       true_date_error <- aug_dat_true$D[[g]][error]
       res <- true_date_error - est_date_error_mode

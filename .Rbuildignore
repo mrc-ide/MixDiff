@@ -5,6 +5,8 @@ SimulatedData$
 EstimateDelaysAndErrorsInDates.R
 SimulateDelaysAndErrorsInDates.R
 process_ebola_data.R
+shared.R
+simul_scenarios.R
 header.tex
 MixDiff.pdf
 MixDiff.Rmd

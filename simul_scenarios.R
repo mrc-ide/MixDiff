@@ -154,7 +154,7 @@ set_up_simul <- function(scenario_name, simul_scenarios, n_groups = 4,
   
   index_dates_order <- compute_index_dates_order(index_dates)
   
-  res <- list(theta = theta, n_per_group = n_per_group, range_dates = range_dates, index_dates_names = index_dates_names)
+  res <- list(theta = theta, n_per_group = n_per_group, range_dates = range_dates, index_dates_names = index_dates_names, delay_dist = simul_scenarios[[scenario_name]]$parametric_delays)
   return(res)
 }
 
@@ -162,7 +162,7 @@ set_up_simul <- function(scenario_name, simul_scenarios, n_groups = 4,
 scenario_name <- "baseline" 
 scenario_param <- set_up_simul(scenario_name, simul_scenarios)
 # make one simulation 
-D <- simul_true_data(scenario_param$theta, scenario_param$n_per_group, scenario_param$range_dates, scenario_param$index_dates_names)
+D <- simul_true_data(scenario_param$theta, scenario_param$n_per_group, scenario_param$range_dates, scenario_param$index_dates_names, delay_dist = scenario_param$delay_dist)
 D_with_error <- simul_true_data(scenario_param$theta, scenario_param$n_per_group, scenario_param$range_dates, 
                                 scenario_param$index_dates_names, simul_error = TRUE, 
                                 remove_allNA_indiv = TRUE, 

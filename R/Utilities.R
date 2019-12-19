@@ -1353,6 +1353,10 @@ prop_erroneous_dates_in_95perc_post <- function(MCMCres, aug_dat_true, inferred)
                                  tmp_res[MCMCres$aug_dat_chain[[e]]$E[[g]][error] != 1] <- NA
                                  tmp_res
                                })
+      if(length(error) == 1)
+      {
+        est_date_error <- t(as.data.frame(est_date_error))
+      } 
       est_date_error_summary <- apply(est_date_error, 1, function(ee) summary(ee[!is.na(ee)]))
       est_date_error_summary <- rbind(
         est_date_error_summary, 

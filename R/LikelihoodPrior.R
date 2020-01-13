@@ -10,7 +10,7 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
   indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 0
   indicator_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 1
-  
+  error <- which(indicator_error, arr.ind = TRUE)
   no_error <- which(indicator_no_error, arr.ind = TRUE)
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
@@ -24,20 +24,13 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   #logK <- log(1/as.numeric(diff(range_dates))) + log(((aug_dat$D[[group_idx]][indiv_idx, date_idx][error] >= range_dates[1]) & 
   #                                                      (aug_dat$D[[group_idx]][indiv_idx, date_idx][error] <= range_dates[2])) ) 
   ### this is the more generic formulation
+  
   if (any(indicator_error)) # check if we need this - if we go in this function there SHOULD be an error?
   {
-    for (ii in which(indicator_error, arr.ind = TRUE))
-    {
-      obs <- obs_dat[[group_idx]][indiv_idx, date_idx][ii] - range_dates[1] + 1
-      true <- aug_dat$D[[group_idx]][indiv_idx, date_idx][ii] - range_dates[1] + 1
-      if(true < 0 | true > nrow(date_transition_mat_obs_true_log))
-      {
-        LL[ii] -100000
-      }else
-      {
-        LL[ii]  <- date_transition_mat_obs_true_log[obs, true]
-      }
-    }
+    obs <- obs_dat[[group_idx]][indiv_idx, date_idx][error] - range_dates[1] + 1
+    true <- aug_dat$D[[group_idx]][indiv_idx, date_idx][error] - range_dates[1] + 1
+    LL_inf <- true < 0 | true > nrow(date_transition_mat_obs_true_log)
+    LL[error] <- sapply(1:length(LL_inf), function(e) if(LL_inf[e]) -100000 else date_transition_mat_obs_true_log[obs[e], true[e]])
   }
   # K <- date_transition_mat[obs, true] 
   ####

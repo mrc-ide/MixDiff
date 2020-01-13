@@ -18,7 +18,7 @@ RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
-\item{p_error}{A list with 6 weights defining a multinomial model -see default value. 
+\item{p_error}{A list with 5 weights defining a multinomial model -see default value. 
 The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
 If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
 

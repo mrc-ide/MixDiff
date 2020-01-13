@@ -24,7 +24,7 @@ simul_true_data(theta, n_per_group, range_dates, index_dates,
 
 \item{simul_error}{A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 
-\item{p_error}{A list with 6 weights defining a multinomial model -see default value. 
+\item{p_error}{A list with 5 weights defining a multinomial model -see default value. 
 The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
 If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
 

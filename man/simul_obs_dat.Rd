@@ -16,7 +16,7 @@ simul_obs_dat(D, theta, range_dates, p_error = list(external_swap = 0.04,
 
 \item{range_dates}{Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)}
 
-\item{p_error}{A list with 6 weights defining a multinomial model -see default value. 
+\item{p_error}{A list with 5 weights defining a multinomial model -see default value. 
 The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
 If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
 

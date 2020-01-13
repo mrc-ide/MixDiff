@@ -69,6 +69,7 @@ RunMCMC <- function(obs_dat,
                     tol = 1e-6,
                     seed = NULL)
 {
+  #browser()
   n_dates <- sapply(obs_dat, ncol )
   n_groups <- length(n_dates)
   

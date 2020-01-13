@@ -5,14 +5,36 @@
 # probability of making a specific observation
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL, date_transition_mat_obs_true_log)
 {
+  # print(paste0("Function LL_observation_term_by_group_delay_and_indiv: group: ", group_idx, 
+  #              "; date: ", date_idx,
+  #              "; individual: ", indiv_idx))
+  # if(group_idx == 3 & date_idx == 1 & indiv_idx == 27)
+  # {
+  #   #browser()
+  #   print(paste0("Function LL_observation_term_by_group_delay_and_indiv: group: ", group_idx,
+  #                "; date: ", date_idx,
+  #                "; individual: ", indiv_idx))
+  # }
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   LL <- matrix(0, length(indiv_idx), length(date_idx)) # 0 by default for neutral loglikelihood - will be left as 0 for missing values where no observation
+  # if(group_idx == 3 & date_idx == 1 & indiv_idx == 27)
+  # {
+  #   print(paste0("LL: " ,LL))
+  # }
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
   indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 0
   indicator_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 1
   error <- which(indicator_error, arr.ind = TRUE)
   no_error <- which(indicator_no_error, arr.ind = TRUE)
+  
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
+  # if(group_idx == 3 & date_idx == 1 & indiv_idx == 27)
+  # {
+  #   print(paste0("LL: " ,LL))
+  #   print(paste0("error: " ,error))
+  #   print(paste0("no_error: " ,no_error))
+  # }
+  
   ### if E=1, what is the relationship between true date D and observed date y
   # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
   ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
@@ -29,11 +51,22 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat
   {
     obs <- obs_dat[[group_idx]][indiv_idx, date_idx][error] - range_dates[1] + 1
     true <- aug_dat$D[[group_idx]][indiv_idx, date_idx][error] - range_dates[1] + 1
-    LL_inf <- true < 0 | true > nrow(date_transition_mat_obs_true_log)
+    LL_inf <- true < 1 | true > nrow(date_transition_mat_obs_true_log)
     LL[error] <- sapply(1:length(LL_inf), function(e) if(LL_inf[e]) -100000 else date_transition_mat_obs_true_log[obs[e], true[e]])
+    # if(group_idx == 3 & date_idx == 1 & indiv_idx == 27)
+    # {
+    #   print(paste0("obs: " ,obs))
+    #   print(paste0("true: " ,true))
+    #   print(paste0("LL_inf: " ,LL_inf))
+    #   print(paste0("LL: " ,LL))
+    #   print(paste0("error: " ,error))
+    #   print(paste0("no_error: " ,no_error))
+    # }
   }
+  
   # K <- date_transition_mat[obs, true] 
   ####
+  #print(paste0("LL: ",LL))
   LL[is.infinite(LL)] <- -100000 # arbitrarily small number to avoid -Inf
   
   return(LL)

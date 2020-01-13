@@ -360,7 +360,8 @@ RunMCMC <- function(obs_dat,
   ### Return list of outputs of interest ###
   ###############################################
   
-  res <- list(theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob)
+  res <- list(theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob,
+              date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
   
   return(res)
 }

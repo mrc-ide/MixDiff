@@ -126,6 +126,28 @@ hyperparameters <- list(
   mean_mean_delay=100, 
   mean_CV_delay=100) # AT THE MOMENT NOT USED 
 
+
+###############################################
+### error model  ###
+###############################################
+
+ERROR_MODEL <- "random" # "typo_challenge"
+if(ERROR_MODEL == "typo_challenge")
+{
+  p_error <- list(external_swap=.04,
+                  internal_swap=.005,
+                  neighbour_substitution=0.05,
+                  distant_substitution=0.02,
+                  random=0.01)
+} else if(ERROR_MODEL == "random")
+{
+  p_error <- list(external_swap=0, 
+                  internal_swap=0,
+                  neighbour_substitution=0,
+                  distant_substitution=0,
+                  random=1)
+}
+
 ###############################################
 ### Run the MCMC  ###
 ###############################################
@@ -137,7 +159,7 @@ system.time({
                      MCMC_settings,
                      hyperparameters,
                      index_dates = index_dates_names, 
-                     p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), 
+                     p_error = p_error, 
                      seed = 2)
 })
 #Rprof(NULL)
@@ -161,7 +183,8 @@ if(!USE_SIMULATED_DATA)
   ext2 <- paste0(ext, "_",
                  MCMC_settings$chain_properties$n_iter, "iter_",
                  MCMC_settings$chain_properties$burnin, "burnt_",
-                 MCMC_settings$chain_properties$record_every, "thin_")
+                 MCMC_settings$chain_properties$record_every, "thin_",
+                 ERROR_MODEL,"_error_model")
   saveRDS(MCMCres, paste0("EbolaData/ResultsEstimation_EbolaData_",ext2,".rds"))
 }else
 {
@@ -172,7 +195,8 @@ if(!USE_SIMULATED_DATA)
   ext2 <- paste0(ext, "_",
                  MCMC_settings$chain_properties$n_iter, "iter_",
                  MCMC_settings$chain_properties$burnin, "burnt_",
-                 MCMC_settings$chain_properties$record_every, "thin_")
+                 MCMC_settings$chain_properties$record_every, "thin_",
+                 ERROR_MODEL,"_error_model")
   saveRDS(MCMCres, paste0(where_to_load_from,"/ResultsEstimation_SimulatedData_",ext2,".rds"))
 }
 
@@ -224,11 +248,11 @@ dev.off()
 ### plot estimated delays ###
 pdf(paste0(where_to_load_from,"/PosteriorDelayDistrPlots_",ext,".pdf"), width=14, height=7)
 plot_estimated_continuous_delay_distributions(MCMCres, 
-                                                          theta_true=theta_true, 
-                                                          index_dates = index_dates_names, 
-                                                          time_unit = "days",
-                                                          max_quantile_to_plot = 0.9,
-                                                          dt = 0.01) 
+                                              theta_true=theta_true, 
+                                              index_dates = index_dates_names, 
+                                              time_unit = "days",
+                                              max_quantile_to_plot = 0.9,
+                                              dt = 0.01) 
 dev.off()
 
 ###############################################
@@ -250,11 +274,13 @@ summary(aug_dat_true$D[[3]][,4] - aug_dat_true$D[[3]][,1])
 
 ### comparing the posterior distribution of true aug_dat and parameters to posterior reached by MCMC chain
 
+date_transition_mat_obs_true_log <- MCMCres$date_transition_mat_obs_true_log
+
 # posterior of true aug data and true parameters
-lposterior_total(aug_dat_true, theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+lposterior_total(aug_dat_true, theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
 
 # posterior of current aug data and true parameters
-lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], theta_true, obs_dat, hyperparameters, index_dates, range_dates=NULL, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
 #lposterior_total(MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]], MCMCres$theta_chain[[length(MCMCres$theta_chain)]], obs_dat, hyperparameters, index_dates, range_dates=NULL)
 
 # highest posterior reached by MCMC chain

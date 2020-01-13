@@ -10,6 +10,9 @@
 #' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
 #' @param delay_dist One of "gamma" (the default), "weibull" or "lognormal", used to draw the delays from
 #' @param simul_error A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
+#' @param p_error A list with 6 weights defining a multinomial model -see default value. 
+#' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+#' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
 #' @param remove_allNA_indiv A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @param remove_indiv_at_most_one_date_recorded  A boolean stating whether individuals with at most one recorded date should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @details \code{theta} should be a list containing:
@@ -57,6 +60,7 @@
 simul_true_data <- function(theta, n_per_group, range_dates, index_dates, 
                             delay_dist = c("gamma", "weibull", "lognormal"),
                             simul_error=FALSE, 
+                            p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), ### TO DO: change this to be the values of typo challenge OR a uniform random error
                             remove_allNA_indiv=FALSE, 
                             remove_indiv_at_most_one_date_recorded=FALSE)
 {
@@ -93,7 +97,8 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates,
   
   if(simul_error)
   {
-    observed_D <- simul_obs_dat(D, theta, range_dates, remove_allNA_indiv=remove_allNA_indiv, remove_indiv_at_most_one_date_recorded=remove_indiv_at_most_one_date_recorded)
+    observed_D <- simul_obs_dat(D, theta, range_dates, p_error = p_error,
+                                remove_allNA_indiv=remove_allNA_indiv, remove_indiv_at_most_one_date_recorded=remove_indiv_at_most_one_date_recorded)
     return(list(true_dat=observed_D$D, obs_dat=observed_D$obs_dat, E=observed_D$E))
   }else{
     return(list(true_dat=D, obs_dat=NULL, E=NULL))
@@ -105,6 +110,9 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates,
 #' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
 #' @param theta A list of parameters; see details.
 #' @param range_dates Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)
+#' @param p_error A list with 6 weights defining a multinomial model -see default value. 
+#' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+#' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
 #' @param remove_allNA_indiv A boolean stating whether individuals with only NA dates should be removed or not. 
 #' @param remove_indiv_at_most_one_date_recorded  A boolean stating whether individuals with at most one recorded date should be removed or not.
 
@@ -143,18 +151,38 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates,
 #' ### (some individuals with only missing data do not appear in the observed dataset)
 #' nrow(D$true_dat[[1]])
 #' nrow(observed_D$obs_dat[[1]])
-simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=TRUE, remove_indiv_at_most_one_date_recorded=TRUE)
+simul_obs_dat <- function(D, theta, range_dates, 
+                          p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), ### TO DO: change this to be the values of typo challenge OR a uniform random error
+                          remove_allNA_indiv=TRUE, 
+                          remove_indiv_at_most_one_date_recorded=TRUE)
 {
   E <- D
   obs_dat <- D
+  # calculate the error matrix - for this we need actual dates not numbers
+  rd <- int_to_date(range_dates)
+  date_space <- seq(rd[1], rd[2], 1)
+  date_transition_mat_obs_true <- calculate_date_matrix(rd[1], rd[2], p_error, log = FALSE)
+  
   for(g in seq_len(length(D)) )
   {
     for(j in seq_len(ncol(D[[g]])) )
     {
+      # draw the error status for each date
       E[[g]][,j] <- sample(c(-1, 1, 0), nrow(D[[g]]), replace=TRUE, prob=c(theta$prop_missing_data, (1-theta$prop_missing_data)*theta$zeta, (1-theta$prop_missing_data)*(1-theta$zeta)))
+      # missing dates
       obs_dat[[g]][E[[g]][,j]==-1,j]  <- NA
+      # correctly recorded dates
       obs_dat[[g]][E[[g]][,j]==0,j]  <- D[[g]][E[[g]][,j]==0,j]
-      obs_dat[[g]][E[[g]][,j]==1,j]  <- sample(seq(range_dates[1], range_dates[2], 1), sum(E[[g]][,j]==1), replace = TRUE) # need to update if change error model
+      # incorrectly recorded dates
+      tmp_true <- int_to_date(D[[g]][E[[g]][,j]==1,j])
+      position_error <- which(E[[g]][,j]==1)
+      if(length(position_error)>0)
+      {
+        obs_dat[[g]][position_error,j]  <- sapply(1:length(position_error), 
+                                                  function(e) 
+                                                    date_to_int(rErrorDate (1, tmp_true[e], date_space, date_transition_mat_obs_true)))
+        # sample(seq(range_dates[1], range_dates[2], 1), sum(E[[g]][,j]==1), replace = TRUE) # need to update if change error model - see code above
+      }
     }
     if(remove_allNA_indiv)
     {

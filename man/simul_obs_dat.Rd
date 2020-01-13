@@ -4,7 +4,9 @@
 \alias{simul_obs_dat}
 \title{Introduces missingness and errors in data}
 \usage{
-simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE,
+simul_obs_dat(D, theta, range_dates, p_error = list(external_swap = 0.04,
+  internal_swap = 0.005, neighbour_substitution = 0.05,
+  distant_substitution = 0.02, random = 0.01), remove_allNA_indiv = TRUE,
   remove_indiv_at_most_one_date_recorded = TRUE)
 }
 \arguments{
@@ -13,6 +15,10 @@ simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE,
 \item{theta}{A list of parameters; see details.}
 
 \item{range_dates}{Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)}
+
+\item{p_error}{A list with 6 weights defining a multinomial model -see default value. 
+The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
 
 \item{remove_allNA_indiv}{A boolean stating whether individuals with only NA dates should be removed or not.}
 

@@ -4,6 +4,9 @@
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see details.
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param p_error A list with 6 weights defining a multinomial model -see default value. 
+#' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+#' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
 #' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @param seed Optional. A numerical value used to fix the random seed. 
 #' @details \code{MCMC_settings} should be a list containing:
@@ -62,6 +65,7 @@ RunMCMC <- function(obs_dat,
                     MCMC_settings,
                     hyperparameters,
                     index_dates,
+                    p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), ### TO DO: change this to be the values of typo challenge OR a uniform random error
                     tol = 1e-6,
                     seed = NULL)
 {
@@ -113,7 +117,13 @@ RunMCMC <- function(obs_dat,
   ### Initalise the MCMC chains ###
   ###############################################
   
-  range_dates <- find_range(obs_dat)
+  range_dates <- find_range(obs_dat) # TO DO: allow flexibility in this - want to potentially increase the range
+  
+  # calculate the error matrix - for this we need actual dates not numbers
+  rd <- int_to_date(range_dates)
+  date_transition_mat_obs_true_log <- calculate_date_matrix(rd[1], rd[2], p_error, log = TRUE)
+  #print("start")
+  #print(date_transition_mat_obs_true_log[1,1])
   
   # to store param values
   curr_theta <- theta
@@ -126,7 +136,7 @@ RunMCMC <- function(obs_dat,
   aug_dat_chain[[1]] <- curr_aug_dat
   
   logpost_chain <- rep(NA, (MCMC_settings$chain_properties$n_iter - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every)
-  logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates)
+  logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
   
   n_accepted_D_moves <- 0
   n_proposed_D_moves <- 0
@@ -157,6 +167,8 @@ RunMCMC <- function(obs_dat,
       print(sprintf("... %d / %d ...", k, MCMC_settings$chain_properties$n_iter))
     }
     
+    #print("before Di")
+    #print(date_transition_mat_obs_true_log[1,1])
     # move some of the D_i
     #print("Move some D_i")
     if(MCMC_settings$moves_switch$D_on)
@@ -166,38 +178,34 @@ RunMCMC <- function(obs_dat,
         #print(paste("group", g))
         for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
-          #print(paste("delay", j))
+          #print(paste("date", j))
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(n_groups_to_update))
           {
             #print(paste("individual", to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))]))
-            tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
+            tmp <- move_Di(to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
                             hyperparameters, 
                             index_dates,
                             range_dates,
+                            date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
                             tol = MCMC_settings$tol) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
             if(tmp$accept==1) 
             {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-              
-              # if accepted move, update zeta
-              # tmp <- move_zeta_gibbs(curr_aug_dat,
-              #                        curr_theta, 
-              #                        obs_dat, 
-              #                        hyperparameters) 
-              # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
         }
       }
     }
     
+    #print("before Ei")
+    #print(date_transition_mat_obs_true_log[1,1])
     # move some of the E_i
     #print("Move some E_i")
     if(MCMC_settings$moves_switch$E_on) 
@@ -220,25 +228,21 @@ RunMCMC <- function(obs_dat,
                             hyperparameters,
                             index_dates,
                             range_dates,
+                            date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
                             tol = MCMC_settings$tol)
             n_proposed_E_moves <- n_proposed_E_moves + 1
             n_accepted_E_moves <- n_accepted_E_moves + tmp$accept
             if(tmp$accept==1)
             {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-              
-              # if accepted move, update zeta
-              # tmp <- move_zeta_gibbs(curr_aug_dat,
-              #                        curr_theta,
-              #                        obs_dat,
-              #                        hyperparameters)
-              # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
         }
       }
     }
     
+    #print("before swap_Ei loop")
+    #print(date_transition_mat_obs_true_log[1,1])
     # swap the E_is that can be swapped (i.e. where exactly one is =1 and exactly one is =0)
     #print("Swap some E_i")
     if(MCMC_settings$moves_switch$swapE_on) 
@@ -250,11 +254,9 @@ RunMCMC <- function(obs_dat,
         #print(candidates_for_swap)
         for(i in candidates_for_swap)
         {
-          # print(paste("individual", i))
-          # if(k == 1 & g == 2 & i == 13)
-          # {
-          #   browser()
-          # }
+          #print(paste("individual", i))
+          #print("before swap_Ei function call")
+          #print(date_transition_mat_obs_true_log[1,1])
           tmp <- swap_Ei(i, g,  
                          curr_aug_dat,
                          curr_theta, 
@@ -262,19 +264,13 @@ RunMCMC <- function(obs_dat,
                          hyperparameters, 
                          index_dates,
                          range_dates,
+                         date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
                          tol = MCMC_settings$tol)
           n_proposed_swapE_moves <- n_proposed_swapE_moves + 1
           n_accepted_swapE_moves <- n_accepted_swapE_moves + tmp$accept
           if(tmp$accept==1)
           {
             curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-            
-            # if accepted move, update zeta
-            # tmp <- move_zeta_gibbs(curr_aug_dat,
-            #                        curr_theta,
-            #                        obs_dat,
-            #                        hyperparameters)
-            # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
           }
         }
       }
@@ -343,7 +339,7 @@ RunMCMC <- function(obs_dat,
       idx <- (k - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every+1
       theta_chain[[idx]] <- curr_theta
       aug_dat_chain[[idx]] <- curr_aug_dat
-      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
+      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
     }
   }
   

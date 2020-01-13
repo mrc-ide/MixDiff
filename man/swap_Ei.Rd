@@ -7,7 +7,7 @@
 swap_Ei(i, group_idx, curr_aug_dat, theta, obs_dat, hyperparameters,
   index_dates, range_dates = NULL,
   index_dates_order = compute_index_dates_order(index_dates),
-  tol = 1e-06)
+  date_transition_mat_obs_true_log, tol = 1e-06)
 }
 \arguments{
 \item{i}{The index of the individual for whom augmented data should be moved}
@@ -27,6 +27,8 @@ swap_Ei(i, group_idx, curr_aug_dat, theta, obs_dat, hyperparameters,
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.}
 
 \item{index_dates_order}{A list of same lenght as index_dates, containing indications on ordering of dates for each group - see \code{\link{compute_index_dates_order}}.}
+
+\item{date_transition_mat_obs_true_log}{A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)}
 
 \item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
 }

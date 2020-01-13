@@ -19,6 +19,7 @@
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @param date_transition_mat_obs_true_log A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)
 #' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @details \code{theta} should be a list containing:
 #' \itemize{
@@ -58,8 +59,13 @@ move_Di <- function(i, group_idx, date_idx,
                     hyperparameters, 
                     index_dates,
                     range_dates = NULL,
+                    date_transition_mat_obs_true_log,
                     tol = 1e-6) 
 {
+  # if(i == 80 & group_idx == 2 & date_idx == 1)
+  # {
+  #   browser()
+  # }
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
   # draw proposed value for D using one of the delays
@@ -92,13 +98,15 @@ move_Di <- function(i, group_idx, date_idx,
     
     # calculates probability of acceptance
     delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-    ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-      LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+    ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+      LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) 
     different_E <- proposed_aug_dat$E[[group_idx]][i,date_idx]!=curr_aug_dat$E[[group_idx]][i,date_idx]
     if(any(different_E)) # only need to look at the error term if some of the E have changed
     {
-      ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
-        LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
+      ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) +
+        LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+        LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
+        LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
     }
     for(d in delay_idx)
       ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates) - 
@@ -195,6 +203,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
                                                 hyperparameters, 
                                                 index_dates,
                                                 range_dates = NULL, 
+                                                date_transition_mat_obs_true_log,
                                                 tol = 1e-6)
 {
   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
@@ -220,8 +229,8 @@ compute_p_accept_move_from_E0_to_E1 <- function(i, group_idx, date_idx,
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) 
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
     LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
@@ -255,7 +264,8 @@ propose_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
                                        obs_dat, 
                                        hyperparameters, 
                                        index_dates,
-                                       range_dates)
+                                       range_dates, 
+                                       date_transition_mat_obs_true_log)
 {
   
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i,date_idx]
@@ -272,6 +282,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
                                                 hyperparameters, 
                                                 index_dates,
                                                 range_dates, 
+                                                date_transition_mat_obs_true_log,
                                                 tol = 1e-6)
 {
   
@@ -297,8 +308,8 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) 
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
     LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
@@ -331,6 +342,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i, group_idx, date_idx,
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @param date_transition_mat_obs_true_log A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)
 #' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @details \code{theta} should be a list containing:
 #' \itemize{
@@ -370,6 +382,7 @@ move_Ei <- function(i, group_idx, date_idx,
                     hyperparameters, 
                     index_dates,
                     range_dates = NULL,
+                    date_transition_mat_obs_true_log,
                     tol = 1e-6) 
 {
   if(length(date_idx)>1)
@@ -423,6 +436,7 @@ move_Ei <- function(i, group_idx, date_idx,
                                                    hyperparameters, 
                                                    index_dates,
                                                    range_dates,
+                                                   date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
                                                    tol = tol)
         
         if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp) 
@@ -458,7 +472,8 @@ move_Ei <- function(i, group_idx, date_idx,
                                                                                 obs_dat, 
                                                                                 hyperparameters, 
                                                                                 index_dates,
-                                                                                range_dates)
+                                                                                range_dates,
+                                                                                date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
       
       tmp <- compute_p_accept_move_from_E1_to_E0(i, group_idx, date_idx, 
                                                  curr_aug_dat, proposed_aug_dat,
@@ -466,7 +481,9 @@ move_Ei <- function(i, group_idx, date_idx,
                                                  obs_dat, 
                                                  hyperparameters, 
                                                  index_dates,
-                                                 range_dates, tol = tol)
+                                                 range_dates, 
+                                                 date_transition_mat_obs_true_log = date_transition_mat_obs_true_log, 
+                                                 tol = tol)
       if(any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp)
       if(p_accept>0) p_accept <- 0
       
@@ -531,6 +548,7 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat)
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
 #' @param index_dates_order A list of same lenght as index_dates, containing indications on ordering of dates for each group - see \code{\link{compute_index_dates_order}}.
+#' @param date_transition_mat_obs_true_log A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)
 #' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
 #' @details \code{theta} should be a list containing:
 #' \itemize{
@@ -573,8 +591,12 @@ swap_Ei <- function(i, group_idx,
                     index_dates,
                     range_dates = NULL, 
                     index_dates_order = compute_index_dates_order(index_dates),
+                    date_transition_mat_obs_true_log,
                     tol = 1e-6) 
 {
+  #print("inside swap_Ei function")
+  #print(date_transition_mat_obs_true_log[1,1])
+  
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
   
   reject <- 0
@@ -606,10 +628,15 @@ swap_Ei <- function(i, group_idx,
                                obs_dat, 
                                hyperparameters, 
                                index_dates,
-                               range_dates)
+                               range_dates,
+                               date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
   
   # for the correction factor
   log_prob_move <- 0
+  # if(i == 24 & group_idx == 1)
+  # {
+  #   browser()
+  # }
   log_prob_reverse_move <- sum(sapply(1:length(date_idx_E1_to_E0), function(kk) 
   {
     tmp <- compute_p_accept_move_from_E0_to_E1(i, group_idx, date_idx_E1_to_E0[kk],
@@ -619,6 +646,7 @@ swap_Ei <- function(i, group_idx,
                                                theta, obs_dat, hyperparameters, 
                                                index_dates,
                                                range_dates,
+                                               date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
                                                tol = tol)
     return(-tmp[2])
   }))
@@ -713,6 +741,7 @@ swap_Ei <- function(i, group_idx,
                                                    theta, obs_dat, hyperparameters, 
                                                    index_dates,
                                                    range_dates, 
+                                                   date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
                                                    tol = tol)
         return(tmp[2])
       })))
@@ -778,17 +807,17 @@ swap_Ei <- function(i, group_idx,
     
     ratio_post_obs <- sum(LL_observation_term_by_group_delay_and_indiv(
       proposed_aug_dat, theta, obs_dat, group_idx, 
-      date_idx_E1_to_E0, i, range_dates=range_dates) - 
+      date_idx_E1_to_E0, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
         LL_observation_term_by_group_delay_and_indiv(
           curr_aug_dat, theta, obs_dat, group_idx, 
-          date_idx_E1_to_E0, i, range_dates=range_dates) ) +  
+          date_idx_E1_to_E0, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) ) +  
       
       sum(LL_observation_term_by_group_delay_and_indiv(
         proposed_aug_dat, theta, obs_dat, group_idx, 
-        date_idx_E0_to_E1, i, range_dates=range_dates) - 
+        date_idx_E0_to_E1, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
           LL_observation_term_by_group_delay_and_indiv(
             curr_aug_dat, theta, obs_dat, group_idx, 
-            date_idx_E0_to_E1, i, range_dates=range_dates) )   
+            date_idx_E0_to_E1, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) )   
     
     if(length(missing_to_update)>0)
     {
@@ -796,16 +825,16 @@ swap_Ei <- function(i, group_idx,
         
         sum(LL_observation_term_by_group_delay_and_indiv(
           proposed_aug_dat, theta, obs_dat, group_idx, 
-          missing_to_update, i, range_dates=range_dates) - 
+          missing_to_update, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
             LL_observation_term_by_group_delay_and_indiv(
               curr_aug_dat, theta, obs_dat, group_idx, 
-              missing_to_update, i, range_dates=range_dates) )
+              missing_to_update, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) )
       
     }
     
     #print(ratio_post_obs)
     ## should be the same as:
-    # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
+    # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
     
     ratio_post_error <- sum(LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i) - 
                               LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i)) + 
@@ -828,8 +857,8 @@ swap_Ei <- function(i, group_idx,
     ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
     
     ### should be the same as: 
-    ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates) - 
-      lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
+    #ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperparameters, index_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+    #  lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
     
     # print(paste("short", ratio_post))
     # print(paste("long", ratio_post_long))

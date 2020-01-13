@@ -5,7 +5,9 @@
 \title{Runs the MCMC estimation procedure.}
 \usage{
 RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
-  tol = 1e-06, seed = NULL)
+  p_error = list(external_swap = 0.04, internal_swap = 0.005,
+  neighbour_substitution = 0.05, distant_substitution = 0.02, random =
+  0.01), tol = 1e-06, seed = NULL)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
@@ -15,6 +17,10 @@ RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
 \item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+
+\item{p_error}{A list with 6 weights defining a multinomial model -see default value. 
+The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
 
 \item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
 

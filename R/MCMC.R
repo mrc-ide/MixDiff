@@ -4,7 +4,7 @@
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see details.
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
-#' @param p_error A list with 6 weights defining a multinomial model -see default value. 
+#' @param p_error A list with 5 weights defining a multinomial model -see default value. 
 #' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
 #' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
 #' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves

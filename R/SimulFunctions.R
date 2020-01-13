@@ -10,7 +10,7 @@
 #' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
 #' @param delay_dist One of "gamma" (the default), "weibull" or "lognormal", used to draw the delays from
 #' @param simul_error A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
-#' @param p_error A list with 6 weights defining a multinomial model -see default value. 
+#' @param p_error A list with 5 weights defining a multinomial model -see default value. 
 #' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
 #' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
 #' @param remove_allNA_indiv A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
@@ -110,7 +110,7 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates,
 #' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
 #' @param theta A list of parameters; see details.
 #' @param range_dates Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)
-#' @param p_error A list with 6 weights defining a multinomial model -see default value. 
+#' @param p_error A list with 5 weights defining a multinomial model -see default value. 
 #' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
 #' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
 #' @param remove_allNA_indiv A boolean stating whether individuals with only NA dates should be removed or not. 
@@ -158,6 +158,8 @@ simul_obs_dat <- function(D, theta, range_dates,
 {
   E <- D
   obs_dat <- D
+  # update range_dates to encompass all observations if needed
+  range_dates <- range(c(range_dates, find_range(obs_dat)))
   # calculate the error matrix - for this we need actual dates not numbers
   rd <- int_to_date(range_dates)
   date_space <- seq(rd[1], rd[2], 1)

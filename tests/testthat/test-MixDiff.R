@@ -23,7 +23,7 @@ test_that("Simplified likelihood ratio used in move_Di is correct", {
   date_transition_mat_obs_true_log <- calculate_date_matrix(rd[1], rd[2], p_error, log = TRUE)
   
   D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, remove_allNA_indiv=TRUE)
+  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, p_error = p_error, remove_allNA_indiv=TRUE)
   tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
   E <- tmp$E
   obs_dat <- tmp$obs_dat

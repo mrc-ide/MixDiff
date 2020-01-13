@@ -137,6 +137,7 @@ system.time({
                      MCMC_settings,
                      hyperparameters,
                      index_dates = index_dates_names, 
+                     p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), 
                      seed = 2)
 })
 #Rprof(NULL)

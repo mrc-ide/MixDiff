@@ -5,7 +5,8 @@
 \title{Performs one iteration of an MCMC move for the augmented data}
 \usage{
 move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
-  hyperparameters, index_dates, range_dates = NULL, tol = 1e-06)
+  hyperparameters, index_dates, range_dates = NULL,
+  date_transition_mat_obs_true_log, tol = 1e-06)
 }
 \arguments{
 \item{i}{The index of the individual(s) for whom augmented data should be moved}
@@ -25,6 +26,8 @@ move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.}
+
+\item{date_transition_mat_obs_true_log}{A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)}
 
 \item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
 }

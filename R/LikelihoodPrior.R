@@ -3,34 +3,53 @@
 ###############################################
 
 # probability of making a specific observation
-LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL)
+LL_observation_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, date_idx, indiv_idx, range_dates=NULL, date_transition_mat_obs_true_log)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
-  LL <- matrix(NA, length(indiv_idx), length(date_idx))
+  LL <- matrix(0, length(indiv_idx), length(date_idx)) # 0 by default for neutral loglikelihood - will be left as 0 for missing values where no observation
   ### making sure D=y if E=0 ### note could remove this if by construction this is always true - could speed up code
   indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 0
+  indicator_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 1
+  
   no_error <- which(indicator_no_error, arr.ind = TRUE)
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] == obs_dat[[group_idx]][indiv_idx, date_idx][no_error]) 
   ### if E=1, what is the relationship between true date D and observed date y
   # for now, observation likelihood conditional on E=1 is uniform on the range of observed dates
   ### same for E=-1, D can take any value in range with same probability as they are all consistent with y=NA
-  error_or_missing <- which(!indicator_no_error)
+  
   ### K is the relative probability of observing a given error, conditional on presence of error
   # for now, K is given as 1/n, where n is the number of dates in the range_dates
   # could use something different if we define the space of possible errors differently. 
-  ### think about impact of this choice
-  K <- (1/as.numeric(diff(range_dates)))
-  LL[error_or_missing] <- log( K* ((aug_dat$D[[group_idx]][indiv_idx, date_idx][error_or_missing] >= range_dates[1]) & (aug_dat$D[[group_idx]][indiv_idx, date_idx][error_or_missing] <= range_dates[2])) ) 
-  
+  ### this is the contribution for erroneous dates assuming a uniform error model
+  #logK <- log(1/as.numeric(diff(range_dates))) + log(((aug_dat$D[[group_idx]][indiv_idx, date_idx][error] >= range_dates[1]) & 
+  #                                                      (aug_dat$D[[group_idx]][indiv_idx, date_idx][error] <= range_dates[2])) ) 
+  ### this is the more generic formulation
+  if (any(indicator_error)) # check if we need this - if we go in this function there SHOULD be an error?
+  {
+    for (ii in which(indicator_error, arr.ind = TRUE))
+    {
+      obs <- obs_dat[[group_idx]][indiv_idx, date_idx][ii] - range_dates[1] + 1
+      true <- aug_dat$D[[group_idx]][indiv_idx, date_idx][ii] - range_dates[1] + 1
+      if(true < 0 | true > nrow(date_transition_mat_obs_true_log))
+      {
+        LL[ii] -100000
+      }else
+      {
+        LL[ii]  <- date_transition_mat_obs_true_log[obs, true]
+      }
+    }
+  }
+  # K <- date_transition_mat[obs, true] 
+  ####
   LL[is.infinite(LL)] <- -100000 # arbitrarily small number to avoid -Inf
   
   return(LL)
 }
 
-LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL)
+LL_observation_term<-function(aug_dat, theta, obs_dat, range_dates=NULL, date_transition_mat_obs_true_log)
 {
   if(is.null(range_dates)) range_dates <- find_range(obs_dat)
-  LL <- sum(unlist(lapply(seq_len(length(obs_dat)), function(g) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, seq_len(ncol(aug_dat$D[[g]])), seq_len(nrow(obs_dat[[g]])), range_dates)) ) ))
+  LL <- sum(unlist(lapply(seq_len(length(obs_dat)), function(g) sum(LL_observation_term_by_group_delay_and_indiv(aug_dat, theta, obs_dat, g, seq_len(ncol(aug_dat$D[[g]])), seq_len(nrow(obs_dat[[g]])), range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)) ) ))
   return(LL)
 }
 # LL_observation_term(aug_dat, theta, obs_dat)
@@ -128,9 +147,9 @@ LL_delays_term<-function(aug_dat, theta, obs_dat, index_dates, Delta=NULL)
 }
 # LL_delays_term(aug_dat, theta, obs_dat)
 
-LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates=NULL)
+LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates=NULL, date_transition_mat_obs_true_log)
 {
-  res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates) + 
+  res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) + 
     LL_error_term(aug_dat, theta, obs_dat) + 
     LL_delays_term(aug_dat, theta, obs_dat, index_dates)
   return(res)
@@ -186,6 +205,7 @@ lprior_total <- function(theta, hyperparameters)
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.
+#' @param date_transition_mat_obs_true_log A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -205,7 +225,7 @@ lprior_total <- function(theta, hyperparameters)
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 #' @return A scalar giving the value of the log posterior. 
 #' @export
-#' @examples
+#' @examples ### TO DO: update example to include date_transition_mat_obs_true_log as new parameter
 #' ### Number of groups of individuals to simulate ###
 #' n_groups <- 2
 #' ### Number of dates to simulate for each group ###
@@ -231,15 +251,15 @@ lprior_total <- function(theta, hyperparameters)
 #' hyperparameters <- list(shape1_prob_error=3, shape2_prob_error=12, 
 #'                      mean_mean_delay=100, mean_CV_delay=100)
 #' ### Compute log posterior distribution for that data
-#' lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+#' # lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 #' ### Now use initalised augmented data 
 #' ### and check that posterior value for this is lower than for true data:
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 #' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
-#' lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
-lposterior_total <- function(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+#' # lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+lposterior_total <- function(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL, date_transition_mat_obs_true_log)
 {
-  res <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates) + lprior_total(theta, hyperparameters)
+  res <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) + lprior_total(theta, hyperparameters)
   return(res)
 }
-#lposterior_total(aug_dat, theta, obs_dat, hyperparameters=list(shape1_prob_error=3, shape2_prob_error=12, mean_mean_delay=100, mean_CV_delay=100))
+#lposterior_total(aug_dat, theta, obs_dat, hyperparameters=list(shape1_prob_error=3, shape2_prob_error=12, mean_mean_delay=100, mean_CV_delay=100)) ### TO DO: update to include new argument date_transition_mat_obs_true_log

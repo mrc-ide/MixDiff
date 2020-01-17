@@ -65,7 +65,11 @@ RunMCMC <- function(obs_dat,
                     MCMC_settings,
                     hyperparameters,
                     index_dates,
-                    p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), ### TO DO: change this to be the values of typo challenge OR a uniform random error
+                    p_error = list(external_swap = 0.0688, 
+                                    internal_swap = 0.0112,
+                                    neighbour_substitution = 0.2784,
+                                    distant_substitution = 0.3656,
+                                    random = 0.2760), # values by default are those from the Typo Challenge
                     tol = 1e-6,
                     seed = NULL)
 {

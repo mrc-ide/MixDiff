@@ -5,9 +5,9 @@
 \title{Runs the MCMC estimation procedure.}
 \usage{
 RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
-  p_error = list(external_swap = 0.04, internal_swap = 0.005,
-  neighbour_substitution = 0.05, distant_substitution = 0.02, random =
-  0.01), tol = 1e-06, seed = NULL)
+  p_error = list(external_swap = 0.0688, internal_swap = 0.0112,
+  neighbour_substitution = 0.2784, distant_substitution = 0.3656, random =
+  0.276), tol = 1e-06, seed = NULL)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}

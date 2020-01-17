@@ -17,7 +17,11 @@ test_that("Simplified likelihood ratio used in move_Di is correct", {
   index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
   index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
   
-  p_error <- list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01)
+  p_error <- list(external_swap = 0.0688, 
+                  internal_swap = 0.0112,
+                  neighbour_substitution = 0.2784,
+                  distant_substitution = 0.3656,
+                  random = 0.2760)
   
   D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
   D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, p_error = p_error, remove_allNA_indiv=TRUE)
@@ -112,7 +116,11 @@ test_that("Simplified likelihood ratio used in move_lognormal is correct", {
   index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
   index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
   
-  p_error <- list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01)
+  p_error <- list(external_swap = 0.0688, 
+                  internal_swap = 0.0112,
+                  neighbour_substitution = 0.2784,
+                  distant_substitution = 0.3656,
+                  random = 0.2760)
   
   D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
   D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, p_error = p_error, remove_allNA_indiv=TRUE)

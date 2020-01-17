@@ -60,7 +60,11 @@
 simul_true_data <- function(theta, n_per_group, range_dates, index_dates, 
                             delay_dist = c("gamma", "weibull", "lognormal"),
                             simul_error=FALSE, 
-                            p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), ### TO DO: change this to be the values of typo challenge OR a uniform random error
+                            p_error = list(external_swap = 0.0688, 
+                                           internal_swap = 0.0112,
+                                           neighbour_substitution = 0.2784,
+                                           distant_substitution = 0.3656,
+                                           random = 0.2760), # values by default are those from the Typo Challenge
                             remove_allNA_indiv=FALSE, 
                             remove_indiv_at_most_one_date_recorded=FALSE)
 {
@@ -152,7 +156,11 @@ simul_true_data <- function(theta, n_per_group, range_dates, index_dates,
 #' nrow(D$true_dat[[1]])
 #' nrow(observed_D$obs_dat[[1]])
 simul_obs_dat <- function(D, theta, range_dates, 
-                          p_error = list(external_swap=.04,internal_swap=.005,neighbour_substitution=0.05,distant_substitution=0.02,random=0.01), ### TO DO: change this to be the values of typo challenge OR a uniform random error
+                          p_error = list(external_swap = 0.0688, 
+                                         internal_swap = 0.0112,
+                                         neighbour_substitution = 0.2784,
+                                         distant_substitution = 0.3656,
+                                         random = 0.2760), # values by default are those from the Typo Challenge
                           remove_allNA_indiv=TRUE, 
                           remove_indiv_at_most_one_date_recorded=TRUE)
 {

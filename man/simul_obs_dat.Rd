@@ -4,9 +4,10 @@
 \alias{simul_obs_dat}
 \title{Introduces missingness and errors in data}
 \usage{
-simul_obs_dat(D, theta, range_dates, p_error = list(external_swap = 0.04,
-  internal_swap = 0.005, neighbour_substitution = 0.05,
-  distant_substitution = 0.02, random = 0.01), remove_allNA_indiv = TRUE,
+simul_obs_dat(D, theta, range_dates, p_error = list(external_swap =
+  0.0688, internal_swap = 0.0112, neighbour_substitution = 0.2784,
+  distant_substitution = 0.3656, random = 0.276),
+  remove_allNA_indiv = TRUE,
   remove_indiv_at_most_one_date_recorded = TRUE)
 }
 \arguments{

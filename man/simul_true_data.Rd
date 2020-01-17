@@ -6,9 +6,9 @@
 \usage{
 simul_true_data(theta, n_per_group, range_dates, index_dates,
   delay_dist = c("gamma", "weibull", "lognormal"), simul_error = FALSE,
-  p_error = list(external_swap = 0.04, internal_swap = 0.005,
-  neighbour_substitution = 0.05, distant_substitution = 0.02, random =
-  0.01), remove_allNA_indiv = FALSE,
+  p_error = list(external_swap = 0.0688, internal_swap = 0.0112,
+  neighbour_substitution = 0.2784, distant_substitution = 0.3656, random =
+  0.276), remove_allNA_indiv = FALSE,
   remove_indiv_at_most_one_date_recorded = FALSE)
 }
 \arguments{

@@ -107,6 +107,21 @@ mean_onset_2_report <- 5.5
 # 5.2 / 5.1-5.3
 sd_onset_2_report <- 5.2
 
+
+### typo challenge probability of error
+p_error = list(external_swap = 0.0688, 
+               internal_swap = 0.0112,
+               neighbour_substitution = 0.2784,
+               distant_substitution = 0.3656,
+               random = 0.2760) # values by default are those from the Typo Challenge
+
+# ### random error model
+# p_error = list(external_swap = 0, 
+#                internal_swap = 0,
+#                neighbour_substitution = 0,
+#                distant_substitution = 0,
+#                random = 1) # random error model
+
 n_groups <- 4
 n_dates <- c(2, 3, 4, 4)
 
@@ -149,15 +164,16 @@ index_dates_order <- compute_index_dates_order(index_dates)
 for(name_place_to_save in 1:100)
 {
   
-  D <- simul_true_data(theta, n_per_group, range_dates, index_dates_names)
+  D <- simul_true_data(theta, n_per_group, range_dates, index_dates_names, p_error = p_error)
   # D_with_error <- simul_true_data(theta, n_per_group, range_dates, 
   #                                 index_dates_names, simul_error = TRUE, 
   #                                 remove_allNA_indiv=TRUE)
   D_with_error <- simul_true_data(theta, n_per_group, range_dates, 
                                   index_dates_names, simul_error = TRUE, 
+                                  p_error = p_error,
                                   remove_allNA_indiv = TRUE, 
                                   remove_indiv_at_most_one_date_recorded=TRUE)
-  tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
+  tmp <- simul_obs_dat(D$true_dat, theta, range_dates, p_error = p_error)
   obs_dat <- tmp$obs_dat
   aug_dat <- list(D=tmp$D, E=tmp$E)
   
@@ -165,8 +181,8 @@ for(name_place_to_save in 1:100)
   ### saving this somewhere ###
   ####################################
   
-  where_to_save <- paste0("./SimulatedData/baseline_ebola_like/",name_place_to_save)
-  if(!dir.exists("./SimulatedData/baseline_ebola_like/")) dir.create("./SimulatedData/baseline_ebola_like/")
+  where_to_save <- paste0("./SimulatedData/ebola_like/baseline/typo_challenge_errors/",name_place_to_save)
+  if(!dir.exists("./SimulatedData/baseline_ebola_like/")) dir.create("./SimulatedData/ebola_like/baseline/typo_challenge_errors/")
   if(!dir.exists(where_to_save)) dir.create(where_to_save)
   
   saveRDS(obs_dat, file = normalizePath(paste0(where_to_save,"/SimulatedObsData.rds")))

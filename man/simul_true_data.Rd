@@ -5,7 +5,11 @@
 \title{Simulates data; see details}
 \usage{
 simul_true_data(theta, n_per_group, range_dates, index_dates,
-  simul_error = FALSE, remove_allNA_indiv = FALSE)
+  delay_dist = c("gamma", "weibull", "lognormal"), simul_error = FALSE,
+  p_error = list(external_swap = 0.0688, internal_swap = 0.0112,
+  neighbour_substitution = 0.2784, distant_substitution = 0.3656, random =
+  0.276), remove_allNA_indiv = FALSE,
+  remove_indiv_at_most_one_date_recorded = FALSE)
 }
 \arguments{
 \item{theta}{List of parameters; see details.}
@@ -16,9 +20,17 @@ simul_true_data(theta, n_per_group, range_dates, index_dates,
 
 \item{index_dates}{A list containing indications on which delays to consider in the simulation, see details.}
 
+\item{delay_dist}{One of "gamma" (the default), "weibull" or "lognormal", used to draw the delays from}
+
 \item{simul_error}{A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 
+\item{p_error}{A list with 5 weights defining a multinomial model -see default value. 
+The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
+
 \item{remove_allNA_indiv}{A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).}
+
+\item{remove_indiv_at_most_one_date_recorded}{A boolean stating whether individuals with at most one recorded date should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 }
 \value{
 A list of three items. 

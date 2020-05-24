@@ -6,3 +6,6 @@ Rprof.out
 MixDiff.html
 .Rapp.history
 .Rhistory
+EbolaData/*
+SimulatedData/*
+man/

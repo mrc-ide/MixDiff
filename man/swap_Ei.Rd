@@ -5,7 +5,9 @@
 \title{Performs one iteration of an MCMC move for the augmented data where the indicators of error in observations for one individual are swapped, i.e. the errors become non errors and vice versa.}
 \usage{
 swap_Ei(i, group_idx, curr_aug_dat, theta, obs_dat, hyperparameters,
-  index_dates, range_dates = NULL)
+  index_dates, range_dates = NULL,
+  index_dates_order = compute_index_dates_order(index_dates),
+  date_transition_mat_obs_true_log, tol = 1e-06)
 }
 \arguments{
 \item{i}{The index of the individual for whom augmented data should be moved}
@@ -23,6 +25,12 @@ swap_Ei(i, group_idx, curr_aug_dat, theta, obs_dat, hyperparameters,
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.}
+
+\item{index_dates_order}{A list of same lenght as index_dates, containing indications on ordering of dates for each group - see \code{\link{compute_index_dates_order}}.}
+
+\item{date_transition_mat_obs_true_log}{A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)}
+
+\item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
 }
 \value{
 A list of two elements:
@@ -55,8 +63,9 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3),
 
 The function performs the move as follows, using a Metropolis-Hastings algorithm. 
 It proposes to swap the indicators of errors in dates, e.g. 0 becomes 1 and 1 becomes 0.
-For the dates where we propose a move from E=1 to E=0, we automatically move D=the corresponding observed data. 
-For the dates where we propose a move from E=0 to E=1, D is then moved as follows: a new value is drawn from the marginal posterior of one of the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
+First, for the dates where E = 1, we propose a move from E=1 to E=0, we automatically move D to the corresponding observed data. 
+Then, for any dates not recorded (E = -1) we propose new values by drawing from the joint marginal posterior distribution of the relevant delays, using as reference dates only those that have just been moved to E=0 (not the ones which were initially at E=0 as these will move to erroneous values at the next step).
+Finally, for the dates which were initially at E = 0, we propose a move from E=0 to E=1, D is then moved as follows: a new value is drawn from the joint marginal posterior of all the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
 If the date is involved in several delays, one of the delays is randomly selected. 
 This move is not symmetrical so we use a correction factor in computing the probability of acceptance in the Metropolis Hastings which accounts for the asymetry.
 }

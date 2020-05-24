@@ -4,7 +4,10 @@
 \alias{RunMCMC}
 \title{Runs the MCMC estimation procedure.}
 \usage{
-RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
+RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates,
+  p_error = list(external_swap = 0.0688, internal_swap = 0.0112,
+  neighbour_substitution = 0.2784, distant_substitution = 0.3656, random =
+  0.276), tol = 1e-06, seed = NULL)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
@@ -14,6 +17,14 @@ RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
 \item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+
+\item{p_error}{A list with 5 weights defining a multinomial model -see default value. 
+The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities.}
+
+\item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
+
+\item{seed}{Optional. A numerical value used to fix the random seed.}
 }
 \value{
 A list of the following elements:
@@ -56,6 +67,7 @@ Runs the MCMC estimation procedure.
  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
  }
  }
+ \item{\code{tol}}{: A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves.}
 }
 \code{hyperparameters} should be a list containing:
 \itemize{

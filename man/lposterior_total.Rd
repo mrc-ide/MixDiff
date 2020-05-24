@@ -5,7 +5,7 @@
 \title{Compute the log joint posterior distribution of augmented data and parameters given observed data}
 \usage{
 lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates,
-  range_dates = NULL)
+  range_dates = NULL, date_transition_mat_obs_true_log)
 }
 \arguments{
 \item{aug_dat}{A list of augmented data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.}
@@ -19,6 +19,8 @@ lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates,
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.}
+
+\item{date_transition_mat_obs_true_log}{A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)}
 }
 \value{
 A scalar giving the value of the log posterior.
@@ -46,6 +48,7 @@ The number of columns of index_dates[[k]] should match the length of theta$mu[[k
 If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
 }
 \examples{
+### TO DO: update example to include date_transition_mat_obs_true_log as new parameter
 ### Number of groups of individuals to simulate ###
 n_groups <- 2
 ### Number of dates to simulate for each group ###
@@ -71,10 +74,10 @@ true_aug_dat <- list(D=D$true_dat, E=observed_D$E)
 hyperparameters <- list(shape1_prob_error=3, shape2_prob_error=12, 
                      mean_mean_delay=100, mean_CV_delay=100)
 ### Compute log posterior distribution for that data
-lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+# lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 ### Now use initalised augmented data 
 ### and check that posterior value for this is lower than for true data:
 MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
-lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+# lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
 }

@@ -17,14 +17,24 @@ test_that("Simplified likelihood ratio used in move_Di is correct", {
   index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
   index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
   
+  p_error <- list(external_swap = 0.0688, 
+                  internal_swap = 0.0112,
+                  neighbour_substitution = 0.2784,
+                  distant_substitution = 0.3656,
+                  random = 0.2760)
+  
   D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, remove_allNA_indiv=TRUE)
+  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, p_error = p_error, remove_allNA_indiv=TRUE)
   tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
   E <- tmp$E
   obs_dat <- tmp$obs_dat
   
   aug_dat <- list(D=D$true_dat, E=E)
-  range_dates <- find_range(obs_dat)
+  range_dates <- find_range(obs_dat) # update range based on observations
+  
+  # calculate the error matrix - for this we need actual dates not numbers
+  rd <- int_to_date(range_dates)
+  date_transition_mat_obs_true_log <- calculate_date_matrix(rd[1], rd[2], p_error, log = TRUE)
   
   hyperpriors <- list(
     shape1_prob_error=3, 
@@ -66,15 +76,15 @@ test_that("Simplified likelihood ratio used in move_Di is correct", {
   # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1. 
   missing <- which(is.na(obs_dat[[group_idx]][i,date_idx]))
   proposed_aug_dat$E[[group_idx]][i,date_idx][missing] <- -1 # y_i missing
-  erroneous <- which(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
-  proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 0 # y_i observed without error
-  non_erroneous <- which(!is.na(obs_dat[[group_idx]][i,date_idx]) & proposed_aug_dat$D[[group_idx]][i,date_idx]!=obs_dat[[group_idx]][i,date_idx] )
-  proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 1 # y_i observed with error
+  non_erroneous <- which(proposed_aug_dat$D[[group_idx]][i,date_idx]==obs_dat[[group_idx]][i,date_idx])
+  proposed_aug_dat$E[[group_idx]][i,date_idx][non_erroneous] <- 0 # y_i observed without error
+  erroneous <- which(!is.na(obs_dat[[group_idx]][i,date_idx]) & proposed_aug_dat$D[[group_idx]][i,date_idx]!=obs_dat[[group_idx]][i,date_idx] )
+  proposed_aug_dat$E[[group_idx]][i,date_idx][erroneous] <- 1 # y_i observed with error
   
   # calculates probability of acceptance
   delay_idx <- which(index_dates[[group_idx]]==date_idx, arr.ind=TRUE)[,2] # these are the delays that are affected by the change in date date_idx
-  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) - 
-    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates) 
+  ratio_post <- LL_observation_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+    LL_observation_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) 
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i) - 
     LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat, group_idx, date_idx, i)
   for(d in delay_idx)
@@ -84,8 +94,8 @@ test_that("Simplified likelihood ratio used in move_Di is correct", {
   ratio_post <- sum(ratio_post)
   
   ### note that ratio_post should be the same as: 
-  ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
-    lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+  ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+    lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates, range_dates=range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
 
 })
 
@@ -106,13 +116,24 @@ test_that("Simplified likelihood ratio used in move_lognormal is correct", {
   index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 4)) )
   index_dates_order <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)), cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)) )
   
+  p_error <- list(external_swap = 0.0688, 
+                  internal_swap = 0.0112,
+                  neighbour_substitution = 0.2784,
+                  distant_substitution = 0.3656,
+                  random = 0.2760)
+  
   D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, remove_allNA_indiv=TRUE)
+  D_with_error <- simul_true_data(theta, n_per_group, range_dates, index_dates, simul_error = TRUE, p_error = p_error, remove_allNA_indiv=TRUE)
   tmp <- simul_obs_dat(D$true_dat, theta, range_dates)
   E <- tmp$E
   obs_dat <- tmp$obs_dat
-  
   aug_dat <- list(D=D$true_dat, E=E)
+  
+  range_dates <- find_range(obs_dat) # update range based on observations
+  
+  # calculate the error matrix - for this we need actual dates not numbers
+  rd <- int_to_date(range_dates)
+  date_transition_mat_obs_true_log <- calculate_date_matrix(rd[1], rd[2], p_error, log = TRUE)
   
   hyperpriors <- list(
     shape1_prob_error=3, 
@@ -148,8 +169,8 @@ test_that("Simplified likelihood ratio used in move_lognormal is correct", {
       sum(LL_delays_term_by_group_delay_and_indiv(aug_dat, curr_theta, obs_dat, group_idx, delay_idx, 1:nrow(obs_dat[[group_idx]]), index_dates, Delta)) 
     
     ### note that ratio_post should be the same as: 
-    ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors, index_dates) - 
-      lposterior_total(aug_dat, curr_theta, obs_dat, hyperpriors, index_dates)
+    ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat, hyperpriors, index_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) - 
+      lposterior_total(aug_dat, curr_theta, obs_dat, hyperpriors, index_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
     
     expect_equal(ratio_post, ratio_post_long) # testing that the short version is equal to the full calculation
   }

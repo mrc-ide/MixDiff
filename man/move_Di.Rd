@@ -5,7 +5,8 @@
 \title{Performs one iteration of an MCMC move for the augmented data}
 \usage{
 move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
-  hyperparameters, index_dates, range_dates = NULL)
+  hyperparameters, index_dates, range_dates = NULL,
+  date_transition_mat_obs_true_log, tol = 1e-06)
 }
 \arguments{
 \item{i}{The index of the individual(s) for whom augmented data should be moved}
@@ -25,6 +26,10 @@ move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.}
+
+\item{date_transition_mat_obs_true_log}{A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)}
+
+\item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
 }
 \value{
 A list of two elements:
@@ -56,10 +61,10 @@ The number of columns of index_dates[[k]] should match the length of theta$mu[[k
 If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
 
 The function performs the move as follows, using a Metropolis algorithm. 
-For the date to be moved, a new value is drawn from the marginal posterior of one of the delays this date is involved in.
-If the date is involved in several delays, one of the delays is randomly selected. 
+For the date to be moved, a new value is drawn from the marginal posterior of all the delays this date is involved in.
 The element E indicating whether the observed date is missing, recorded correctly or recorded with error, is adjusted accordingly given the proposed value of D. 
-The new augmented data is then accepted with probability given by the ratio of the posterior values at the new augmented data and the old augmented data.
+The new augmented data is then accepted with probability given by the ratio of the posterior values at the new augmented data and the old augmented data, 
+with a correction factor since the move is non symmetrical.
 }
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###

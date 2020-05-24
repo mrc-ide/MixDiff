@@ -5,7 +5,8 @@
 \title{Performs one iteration of an MCMC move for the augmented data representing the indicator of error in observations}
 \usage{
 move_Ei(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
-  hyperparameters, index_dates, range_dates = NULL)
+  hyperparameters, index_dates, range_dates = NULL,
+  date_transition_mat_obs_true_log, tol = 1e-06)
 }
 \arguments{
 \item{i}{The index of the individual for whom augmented data should be moved}
@@ -25,6 +26,10 @@ move_Ei(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}. If NULL, will be computed automatically.}
+
+\item{date_transition_mat_obs_true_log}{A matrix where each column contains the probabilities that, conditional on a true date, a certain date was recorded (on the log scale)}
+
+\item{tol}{A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves}
 }
 \value{
 A list of two elements:
@@ -58,8 +63,7 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3),
 The function performs the move as follows, using a Metropolis-Hastings algorithm. 
 If E=-1 nothing happens.
 If E=1, we propose a move to E=0 and hence D=the observed data. 
-If E=0, we propose a move to E=1. D is then moved as follows: a new value is drawn from the marginal posterior of one of the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
-If the date is involved in several delays, one of the delays is randomly selected. 
+If E=0, we propose a move to E=1. D is then moved as follows: a new value is drawn from the marginal posterior of all the delays this date is involved in, repeatdely until D falls on a different day than the observed date to be consistent with E=1. 
 This move is not symmetrical so we use a correction factor in computing the probability of acceptance in the Metropolis Hastings which accounts for the asymetry.
 }
 \examples{

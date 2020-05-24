@@ -4,6 +4,12 @@ EbolaData$
 SimulatedData$
 EstimateDelaysAndErrorsInDates.R
 SimulateDelaysAndErrorsInDates.R
+process_ebola_data.R
+shared.R
+simul_scenarios.R
+for_paper.R
+header.tex
+MixDiff.pdf
 MixDiff.Rmd
 MixDiff.html
 P_20160624_100437.jpg

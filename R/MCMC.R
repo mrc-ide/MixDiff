@@ -4,6 +4,11 @@
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see details.
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param p_error A list with 5 weights defining a multinomial model -see default value. 
+#' The weights inform the probabilities of 'external_swap', 'internal_swap', 'neighbour_substitution' , 'distant_substitution', and 'random' errors. 
+#' If weights don't sum to 1; they are automatically rescaled to define corresponding probabilities. 
+#' @param tol A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves
+#' @param seed Optional. A numerical value used to fix the random seed. 
 #' @details \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on, zeta_on) stating whether each parameter/augmented data should be moved in the procedure or not.}
@@ -30,6 +35,7 @@
 #'  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
 #'  }
 #'  }
+#'  \item{\code{tol}}{: A positive numerical value indicating the size of the tail of the distribution of different delays which can be ignored when drawing from these delays in the moves.}
 #' }
 #' \code{hyperparameters} should be a list containing:
 #' \itemize{
@@ -58,11 +64,41 @@
 RunMCMC <- function(obs_dat, 
                     MCMC_settings,
                     hyperparameters,
-                    index_dates)
+                    index_dates,
+                    p_error = list(external_swap = 0.0688, 
+                                    internal_swap = 0.0112,
+                                    neighbour_substitution = 0.2784,
+                                    distant_substitution = 0.3656,
+                                    random = 0.2760), # values by default are those from the Typo Challenge
+                    tol = 1e-6,
+                    seed = NULL)
 {
-  
+  #browser()
   n_dates <- sapply(obs_dat, ncol )
   n_groups <- length(n_dates)
+  
+  ###############################################
+  ### check for issues in observations - i.e. cases with only missing observations or only 1 observation ###
+  ###############################################
+  
+  #check_not_all_missing(obs_dat)
+  check_at_least_two_dates_per_indiv(obs_dat)
+  
+  ###############################################
+  ### convert index_dates to numeric so all other functions work using column numbers rather than column names ###
+  ###############################################
+  
+  index_dates_original <- process_index_dates(index_dates)
+  index_dates <- convert_index_dates_to_numeric(index_dates_original, obs_dat) # matches the names of columns from obs_dat
+  
+  ###############################################
+  ### fix the random seed if appropriate ###
+  ###############################################
+  
+  if(!is.null(seed))
+  {
+    set.seed(seed)
+  }
   
   ###############################################
   ### define augmented data to be used for initialisation of the chain ###
@@ -74,19 +110,25 @@ RunMCMC <- function(obs_dat,
   ### define augmented data to be used for initialisation of the chain ###
   ###############################################
   
-  aug_dat <- initialise_aug_data(obs_dat, compute_index_dates_order(index_dates), MCMC_settings)
+  aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings)
   
   ###############################################
   ### define parameters to be used for initialisation of the chain ###
   ###############################################
   
-  theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
+  theta <- initialise_theta_from_aug_dat(aug_dat, index_dates_original)
   
   ###############################################
   ### Initalise the MCMC chains ###
   ###############################################
   
-  range_dates <- find_range(obs_dat)
+  range_dates <- find_range(obs_dat) # TO DO: allow flexibility in this - want to potentially increase the range
+  
+  # calculate the error matrix - for this we need actual dates not numbers
+  rd <- int_to_date(range_dates)
+  date_transition_mat_obs_true_log <- calculate_date_matrix(rd[1], rd[2], p_error, log = TRUE)
+  #print("start")
+  #print(date_transition_mat_obs_true_log[1,1])
   
   # to store param values
   curr_theta <- theta
@@ -99,7 +141,7 @@ RunMCMC <- function(obs_dat,
   aug_dat_chain[[1]] <- curr_aug_dat
   
   logpost_chain <- rep(NA, (MCMC_settings$chain_properties$n_iter - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every)
-  logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates)
+  logpost_chain[1] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
   
   n_accepted_D_moves <- 0
   n_proposed_D_moves <- 0
@@ -109,7 +151,6 @@ RunMCMC <- function(obs_dat,
   
   n_accepted_swapE_moves <- 0 
   n_proposed_swapE_moves <- 0 
-  
   n_accepted_mu_moves <- lapply(seq_len(n_groups), function(g) rep(0, ncol(index_dates[[g]]) ))
   n_proposed_mu_moves <- n_accepted_mu_moves
   
@@ -131,116 +172,110 @@ RunMCMC <- function(obs_dat,
       print(sprintf("... %d / %d ...", k, MCMC_settings$chain_properties$n_iter))
     }
     
+    #print("before Di")
+    #print(date_transition_mat_obs_true_log[1,1])
     # move some of the D_i
     #print("Move some D_i")
     if(MCMC_settings$moves_switch$D_on)
     {
       for(g in seq_len(n_groups))
       {
-        #print(g)
+        #print(paste("group", g))
         for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
         {
-          #print(j)
+          #print(paste("date", j))
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
           for(i in seq_len(n_groups_to_update))
           {
-            #print(i)
-            tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
+            #print(paste("individual", to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))]))
+            tmp <- move_Di(to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j, 
                             curr_aug_dat,
                             curr_theta, 
                             obs_dat, 
                             hyperparameters, 
                             index_dates,
-                            range_dates) 
+                            range_dates,
+                            date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
+                            tol = MCMC_settings$tol) 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
             if(tmp$accept==1) 
             {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-              
-              # if accepted move, update zeta
-              # tmp <- move_zeta_gibbs(curr_aug_dat,
-              #                        curr_theta, 
-              #                        obs_dat, 
-              #                        hyperparameters) 
-              # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
         }
       }
     }
     
+    #print("before Ei")
+    #print(date_transition_mat_obs_true_log[1,1])
     # move some of the E_i
     #print("Move some E_i")
     if(MCMC_settings$moves_switch$E_on) 
     {
       for(g in seq_len(n_groups))
       {
-        #print(g)
+        #print(paste("group", g))
         for(j in seq_len(ncol(curr_aug_dat$E[[g]])))
         {
-          #print(j)
+          #print(paste("delay", j))
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Ei_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- length(to_update) 
           for(i in seq_len(n_groups_to_update))
           {
+            #print(paste("individual", to_update[i]))
             tmp <- move_Ei (to_update[i], g, j,
                             curr_aug_dat,
                             curr_theta,
                             obs_dat,
                             hyperparameters,
                             index_dates,
-                            range_dates)
+                            range_dates,
+                            date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
+                            tol = MCMC_settings$tol)
             n_proposed_E_moves <- n_proposed_E_moves + 1
             n_accepted_E_moves <- n_accepted_E_moves + tmp$accept
             if(tmp$accept==1)
             {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-              
-              # if accepted move, update zeta
-              # tmp <- move_zeta_gibbs(curr_aug_dat,
-              #                        curr_theta,
-              #                        obs_dat,
-              #                        hyperparameters)
-              # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
             }
           }
         }
       }
     }
     
+    #print("before swap_Ei loop")
+    #print(date_transition_mat_obs_true_log[1,1])
     # swap the E_is that can be swapped (i.e. where exactly one is =1 and exactly one is =0)
     #print("Swap some E_i")
     if(MCMC_settings$moves_switch$swapE_on) 
     {
       for(g in seq_len(n_groups))
       {
-        #print(g)
+        #print(paste("group",g))
         candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
         #print(candidates_for_swap)
         for(i in candidates_for_swap)
         {
-          #print(i)
+          #print(paste("individual", i))
+          #print("before swap_Ei function call")
+          #print(date_transition_mat_obs_true_log[1,1])
           tmp <- swap_Ei(i, g,  
-                  curr_aug_dat,
-                  curr_theta, 
-                  obs_dat, 
-                  hyperparameters, 
-                  index_dates,
-                  range_dates)
+                         curr_aug_dat,
+                         curr_theta, 
+                         obs_dat, 
+                         hyperparameters, 
+                         index_dates,
+                         range_dates,
+                         date_transition_mat_obs_true_log = date_transition_mat_obs_true_log,
+                         tol = MCMC_settings$tol)
           n_proposed_swapE_moves <- n_proposed_swapE_moves + 1
           n_accepted_swapE_moves <- n_accepted_swapE_moves + tmp$accept
           if(tmp$accept==1)
           {
             curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
-            
-            # if accepted move, update zeta
-            # tmp <- move_zeta_gibbs(curr_aug_dat,
-            #                        curr_theta,
-            #                        obs_dat,
-            #                        hyperparameters)
-            # curr_theta <- tmp$new_theta # always update with new theta (Gibbs sampler)
           }
         }
       }
@@ -309,7 +344,7 @@ RunMCMC <- function(obs_dat,
       idx <- (k - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every+1
       theta_chain[[idx]] <- curr_theta
       aug_dat_chain[[idx]] <- curr_aug_dat
-      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
+      logpost_chain[idx] <- lposterior_total(curr_aug_dat, curr_theta, obs_dat, hyperparameters, index_dates, range_dates, date_transition_mat_obs_true_log = date_transition_mat_obs_true_log) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
     }
   }
   
@@ -318,17 +353,19 @@ RunMCMC <- function(obs_dat,
   ###############################################
   
   accept_prob <- list(
-    D_moves=n_accepted_D_moves / n_proposed_D_moves,
-    E_moves=n_accepted_E_moves / n_proposed_E_moves,
-    mu_moves=lapply(seq_len(n_groups), function(g) n_accepted_mu_moves[[g]] / n_proposed_mu_moves[[g]]),
-    CV_moves=lapply(seq_len(n_groups), function(g) n_accepted_CV_moves[[g]] / n_proposed_CV_moves[[g]]),
-    zeta_moves=1)
+    D_moves = n_accepted_D_moves / n_proposed_D_moves,
+    E_moves = n_accepted_E_moves / n_proposed_E_moves,
+    E_swaps = n_accepted_swapE_moves / n_proposed_swapE_moves,
+    mu_moves = lapply(seq_len(n_groups), function(g) n_accepted_mu_moves[[g]] / n_proposed_mu_moves[[g]]),
+    CV_moves = lapply(seq_len(n_groups), function(g) n_accepted_CV_moves[[g]] / n_proposed_CV_moves[[g]]),
+    zeta_moves = 1)
   
   ###############################################
   ### Return list of outputs of interest ###
   ###############################################
   
-  res <- list(theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob)
+  res <- list(theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob,
+              date_transition_mat_obs_true_log = date_transition_mat_obs_true_log)
   
   return(res)
 }
@@ -342,17 +379,30 @@ RunMCMC <- function(obs_dat,
 #'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
 #' }
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return Nothing. Only performs a plot.
 #' @import graphics
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-plot_parameter_chains <- function(MCMCres, theta_true=NULL)
+plot_parameter_chains <- function(MCMCres, theta_true=NULL, index_dates) 
 {
-  par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
-  
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
+  
+  par(mfrow=c(2, 1 + n_groups),mar=c(5, 6, 1, 1))
   
   iterations <- seq_len(length(MCMCres$theta_chain))
   if(!is.null(theta_true)) x_coord_simul <- max(iterations)*1.05
@@ -361,63 +411,29 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   plot(MCMCres$logpost_chain, type="l", xlab="Iterations", ylab="Log posterior")
   
   # looking at mean delay 
-  group_idx <- 1 ##########################
-  j <- 1
-  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-  plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-alive group)", ylim=c(0, 20))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j])
-  par(xpd=FALSE)
-  
-  legend("topright", "Onset-Report", lty=1)
-  group_idx <- 2 ##########################
-  j <- 1
-  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-  plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(non hospitalised-dead group)", ylim=c(0, 20))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  for(j in seq(2,(n_dates[group_idx]-1),1))
+  for(group_idx in 1:n_groups)
   {
+    group_name <-  group_names[group_idx]
+    j <- 1
     mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-    lines(mu, col=j)
+    plot(mu, type="l", xlab="Iterations", ylab=paste0("mean delays\n(",group_name,")"), ylim=c(0, 20))
     par(xpd=TRUE)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
     par(xpd=FALSE)
+    if(n_dates[group_idx]>2)
+    {
+      for(j in seq(2,(n_dates[group_idx]-1),1))
+      {
+        mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
+        lines(mu, col=j)
+        par(xpd=TRUE)
+        if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
+        par(xpd=FALSE)
+      }
+    }
+    legend("topright", apply(index_dates[[group_idx]], 2, paste, collapse = "-"),
+           lty=1, col=seq_len(n_dates[group_idx]))
   }
-  legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-  group_idx <- 3 ##########################
-  j <- 1
-  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-  plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-alive group)", ylim=c(0, 20))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  for(j in seq(2,(n_dates[group_idx]-1), 1))
-  {
-    mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-    lines(mu, col=j)
-    par(xpd=TRUE)
-    if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
-    par(xpd=FALSE)
-  }
-  legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-  group_idx <- 4 ##########################
-  j <- 1
-  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-  plot(mu, type="l", xlab="Iterations", ylab="mean delays\n(hospitalised-dead group)", ylim=c(0, 20))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  for(j in seq(2,(n_dates[group_idx]-1), 1))
-  {
-    mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] )
-    lines(mu, col=j)
-    par(xpd=TRUE)
-    if(!is.null(theta_true)) points(x_coord_simul,theta_true$mu[[group_idx]][j], col=j)
-    par(xpd=FALSE)
-  }
-  legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
   
   # looking at zeta
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta )
@@ -426,63 +442,29 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
   if(!is.null(theta_true)) points(x_coord_simul,theta_true$zeta)
   par(xpd=FALSE)
   
-  # looking at CV delay
-  group_idx <- 1 ##########################
-  j <- 1
-  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-  plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-alive group)", ylim=c(0, 2))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  legend("topright", "Onset-Report", lty=1)
-  group_idx <- 2 ##########################
-  j <- 1
-  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-  plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(non hospitalised-dead group)", ylim=c(0, 2))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  for(j in seq(2,(n_dates[group_idx]-1), 1))
+  for(group_idx in 1:n_groups)
   {
+    group_name <-  group_names[group_idx]
+    j <- 1
     CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-    lines(CV, col=j)
+    plot(CV, type="l", xlab="Iterations", ylab=paste0("CV delays\n(",group_name,")"), ylim=c(0, 2))
     par(xpd=TRUE)
     if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
     par(xpd=FALSE)
+    if(n_dates[group_idx] > 2)
+    {
+      for(j in seq(2,(n_dates[group_idx]-1), 1))
+      {
+        CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
+        lines(CV, col=j)
+        par(xpd=TRUE)
+        if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
+        par(xpd=FALSE)
+      }
+    }
+    legend("topright", apply(index_dates[[group_idx]], 2, paste, collapse = "-"),
+           lty=1, col=seq_len(n_dates[group_idx]))
   }
-  legend("topright", c("Onset-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-  group_idx <- 3 ##########################
-  j <- 1
-  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-  plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-alive group)", ylim=c(0, 2))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  for(j in seq(2,(n_dates[group_idx]-1),1))
-  {
-    CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-    lines(CV, col=j)
-    par(xpd=TRUE)
-    if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-    par(xpd=FALSE)
-  }
-  legend("topright", c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
-  group_idx <- 4 ##########################
-  j <- 1
-  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-  plot(CV, type="l", xlab="Iterations", ylab="CV delays\n(hospitalised-dead group)", ylim=c(0, 2))
-  par(xpd=TRUE)
-  if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-  par(xpd=FALSE)
-  for(j in seq(2,(n_dates[group_idx]-1), 1))
-  {
-    CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] )
-    lines(CV, col=j)
-    par(xpd=TRUE)
-    if(!is.null(theta_true)) points(x_coord_simul,theta_true$CV[[group_idx]][j], col=j)
-    par(xpd=FALSE)
-  }
-  legend("topright", c("Onset-Hosp", "Hosp-Death", "Onset-Report"), lty=1, col=seq_len(n_dates[group_idx]))
 }
 
 
@@ -490,12 +472,13 @@ plot_parameter_chains <- function(MCMCres, theta_true=NULL)
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
 #' @param aug_dat_true A list containing the data to which the output chains should be compared. If not \code{NULL}, this should have the format of the output of function \code{\link{simul_true_data}}. 
+#' @param n_plots_per_group The number of infividuals to plot augmented data chains for (for each group). Defaults to 5. 
 #' @return Nothing. Only performs a plot.
 #' @import graphics
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
+plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL, n_plots_per_group = 5)
 {
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
@@ -509,55 +492,26 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
     cex <- 1.5
   }
   
-  par(mfrow=c(4, 5),mar=c(5, 6, 1, 1))
-  group_idx <- 1 ##########################
-  # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
-  for(i in seq_len(length(indiv_to_plot)) )
+  par(mfrow=c(n_groups, n_plots_per_group),mar=c(5, 6, 4, 1))
+  
+  for(group_idx in 1:n_groups)
   {
-    j <- 1
-    date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-    plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-    par(xpd=TRUE)
-    if(!is.null(aug_dat_true))
+    # randomly pick 5 individuals in that group
+    indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), n_plots_per_group)
+    if(!is.null(rownames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]])))
     {
-      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+      ids_indiv_to_plot <- rownames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]])[indiv_to_plot]
+    } else
+    {
+      ids_indiv_to_plot <- paste("Individual",indiv_to_plot)
     }
-    par(xpd=FALSE)
-    for(j in seq_len(n_dates[group_idx]))
+    for(i in seq_len(length(indiv_to_plot)) )
     {
+      j <- 1
       date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-      lines(date, col=j)
-      par(xpd=TRUE)
-      if(!is.null(aug_dat_true)) 
-      {
-        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
-      }
-      par(xpd=FALSE)
-    }
-    legend("topright", c("Onset","Report"), lty=1, col=seq_len(n_dates[group_idx]))
-  }
-  group_idx <- 2 ##########################
-  # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
-  for(i in seq_len(length(indiv_to_plot)) )
-  {
-    j <- 1
-    date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-    plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-    par(xpd=TRUE)
-    if(!is.null(aug_dat_true))
-    {
-      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
-    }
-    par(xpd=FALSE)
-    for(j in seq(2, (n_dates[group_idx]), 1))
-    {
-      date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-      lines(date, col=j)
+      plot(date, type="l", xlab="Iterations", ylab="", 
+           main = ids_indiv_to_plot[i],
+           ylim=c(min(date)-30, max(date)+30))
       par(xpd=TRUE)
       if(!is.null(aug_dat_true))
       {
@@ -565,107 +519,81 @@ plot_aug_dat_chains <- function(MCMCres, aug_dat_true=NULL)
         points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
       }
       par(xpd=FALSE)
-    }
-    legend("topright", c("Onset","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
-  }
-  group_idx <- 3 ##########################
-  # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
-  for(i in seq_len(length(indiv_to_plot)) )
-  {
-    j <- 1
-    date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-    plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-    par(xpd=TRUE)
-    if(!is.null(aug_dat_true))
-    {
-      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
-    }
-    par(xpd=FALSE)
-    for(j in seq(2, (n_dates[group_idx]), 1))
-    {
-      date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-      lines(date, col=j)
-      par(xpd=TRUE)
-      if(!is.null(aug_dat_true))
+      if(n_dates[group_idx]>2)
       {
-        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+        for(j in seq(2, (n_dates[group_idx]), 1))
+        {
+          date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
+          lines(date, col=j)
+          par(xpd=TRUE)
+          if(!is.null(aug_dat_true))
+          {
+            pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
+            points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
+          }
+          par(xpd=FALSE)
+        }
       }
-      par(xpd=FALSE)
+      if(!is.null(colnames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]])))
+        legend("topright", colnames(MCMCres$aug_dat_chain[[1]]$D[[group_idx]]), lty=1, col=seq_len(n_dates[group_idx]), cex = 0.7)
     }
-    legend("topright", c("Onset","Hosp","Disch","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
-  }
-  group_idx <- 4 ##########################
-  # randomly pick 5 individuals in that group
-  indiv_to_plot <- sample(seq_len(n_indiv_per_group[group_idx]), 5)
-  for(i in seq_len(length(indiv_to_plot)) )
-  {
-    j <- 1
-    date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-    plot(date, type="l", xlab="Iterations", ylab="", ylim=c(min(date)-30, max(date)+30))
-    par(xpd=TRUE)
-    if(!is.null(aug_dat_true))
-    {
-      pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-      points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
-    }
-    par(xpd=FALSE)
-    for(j in seq(2,(n_dates[group_idx]), 1))
-    {
-      date <- sapply(iterations, function(e) MCMCres$aug_dat_chain[[e]]$D[[group_idx]][indiv_to_plot[i], j] )
-      lines(date, col=j)
-      par(xpd=TRUE)
-      if(!is.null(aug_dat_true))
-      {
-        pch <- pch_types[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))]
-        points(x_coord_simul[match(aug_dat_true$E[[group_idx]][indiv_to_plot[i],j], c(-1, 0, 1))],aug_dat_true$D[[group_idx]][indiv_to_plot[i],j], col=j, pch=pch, cex=cex)
-      }
-      par(xpd=FALSE)
-    }
-    legend("topright", c("Onset","Hosp","Death","Report"), lty=1, col=seq_len(n_dates[group_idx]) )
   }
 }
 
 #' Compute correlation between the MCMC chains of mean and CV of each delay
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param plot A boolean indicating whether to plot the correlations or not
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return A list of results of correlation test (obtained from the function \code{\link{cor.test}}) between the posterior mean and the posterior CV for each delay. 
 #' @import graphics
 #' @import stats
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
+compute_correlations_mu_CV <- function(MCMCres, index_dates, plot=TRUE)
 {
   cor_mu_CV <- list()
   
-  if(plot) par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
-  
-  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol)
+  n_delays <- sapply(index_dates, ncol)
   n_groups <- length(n_dates)
+  
+  if(plot) par(mfrow=c(n_groups, max(n_delays)), mar=c(5, 6, 5, 1))
   
   iterations <- seq_len(length(MCMCres$theta_chain) )
   
-  group_idx <- 1
-  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]])
-  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]])
-  if(plot) plot(mu, CV, type="l")
-  cor_mu_CV[[group_idx]] <- cor.test(mu, CV)
-  
-  for(group_idx in seq(2, n_groups, 1))
+  for(group_idx in seq(1, n_groups, 1))
   {
     cor_mu_CV[[group_idx]] <- list()
-    for(j in seq_len(n_dates[[group_idx]]-1))
+    for(j in seq_len(n_dates[group_idx]-1))
     {
       mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
       CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-      if(plot) plot(mu, CV, type="l", col=j)
+      if(plot) plot(mu, CV, type="l", col=j,
+                    xlab = "mean delay",
+                    ylab = "CV delay", 
+                    main = paste0(paste(index_dates[[group_idx]][,j], collapse = "-"), " \n(", names(index_dates)[group_idx], ")"))
       cor_mu_CV[[group_idx]][[j]] <- cor.test(mu, CV)
     }
+    if(plot) 
+    {
+      if(n_delays[group_idx] < max(n_delays))
+      {
+        for(j in n_dates[group_idx]:max(n_delays))
+        {
+          plot.new()
+        }
+      }
+    }
+    names(cor_mu_CV[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
   }
+  names(cor_mu_CV) <- names(index_dates)
   
   return(cor_mu_CV)
 }
@@ -673,48 +601,91 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
 #' Compute autocorrelation for each parameter of the MCMC chains 
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param plot A boolean indicating whether to plot the autocorrelations or not
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return A list of results of autocorrelation results (obtained from the function \code{\link{acf}}). 
 #' @import graphics
 #' @import stats
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_autocorr <- function(MCMCres)
+compute_autocorr <- function(MCMCres, index_dates, plot=TRUE)
 {
   autocorr <- list()
-  autocorr$mu <- list()
-  autocorr$CV <- list()
-  
-  par(mfrow=c(4, 5),mar=c(4, 4, 4, 0.5))
+  autocorr$mean_delays <- list()
+  autocorr$CV_delays <- list()
   
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_delays <- sapply(index_dates, ncol)
   n_groups <- length(n_dates)
+  
+  if(plot) par(mfrow=c(1 + n_groups, max(n_delays)*2 ),mar=c(4, 4, 5, 0.5))
   
   iterations <- seq_len(length(MCMCres$theta_chain) )
   
-  for(group_idx in seq(1, n_groups, 1))
+  zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
+  autocorr$prob_error <- acf(zeta, main="Probability of error", plot = plot)
+  
+  if(plot) 
   {
-    autocorr$mu[[group_idx]] <- list()
-    autocorr$CV[[group_idx]] <- list()
-    for(j in seq_len(n_dates[[group_idx]]-1))
+    if(max(n_delays) > 1)
     {
-      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-      autocorr$mu[[group_idx]][[j]] <- acf(mu, main=sprintf("Mu, group %d, delay %d", group_idx, j))
-      autocorr$CV[[group_idx]][[j]] <- acf(CV, main=sprintf("CV, group %d, delay %d", group_idx, j))
+      plot.new()
+      for(j in 2:max(n_delays))
+      {
+        plot.new()
+        plot.new()
+      }
     }
   }
   
-  zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
-  autocorr$zeta <- acf(zeta, main="zeta")
+  for(group_idx in seq(1, n_groups, 1))
+  {
+    autocorr$mean_delays[[group_idx]] <- list()
+    autocorr$CV_delays[[group_idx]] <- list()
+    for(j in seq_len(n_dates[group_idx]-1))
+    {
+      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
+      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
+      autocorr$mean_delays[[group_idx]][[j]] <- acf(mu, 
+                                                    plot = plot,
+                                                    main = paste0("Mean ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
+      
+      autocorr$CV_delays[[group_idx]][[j]] <- acf(CV,  
+                                                  plot = plot,
+                                                  main = paste0("CV ",paste(index_dates[[group_idx]][,j], collapse = "-"), " delay \n(", names(index_dates)[group_idx], ")"))
+    }
+    names(autocorr$mean_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
+    names(autocorr$CV_delays[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
+    if(plot) 
+    {
+      if(n_delays[group_idx] < max(n_delays))
+      {
+        for(j in n_dates[group_idx]:max(n_delays))
+        {
+          plot.new()
+          plot.new()
+        }
+      }
+    }
+  }
+  
+  names(autocorr$mean_delays) <- names(index_dates)
+  names(autocorr$CV_delays) <- names(index_dates)
+  
   
   return(autocorr)
 }
 
-
 #' Computes posterior estimates of parameters from the MCMC chain
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param central A character specifying what the central estimate should be (median or mean posterior)
 #' @param CrI A scalar in [0;1] used to compute the posterior credible intervals. For 95\% credible intervals, use CrI=0.95.
 #' @param theta_true A list of parameters to which the output chains should be compared. If not \code{NULL}, this should contain:
@@ -726,6 +697,11 @@ compute_autocorr <- function(MCMCres)
 #' The posterior distributions of parameters are then plotted together with \code{theta_true}. 
 #' @param plot A boolean specifying whether to plot boxplots of the posterior estimates or not
 #' @param cex.axis A numerical value giving the amount by which x axis labels should be magnified relative to the default.
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
 #' @return A list containing two elements: the posterior estimates of parameters:
 #' \itemize{
 #'  \item{\code{logpost}}{: A vector of three values giving the central log-posterior estimate (first value) and quantiles corresponding to CrI (second and third values). }
@@ -741,13 +717,24 @@ compute_autocorr <- function(MCMCres)
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), CrI=0.95, theta_true=NULL, plot=TRUE, cex.axis=1)
+get_param_posterior_estimates <- function(MCMCres, 
+                                          index_dates, 
+                                          central=c("median","mean"), CrI=0.95, 
+                                          theta_true=NULL, plot=TRUE, cex.axis=1)
 {
-  par(mfrow=c(2, 5),mar=c(3, 5, 0.5, 0.5))
-  
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
   n_groups <- length(n_dates)
   n_indiv_per_group <- sapply(MCMCres$aug_dat_chain[[1]]$D, nrow )
+  
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
+  
+  par(mfrow=c(2, 1 + n_groups),mar=c(3, 5, 0.5, 0.5))
   
   iterations <- seq_len(length(MCMCres$theta_chain))
   output <- list()
@@ -764,100 +751,469 @@ get_param_posterior_estimates <- function(MCMCres, central=c("median","mean"), C
   output$theta <- list()
   
   # looking at mean delay 
-  group_idx <- 1 ##########################
-  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
+  for(group_idx in 1:n_groups)
   {
-    boxplot(mu, ylab="mean delays\n(non hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels="Onset-Report", tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
-  }
-  group_idx <- 2 ##########################
-  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
-  {
-    boxplot(mu, ylab="mean delays\n(non hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
-  }
-  group_idx <- 3 ##########################
-  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
-  {
-    boxplot(mu, ylab="mean delays\n(hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
-  }
-  group_idx <- 4 ##########################
-  mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
-  output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
-  {
-    boxplot(mu, ylab="mean delays\n(hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
+    group_name <-  group_names[group_idx]
+    delays_names <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
+    mu <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j] ) )
+    output$theta$mu[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(mu[[j]]), quantile(mu[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+    if(plot)
+    {
+      boxplot(mu, ylab=paste0("mean delays\n(",group_name,")"), main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+      axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=delays_names, tick=FALSE, cex.axis=cex.axis)
+      axis(side=2)
+      if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$mu[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
+    }
   }
   
   # looking at zeta
   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
+  output$theta$zeta <- c(get(central)(zeta), quantile(zeta, c((1-CrI)/2, CrI+(1-CrI)/2)) ) 
   if(plot)
   {
-    boxplot(zeta, axes=FALSE, ylab="zeta")
-    axis(side=1, at=1, labels="zeta", tick=FALSE, cex.axis=cex.axis)
+    boxplot(zeta, axes=FALSE, ylab="prob error")
+    axis(side=1, at=1, labels="prob error", tick=FALSE, cex.axis=cex.axis)
     axis(side=2)
     if(!is.null(theta_true)) points(theta_true$zeta, pch=8, lwd=2, cex=2)
   }
   
   # looking at CV delay 
-  group_idx <- 1 ##########################
-  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
+  for(group_idx in 1:n_groups)
   {
-    boxplot(CV, ylab="CV delays\n(non hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels="Onset-Report", tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
-  }
-  group_idx <- 2 ##########################
-  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
-  {
-    boxplot(CV, ylab="CV delays\n(non hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
-  }
-  group_idx <- 3 ##########################
-  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
-  {
-    boxplot(CV, ylab="CV delays\n(hospitalised-alive group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Disch", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
-  }
-  group_idx <- 4 ##########################
-  CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
-  output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
-  if(plot)
-  {
-    boxplot(CV, ylab="CV delays\n(hospitalised-dead group)", main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
-    axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=c("Onset-Hosp", "Hosp-Death", "Onset-Report"), tick=FALSE, cex.axis=cex.axis)
-    axis(side=2)
-    if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
+    group_name <-  group_names[group_idx]
+    delays_names <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
+    CV <- lapply(seq_len(n_dates[group_idx]-1), function(j) sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j] ) )
+    output$theta$CV[[group_idx]] <- sapply(seq_len(n_dates[group_idx]-1), function(j) c(get(central)(CV[[j]]), quantile(CV[[j]], c((1-CrI)/2, CrI+(1-CrI)/2)) ) )
+    if(plot)
+    {
+      boxplot(CV, ylab=paste0("CV delays\n(",group_name,")"), main="", border=seq_len(n_dates[group_idx]-1), axes=FALSE)
+      axis(side=1, at=seq_len(n_dates[group_idx]-1), labels=delays_names, tick=FALSE, cex.axis=cex.axis)
+      axis(side=2)
+      if(!is.null(theta_true)) points(seq_len(n_dates[group_idx]-1), theta_true$CV[[group_idx]], pch=8, lwd=2, cex=2, col=seq_len(n_dates[group_idx]-1))
+    }
   }
   
+  # TO DO: here suggest to add all inputs into the list output so you can recover what data this was based on and what MCMC settings etc. 
   return(output)
+  
+}
+
+#' Plots the posterior estimates of the delay distributions
+#' 
+#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#' @param theta_true A list of parameters to which the output chains should be compared. If not \code{NULL}, this should contain:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups=length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of \code{mu} should be a scalar or vector giving the mean delay(s) in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param time_unit the time unit to display in the x axes of the plots ("days" by default).
+#' @param max_quantile_to_plot the quantile of the delay distributions to use to determine where to stop the x axes. 
+#' @param dt the time step to use for plotting the pdf of the delays
+#' @param legend a boolean indicating whether a legend should be added (only added to the first plot)
+#' @param central which central estimate of the delays pdf to plot; 
+#' one of "mode" (the default, uses the mode of the posterior of \code{MCMCres}), 
+#' "median" (plots for each t, the median pdf(t) across \code{MCMCres}),
+#' "both" (both median and mode are plotted).
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
+#' @return Nothing. Only performs a series of plots of the pdf of the delay distributions.
+#' @import graphics
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+plot_estimated_continuous_delay_distributions <- function(MCMCres, 
+                                                          theta_true=NULL, 
+                                                          index_dates, 
+                                                          time_unit = "days",
+                                                          max_quantile_to_plot = 0.9,
+                                                          dt = 0.01, 
+                                                          legend = TRUE,
+                                                          central = c("mode", "median", "both")) 
+{
+  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
+  n_delays <- sapply(index_dates, ncol)
+  n_groups <- length(n_dates)
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
+  
+  par(mfrow=c(n_groups, max(n_delays)),mar=c(5, 6, 1, 1))
+  
+  iterations <- seq_len(length(MCMCres$theta_chain))
+  
+  # looking at the delays for each group 
+  for(group_idx in 1:n_groups)
+  {
+    group_name <-  group_names[group_idx]
+    for(j in seq(1,(n_delays[group_idx]), 1))
+    {
+      params <- as.data.frame(t(sapply(iterations, function(e) 
+        find_params_gamma(mean = MCMCres$theta_chain[[e]]$mu[[group_idx]][j], 
+                          CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j]))))
+      max_delay_for_ploting <- ceiling(max(sapply(iterations, function(e) 
+        qgamma(max_quantile_to_plot, shape = params$shape[e],  scale = params$scale[e]))))
+      ### code for the discrete plots:
+      # x <- seq_len(max_delay_for_ploting)
+      # naive discretisation:
+      #y <- sapply(iterations, function(e) 
+      #  pgamma(x, shape = params$shape[e],  scale = params$scale[e]) - pgamma(x - 1, shape = params$shape[e],  scale = params$scale[e]))
+      # discretisation similar to that in the likelihood we use (see Cori et al. AJE 2013):
+      # y <- sapply(iterations, function(e) 
+      #   MixDiff:::DiscrGamma(x-1, 
+      #                        mu = MCMCres$theta_chain[[e]]$mu[[group_idx]][j],  
+      #                        CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j],  
+      #                        log = FALSE))
+      ### code for the continuous plots:
+      x <- seq(dt, max_delay_for_ploting, dt)
+      y <- sapply(iterations, function(e) dgamma(x, shape = params$shape[e],  
+                                                 scale = params$scale[e]))
+      y_low <- apply(y, 1, quantile, 0.025)
+      y_up <- apply(y, 1, quantile, 0.975)
+      y_median <- apply(y, 1, quantile, 0.5)             
+      y_mode_posterior <- y[,which.max(MCMCres$logpost_chain)]
+      y_max <-  max(apply(y, 1, max))
+      if(!is.null(theta_true))
+      {
+        params_true <- find_params_gamma(mean = theta_true$mu[[group_idx]][j], 
+                                         CV = theta_true$CV[[group_idx]][j])
+        y_true <- dgamma(x, shape = params_true["shape"],  
+                         scale = params_true["scale"])
+        y_max <- max(c(y_max, y_true))
+      }
+      
+      if(central %in% c("median", "both"))
+      {
+        plot(x, y_median, type = "l", lty = 2,
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+        polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
+                col = "#00000055", 
+                border = NA)
+        if(central %in% "both")
+          lines(x, y_mode_posterior)
+      } else if(central %in% "mode")
+      {
+        plot(x, y_mode_posterior, type = "l",
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+        polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
+                col = "#00000055", 
+                border = NA)
+      }
+      
+      if(!is.null(theta_true))
+      {
+        lines(x, y_true, col = "red")
+        if(legend & group_idx == 1 & j == 1)
+        {
+          if(central %in% "both")
+          {
+            legend("topright", c("Median", "Mode", "95%CrI", "True"), 
+                   lty = c(2, 1, -1, 1), pch = c(-1, -1, 15, -1),
+                   pt.cex = c(1, 1, 2.5, 1),
+                   col = c("black", "black", "#00000055", "red"), 
+                   bty = "n")
+          } else if(central %in% "median")
+          {
+            legend("topright", c("Median", "95%CrI", "True"), 
+                   lty = c(2, -1, 1), pch = c(-1, 15, -1),
+                   pt.cex = c(1, 2.5, 1),
+                   col = c("black", "#00000055", "red"), 
+                   bty = "n")
+          } else if(central %in% "mode")
+          {
+            legend("topright", c("Mode", "95%CrI", "True"), 
+                   lty = c(1, -1, 1), pch = c(-1, 15, -1),
+                   pt.cex = c(1, 2.5, 1),
+                   col = c("black", "#00000055", "red"), 
+                   bty = "n")
+          }
+        }
+      } else
+      {
+        if(legend & group_idx == 1 & j == 1)
+        {
+          if(central %in% "both")
+          {
+            legend("topright", c("Median", "Mode", "95%Cri"), 
+                   lty = c(2, 1, -1), pch = c(-1, -1, 15),
+                   pt.cex = c(1, 1, 2.5),
+                   col = c("black", "black", "#00000055"), 
+                   bty = "n")
+          } else if(central %in% "median")
+          {
+            legend("topright", c("Median", "95%CrI"), 
+                   lty = c(2, -1), pch = c(-1, 15),
+                   pt.cex = c(1, 2.5),
+                   col = c("black", "#00000055"), 
+                   bty = "n")
+          } else if(central %in% "mode")
+          {
+            legend("topright", c("Mode", "95%CrI"), 
+                   lty = c(1, -1), pch = c(-1, 15),
+                   pt.cex = c(1, 2.5),
+                   col = c("black", "#00000055"), 
+                   bty = "n")
+          }
+        }
+      }
+    }
+    if((n_delays[group_idx]) < max(n_delays))
+    {
+      for(j in seq(n_delays[group_idx] + 1, max(n_delays), 1))
+      {
+        plot.new()
+      }
+    }
+  }
+  
+}
+
+#' Plots the posterior estimates of the delay distributions for several datasets at a time (useful for simulations)
+#' 
+#' @param MCMCres A list, each element of which is the output of function \code{\link{RunMCMC}}. 
+#' @param theta_true A list of parameters to which the output chains should be compared. If not \code{NULL}, this should contain:
+#' \itemize{
+#'  \item{\code{mu}}{: A list of length \code{n_groups=length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of \code{mu} should be a scalar or vector giving the mean delay(s) in that group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar or vector giving the coefficient o variation of the delay(s) in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#' }
+#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
+#' @param time_unit the time unit to display in the x axes of the plots ("days" by default).
+#' @param max_quantile_to_plot the quantile of the delay distributions to use to determine where to stop the x axes. 
+#' @param dt the time step to use for plotting the pdf of the delays
+#' @param legend a boolean indicating whether a legend should be added (only added to the first plot)
+#' @param central which central estimate of the delays pdf to plot; 
+#' one of "mode" (the default, uses the mode of the posterior across all elements in the list \code{MCMCres}), 
+#' "median" (plots for each t, the median of all pdfs(t) across all elements in the list \code{MCMCres}),
+#' "multiple_modes" (uses the mode of each posterior across the elements in the list \code{MCMCres}), 
+#' "multiple_medians" (plots for each t, the median of each pdfs(t) across the elements in the list \code{MCMCres}),
+#' "none" (no central estimate is plotted).
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' 
+#' @return Nothing. Only performs a series of plots of the pdf of the delay distributions.
+#' @import graphics
+#' @export
+#' @examples
+#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+plot_multiple_estimated_continuous_delay_distributions <- function(MCMCres, 
+                                                                   theta_true=NULL, 
+                                                                   index_dates, 
+                                                                   time_unit = "days",
+                                                                   max_quantile_to_plot = 0.9,
+                                                                   dt = 0.01, 
+                                                                   legend = TRUE, 
+                                                                   central = c("mode", "median", "multiple_modes", "multiple_medians", "none")) 
+{
+  central <- match.arg(central)
+  
+  n_dates <- sapply(MCMCres[[1]]$aug_dat_chain[[1]]$D, ncol )
+  n_delays <- sapply(index_dates, ncol)
+  n_groups <- length(n_dates)
+  if(is.null(names(n_dates)))
+  {
+    group_names <- paste("Group", 1:n_groups)
+  } else
+  {
+    group_names <- names(n_dates)
+  }
+  
+  par(mfrow=c(n_groups, max(n_delays)), mar=c(4, 5, .5, .5))
+  
+  iterations <- seq_len(length(MCMCres[[1]]$theta_chain))
+  
+  params_to_save <- list()
+  
+  # looking at the delays for each group 
+  for(group_idx in 1:n_groups)
+  {
+    group_name <-  group_names[group_idx]
+    params_to_save[[group_idx]] <- list()
+    for(j in seq(1,(n_delays[group_idx]), 1))
+    {
+      params <- as.data.frame(t(sapply(iterations, function(e) 
+        find_params_gamma(mean = MCMCres[[1]]$theta_chain[[e]]$mu[[group_idx]][j], 
+                          CV = MCMCres[[1]]$theta_chain[[e]]$CV[[group_idx]][j]))))
+      for(k in 2:length(MCMCres))
+      {
+        params <- rbind(params, as.data.frame(t(sapply(iterations, function(e) 
+          find_params_gamma(mean = MCMCres[[k]]$theta_chain[[e]]$mu[[group_idx]][j], 
+                            CV = MCMCres[[k]]$theta_chain[[e]]$CV[[group_idx]][j])))))
+      }
+      idx <- as.vector(unlist(sapply(1:length(MCMCres), function(k) rep(k, length(MCMCres[[k]]$theta_chain)))))
+      
+      params_to_save[[group_idx]][[j]] <- cbind(idx, params)
+      
+      max_delay_for_ploting <- ceiling(max(sapply(iterations, function(e) 
+        qgamma(max_quantile_to_plot, shape = params$shape[e],  scale = params$scale[e]))))
+      ### code for the discrete plots:
+      # x <- seq_len(max_delay_for_ploting)
+      # naive discretisation:
+      #y <- sapply(iterations, function(e) 
+      #  pgamma(x, shape = params$shape[e],  scale = params$scale[e]) - pgamma(x - 1, shape = params$shape[e],  scale = params$scale[e]))
+      # discretisation similar to that in the likelihood we use (see Cori et al. AJE 2013):
+      # y <- sapply(iterations, function(e) 
+      #   MixDiff:::DiscrGamma(x-1, 
+      #                        mu = MCMCres$theta_chain[[e]]$mu[[group_idx]][j],  
+      #                        CV = MCMCres$theta_chain[[e]]$CV[[group_idx]][j],  
+      #                        log = FALSE))
+      ### code for the continuous plots:
+      x <- seq(dt, max_delay_for_ploting, dt)
+      y <- sapply(1:nrow(params), function(e) dgamma(x, shape = params$shape[e],  
+                                                     scale = params$scale[e]))
+      y_low <- apply(y, 1, quantile, 0.025)
+      y_up <- apply(y, 1, quantile, 0.975)
+      if(central == "median")
+      {
+        y_central <- apply(y, 1, quantile, 0.5)            
+      } else if(central == "mode")
+      {
+        y_modes <- sapply(1:length(MCMCres), function(k) 
+          y[,idx == k][,which.max(MCMCres[[k]]$logpost_chain)])
+        post_values <- sapply(1:length(MCMCres), function(k) max(MCMCres[[k]]$logpost_chain))
+        y_central <- y_modes[, which.max(post_values)]
+      } else if(central == "multiple_medians")
+      {
+        y_central <- sapply(1:length(MCMCres), function(k) 
+          apply(y[,idx == k], 1, quantile, 0.5))             
+      } else if(central == "multiple_modes")
+      {
+        y_central <- sapply(1:length(MCMCres), function(k) 
+          y[,idx == k][,which.max(MCMCres[[k]]$logpost_chain)])
+      } 
+      y_max <-  max(apply(y, 1, max))
+      if(!is.null(theta_true))
+      {
+        params_true <- find_params_gamma(mean = theta_true$mu[[group_idx]][j], 
+                                         CV = theta_true$CV[[group_idx]][j])
+        y_true <- dgamma(x, shape = params_true["shape"],  
+                         scale = params_true["scale"])
+        y_max <- max(c(y_max, y_true))
+      }
+      
+      if(central %in% c("multiple_medians", "multiple_modes"))
+      {
+        plot(x, y_central[,1], type = "l", lty = 2, 
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+        for(k in 2:length(MCMCres))
+        {
+          lines(x, y_central[,k], lty = 2)
+        }
+      } else if(central %in% c("median", "mode"))
+      {
+        plot(x, y_central, type = "l", lty = 2, 
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+      } else
+      {
+        plot(x, y[,1], type = "l", lty = 2, 
+             col = "white",
+             ylim = c(0, y_max),
+             xlab = paste0("Delay ", 
+                           apply(index_dates[[group_idx]], 2, paste, collapse = "-")[j], 
+                           " (", time_unit,")",
+                           "\n(",group_name,")"),
+             ylab = "pdf")
+      }
+      polygon(c(x, rev(x)), c(y_low, rev(y_up)), 
+              col = "#00000055", 
+              border = NA)
+      if(!is.null(theta_true))
+      {
+        lines(x, y_true, col = "red")
+        if(legend & group_idx == 1 & j == 1)
+        {
+          if(central %in% c("median", "multiple_medians")) 
+          {
+            legend_txt <- c("Median", "95%CrI", "True") 
+          } else if(central %in% c("mode", "multiple_modes")) 
+          {
+            legend_txt <- c("Mode", "95%CrI", "True") 
+          }
+          if(central != "none")
+          {
+            legend("topright", legend_txt, 
+                   lty = c(2, -1, 1), pch = c(-1, 15, -1),
+                   pt.cex = c(1, 2.5, 1),
+                   col = c("black", "#00000055", "red"), 
+                   bty = "n")
+          } else
+          {
+            legend("topright", c("95%CrI", "True") , 
+                   lty = c(-1, 1), pch = c(15, -1),
+                   pt.cex = c(2.5, 1),
+                   col = c("#00000055", "red"), 
+                   bty = "n")
+          }
+        }
+      } else {
+        if(legend & group_idx == 1 & j == 1)
+        {
+          if(central %in% c("median", "multiple_medians")) 
+          {
+            legend_txt <- c("Median", "95%CrI") 
+          }else if(central %in% c("mode", "multiple_modes")) 
+          {
+            legend_txt <- c("Mode", "95%CrI") 
+          }
+          if(central != "none")
+          {
+            legend("topright", legend_txt, 
+                   lty = c(2, -1), pch = c(-1, 15),
+                   pt.cex = c(1, 2.5),
+                   col = c("black", "#00000055"), 
+                   bty = "n")
+          }else
+          {
+            legend("topright", "95%CrI", 
+                   lty = c(-1), pch = c(15),
+                   pt.cex = c(2.5),
+                   col = c("#00000055"), 
+                   bty = "n")
+          }
+        }
+      }
+    }
+    names(params_to_save[[group_idx]]) <- apply(index_dates[[group_idx]], 2, paste, collapse = "-")
+    if((n_delays[group_idx]) < max(n_delays))
+    {
+      for(j in seq(n_delays[group_idx] + 1, max(n_delays), 1))
+      {
+        plot.new()
+      }
+    }
+  }
+  names(params_to_save) <- names(index_dates)
+  return(params_to_save)
   
 }
 

@@ -64,17 +64,25 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
   D <- list()
   for(g in seq_len(n_groups) )
   {
+    #print(paste("group", g))
     D[[g]] <- obs_dat[[g]]
     for(e in seq_len(nrow(D[[g]])))
     {
-      #print(e)
-      
+       #if(g==1 & e == 2)
+       #{
+      #   browser()
+      # }
+      #print(paste("individual", e))
+      #print(D[[g]][e,])
       # first deal with incompatible dates
       for(j in seq_len(ncol(index_dates_order[[g]])))
       {
+        #print(paste("date", j))
+        #print(D[[g]][e,index_dates_order[[g]][,j]])
         if(!any(is.na(D[[g]][e,index_dates_order[[g]][,j]])))
         {
           # there is a problem if the dates have too short or too long delay
+          #print(D[[g]][e,])
           if(are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )
           {
             # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
@@ -90,8 +98,11 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
               must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
             }
             D[[g]][e,must_be_wrong] <- NA
+            #while_idx = 0
             while(!(must_be_wrong %in% index_dates_order[[g]][,j]))
             {
+              #while_idx <- while_idx + 1
+              #print(paste("while_idx:", while_idx))
               # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
               tmp <- table(as.vector(index_dates_order[[g]][,sapply(seq_len(ncol(index_dates_order[[g]])), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
               if(any(tmp>1))
@@ -111,51 +122,16 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       }
       
       # now deal with missing dates
-      missing_dates <- which(is.na(D[[g]][e,]))
-      while(length(missing_dates)>0)
-      {
-        can_be_inferred_from <- lapply(missing_dates, function(i) {
-          x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
-          from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
-          from_value <- sapply(seq_len(nrow(x)), function(k) D[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
-          rule <- sapply(seq_len(nrow(x)), function(k) if(x[k,1]==1) "before" else "after"  )
-          return(list(rule=rule,from_idx=from_idx, from_value=from_value))
-        })
-        can_be_inferred <- which(sapply(seq_len(length(missing_dates)), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
-        for(k in can_be_inferred)
-        {
-          x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
-          if(length(x)==1)
-          {
-            inferred <- can_be_inferred_from[[k]]$from_value[x]
-          }else
-          {
-            if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
-            {
-              inferred <- min(can_be_inferred_from[[k]]$from_value[x])
-            }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
-            {
-              inferred <- max(can_be_inferred_from[[k]]$from_value[x])
-            }else
-            {
-              max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
-              min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
-              if(min_val>max_val)
-              {
-                stop("Incompatible data to infer from. ")
-              }else
-              {
-                inferred <- floor(median(c(min_val, max_val)))
-              }
-            }
-          }
-          D[[g]][e,missing_dates[k]] <- inferred
-        }
-        missing_dates <- which(is.na(D[[g]][e,]))
-      }
+      D <- infer_missing_dates(D, E = NULL, g, e, index_dates, index_dates_order)$D
+      
     }
   }
   names(D) <- names(obs_dat)
+  for(g in seq_len(n_groups) )
+  {
+    colnames(D[[g]]) <- colnames(obs_dat[[g]])
+    rownames(D[[g]]) <- rownames(obs_dat[[g]])
+  }
   
   # compute E accordingly
   E <- list()
@@ -167,14 +143,20 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
       error <- D[[g]][,j] != obs_dat[[g]][,j]
       E[[g]][which(error),j] <- 1 # error
       E[[g]][which(!error),j] <- 0 # no error
-      E[[g]][is.na(error)] <- -1 # missing value
+      E[[g]][which(is.na(obs_dat[[g]][,j])), j] <- -1 # missing value
     }
     names(E[[g]]) <- names(obs_dat[[g]])
   }
   names(E) <- names(obs_dat)
+  for(g in seq_len(n_groups) )
+  {
+    colnames(E[[g]]) <- colnames(obs_dat[[g]])
+    rownames(E[[g]]) <- rownames(obs_dat[[g]])
+  }
   
   aug_dat <- list(D = D,
                   E = E)
+  
   
   return(aug_dat)
 }
@@ -225,7 +207,7 @@ initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) #
 {
   n_groups <- length(aug_dat$D)
   n_dates <- sapply(aug_dat$D, ncol)
-    
+  
   ### mean and std of distribution of various delays, by group
   ### we use a the starting point the observed mean and std of each delay in each group
   obs_delta <- compute_delta(aug_dat$D, index_dates)

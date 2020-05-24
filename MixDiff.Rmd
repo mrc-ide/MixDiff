@@ -1,64 +1,138 @@
 ---
-title: "MixDiff: a framework to reconstruct dataset with missing or erroneous data for outbreaks intervention"
-output: html_document
+title: 'MixDiff: a framework to reconstruct dataset with missing or erroneous data
+  for outbreaks intervention'
+output:
+  pdf_document:
+    includes:
+      in_header: header.tex
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# load relevant libraries
+library(kableExtra)
+library(captioner)
+
+# set up captions for figures and tables
+table_captions <- captioner::captioner(prefix="Table S", auto_space = FALSE)
+figure_captions <- captioner::captioner(prefix="Figure S", auto_space = FALSE)
+
+t.ref <- function(label){
+  stringr::str_extract(table_captions(label), "[^:]*")
+}
+
+f.ref <- function(label){
+  stringr::str_extract(figure_captions(label), "[^:]*")
+}
+
 ```
+
+<!-- ```{r chunk_creating_one_figure, echo=FALSE, fig.cap=figure_captions("one_figure", "figure label")} -->
+<!-- plot(1) -->
+<!-- ``` -->
+
+<!-- As shown in figure `r f.ref("one_figure")` -->
+
 
 # Method
 
-##Pathways
+## Pathways
 
-There exist four different pathays depending if the case has been hospitalised and/or survived. The date associated with the four health seeking pathways are given in the following table: 
+```{r, echo = FALSE}
+pathways_tab_caption <- table_captions(
+  name = "pathways_tab", 
+  caption = "Clinical pathways relevant for an Ebola like disease")
+```
+
+There exist four different pathays depending if the case has been hospitalised 
+and/or survived. The date associated with the four health seeking pathways are 
+given in `r t.ref("pathways_tab")`.
+
+`r pathways_tab_caption`
 
 |                  | Onset | Hospitalisation | Death | Discharge | Report |
 |------------------|-------|-----------------|-------|-----------|--------|
 | $HD$             |   X   |        X        |   X   |           |    X   |
 | $H\bar{D}$       |   X   |        X        |       |     X     |    X   |
-| $\bar{HD}$       |   X   |                 |   X   |           |    X   |
+| $\bar{H}D$       |   X   |                 |   X   |           |    X   |
 | $\bar{H}\bar{D}$ |   X   |                 |       |           |    X   |
 
 ## Notations
 
-For each individual $i$, we denote $y_i^k$ $(k=1, \ldots, n_{g_i})$ the observed data for that individual. 
-The number of observed data $n_{g_i}$ can depend on characteristics of the individual, defined by a grouping so that individual $i$ is in group $g_i$. 
+For each individual $i$, we denote $y_i^k$ $(k=1, \ldots, n_{g_i})$ the observed 
+data for that individual. 
+The number of observed data $n_{g_i}$ can depend on characteristics of the 
+individual, defined by a grouping so that individual $i$ is in group $g_i$. 
 
-Here, we consider observed data as being epidemiologically relevant dates, which depend on the path of the individual (see table above): if the individual was hospitalised and died ($g_i=HD$) or was hospitalised and did not die ($g_i=H\bar{D}$), $n_{g_i}=4$; if the individual was not hospitalised and died ($g_i=\bar{H}D$), $n_{g_i}=3$; if the individual was not hospitalised and died ($g_i=\bar{H}\bar{D}$), $n_{g_i}=2$.
+Here, we consider observed data as being epidemiologically relevant dates, which 
+depend on the path of the individual (see table above): if the individual was 
+hospitalised and died ($g_i=HD$) or was hospitalised and did not die 
+($g_i=H\bar{D}$), $n_{g_i}=4$; if the individual was not hospitalised and died 
+($g_i=\bar{H}D$), $n_{g_i}=3$; if the individual was not hospitalised and died 
+($g_i=\bar{H}\bar{D}$), $n_{g_i}=2$.
 
-We are interested in inferring the timing of the different steps of the healthcare pathways depending on the group $g_{i}$. To fully describe the healthcare pathway, we need to define the onset of the disease (no other date should be anterior) and then $n_{g_i}-1$ delays to reach the $n_{g_i}-1$ remaining enpoints. Any pairs of points can be chosen, providing that there exists a path from the origin to the endpoints. For example, in the case of the group $HD$, (onset -> hospitalisation, hospitalisation -> death, onset -> report) is a valid representation, while (onset -> hospitalisation, hospitalisation -> Death, onset -> report)
-$\Delta_i^k$ the delay taken by individual $i$ for the $k$th delay distribution 
+We are interested in inferring the timing of the different steps of the 
+healthcare pathways depending on the group $g_{i}$. To fully describe the 
+healthcare pathway, we need to define the onset of the disease (no other date 
+should be anterior) and then $n_{g_i}-1$ delays to reach the $n_{g_i}-1$ 
+remaining enpoints. Any pairs of points can be chosen, providing that there 
+exists a path from the origin to the endpoints. For example, in the case of the 
+group $HD$, (onset -> hospitalisation, hospitalisation -> death, onset -> report) 
+is a valid representation, while (onset -> hospitalisation, 
+hospitalisation -> Death, onset -> report)
+$\Delta_i^k$ the delay taken by individual $i$ for the $k$th delay distribution. 
 
-We assume that each data (here date) can have been recorded with error, or can be missing in the observations. Hence we introduce augmented data $D_i^k$ $(k=1, \ldots, n_{g_i})$, where $D_i^k$ is the true data corresponding to the observed data $y_i^k$. 
+We assume that each data (here date) can have been recorded with error, or can 
+be missing in the observations. Hence we introduce augmented data $D_i^k$ 
+$(k=1, \ldots, n_{g_i})$, where $D_i^k$ is the true data corresponding to the 
+observed data $y_i^k$. 
 
 ## Likelihood
 
 ### Observation level
 
-The data from the healthcare pathways can be missing or recorded, and, if recorded, can be correct or erroneous. To each observed data entry $y_i^k$ is thus associated an indicator function $E_i^k \in \{-1,0,1 \}$ (missing, recorded and no error, recorded and erroneous). We have
+The data from the healthcare pathways can be missing or recorded, and, if 
+recorded, can be correct or erroneous. To each observed data entry $y_i^k$ is 
+thus associated an indicator function $E_i^k \in \{-1,0,1 \}$ (missing, recorded 
+and no error, recorded and erroneous). We have
 $$P(E_i^k=1|E_i^k \neq -1)= Bernoulli(\zeta)$$
-with $\zeta$ the error probability. The likelihood associated with the observed data $y_i^k$ conditional on the true data $D_i^k$ is thus:
+with $\zeta$ the error probability. The likelihood associated with the observed 
+data $y_i^k$ conditional on the true data $D_i^k$ is thus:
 $$P(y_i^k|D_i^k,E_i^k=0)=\delta_{y_i^k,D_i^k}$$
 $$P(y_i^k|D_i^k,E_i^k=1)=h_{\theta_h}\left(D_i^k\right)$$
 $$P(y_i^k|D_i^k,E_i^k=-1)=1$$
 
-Here we assume that any date between $T$ and $T_{0}$ are equally likely to be recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$.
+Here we assume that any date between $T$ and $T_{0}$ are equally likely to be 
+recorded and thus $h_{\theta_h}\left(D_i^k\right)=\frac{1}{T-T_{0}}$.
 
-NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as error on onset date > error on death date. Also think about the space of possible errors - if wider than h is smaller and moves towards E=1 might be difficult to achieve. What happens if T_0 is ridiculously early or T ridiculously late in the dataset - this will affect the likelihood. 
+NOTE: discuss what $h_{\theta_h}$ should be; could include conditions such as 
+error on onset date > error on death date. Also think about the space of possible 
+errors - if wider than h is smaller and moves towards E=1 might be difficult to 
+achieve. What happens if T_0 is ridiculously early or T ridiculously late in the 
+dataset - this will affect the likelihood. 
+
+??? Probably need a prior for p(D, E), which will include the 
+$$P(E_i^k=1|E_i^k \neq -1)= Bernoulli(\zeta)$$ but also requires a p(D) ?
 
 ### Difference level
 
 This level describes the difference between two observations: 
 for $k\geq 2$, $P\left(D_i^k|D_i^{k-1}, g_i\right) = f_{k-1, k}^{g_i}\left(D_i^{k}-D_i^{k-1}\right)$. 
 
-We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with mean and coefficient of variation (before discretisation) being noted respectively $\mu_{k-1, k}^{g_i}$ and $CV_{k-1, k}^{g_i}$. 
+We use discretised gamma distributions for $f_{k-1, k}^{g_i}$ with mean and 
+coefficient of variation (before discretisation) being noted respectively 
+$\mu_{k-1, k}^{g_i}$ and $CV_{k-1, k}^{g_i}$. 
 
-<!--In our example, we assume that the distribution of the delay between exposure and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
+<!--In our example, we assume that the distribution of the delay between exposure 
+and onset $f_{E, O}^{g_i}=f_{E, O}$ does not depend on the group - NOT RELEVANT 
+FOR NOW AS NOT CONSIDERING EXPOSURE DATE -->
 
 ### Full posterior distribution
 
-The joint posteior distribution of parameters and augmented data given observed data is:
+The joint posteior distribution of parameters and augmented data given observed 
+data is:
 
 $\begin{aligned}
 P\left(\zeta, \mu, CV, D, E | g, y\right) \propto& P\left(\zeta, \mu, CV, D, E, g, y\right) \\
@@ -68,20 +142,383 @@ P\left(\zeta, \mu, CV, D, E | g, y\right) \propto& P\left(\zeta, \mu, CV, D, E, 
 
 where $P\left(D | \zeta, \mu, CV, g\right) \propto \prod_i \prod_{k=2}^{n_{g_i}} P\left( D_i^k | D_i^{k-1}, \mu, CV, g \right)$ (assuming a uniform prior for $D_i^1$). 
 
-## Priors
+## Inference
 
-We use an informative beta prior for $\zeta$, and uninformative flat exponential priors for $\mu$ and $CV$, the mean and coefficient of variation of all delays. 
+Inference is made in a Bayesian framework using Markov Chain Monte Carlo (MCMC). 
 
-## Moves
+### Priors
 
-TO WRITE BETTER
-Metropolis algorithm with Lognormal proposal for $\mu$, $CV$
-Beta Gibbs sampler for $\zeta$
-Independant metropolis algorithm for dates $D$, where for each date $D$ we propose a new value drawn in one of the marginal posterior delays this particular date is involved, with $E$ being automatically updated accordingly. Only a fraction of dates (1/10 at the moment) updated at each iteration. 
+We use an informative beta prior for $\zeta$, and uninformative flat exponential 
+priors for $\mu$ and $CV$, the mean and coefficient of variation of all delays. 
+
+### Initialisation of the Markov Chain
+
+We first initialise the augmented data as follows. 
+We start by setting $E = -1$ for all missing dates. 
+We then assume that all other dates are correctly recorded i.e. $D = y$ and 
+$E = 0$.
+We define a maximum delay (100 days by default), so that delays which are either
+strictly negative or above this maximum delay are considered unrealistic.
+For each group, we identify dates involved in any unrealistic delay. 
+For each unrealistic delay identified, we decide on which date involved in this 
+delay is most likely to be incorrectly recorded with the following priority 
+rules: dates involved in several unrealistic delays are more likely to be 
+recorded erroneously; dates furthest away from the median of all recorded dates
+are more likely to be erroneous. Dates identified as erroenously recorded
+through this process are first set to be incorrectly recorded ($E = 1$) and we 
+temporarily assume that the corresponding dates are $D = NA$.
+This process of identification of erroneously recorded dates is repeated 
+recursively until no more unrealistic delays can be identified. 
+The true dates $D$ correspondigng to the observations identified as erroneous, 
+as well as those corresponding to the missing observations
+are then drawn (one at a time) uniformly among a plausible range of dates. 
+For each group and each date, such range of dates is defined from the 
+combination of 
+i) the graph (which defines an ordering between dates), 
+ii) the set of observed dates for this individual (which combined with the graph 
+may impose some bounds on the date under consideration), and 
+ii) setting an absolute minimum and maximum range for all dates (by default the 
+minimum and maximum observed dates across the entire dataset). 
+
+We then initialise the parameters of the model conditional on the augmented data
+as follows. 
+The probability of error $\zeta$ is set to a given value between 0 and 1 
+(0.1 by default); this value does not matter as zeta is then updated using a 
+Gibbs sampler. 
+The mean and coefficient of variation of each delay are set to the observed mean 
+and coefficient of variation for the corresponding augmented dates $D$. 
+
+### Moves
+
+At each iteration of the MCMC, the following movements are performed: 
+
+1) Move a fraction of the dates $D$. For each group of individuals and for each 
+date in that group, a given fraction (1/10 by default) of cases are randomly 
+selected. For each of them, the corresponding date $D$ is updated using an 
+independant Metropolis algorithm, with a candidate value drawn in the marginal 
+mixture distribution of posterior delays this particular date is directly 
+involved in (i.e. is directly connected to in the underlying timeline graph for 
+that group). 
+The error status for that date, $E$, is automatically updated accordingly. 
+We then accept or reject the candidate pair $D$ and $E$. The acceptance 
+probability accounts for the asymetry in the proposal distribution. 
+
+2) Move a fraction of the error statuses $E$. For each group of individuals and 
+for each date in that group, a given fraction (1/10 by default) of cases are 
+randomly selected. For each of them, the corresponding error status $E$, if the 
+corresponding recorded date $y$ is not missing ($E \neq -1$), we update $E$ 
+using a Metropolis algorithm with the candidate value calculated as 
+$E_{proposed} = 1 - E_{current}$.
+If $E_{proposed} = 0$ then the corresponding date  $D$ is automatically updated 
+so that $D = y$. If $E_{proposed} = 1$ then the corresponding date $D$ is 
+updated with a candidate value drawn in the marginal mixture distribution of 
+posterior delays this particular date is directly involved in (i.e. is directly 
+connected to in the underlying timeline graph for that group), excluding the 
+value $D = y$. 
+We then accept or reject the candidate pair $D$ and $E$. The acceptance 
+probability accounts for the asymetry in the proposal distribution for $D$. 
+
+3) Swap error statuses $E$ for a fraction of individuals. First, for each group,
+we identify all individuals who, in the current state of the augmented data 
+chain, have at least one erroneous ($E = -1$) and one non erroneous ($E = 0$) 
+dates. For each of these individuals (one at a time), 
+[COULD PERHAPS DO ONLY A FRACTION HERE?] 
+we then propose to change all error statuses for non missing 
+dates using a Matropolis algorithm. 
+First, we propose to update all currently
+incorrectly recorded dates ($E = 1$) to a be correctly recorded ($E = 0$). The 
+corresponding dates $D$ are then updated so that $D = y$. 
+Second, if the individual has any missing dates ($E = -1$), we update the 
+corresponding dates $D$ one at a time by drawing a candidate value in the 
+marginal mixture distribution of posterior delays this particular date is 
+directly involved in (i.e. is directly connected to in the underlying timeline 
+graph for that group), but ignoring delays involving dates which were either 
+i) correctly recorded ($E = 0$) as we will switch them to $E = 1$ just after, 
+and therefore don't want to rely on their corresponding $D$ values or 
+ii) missing and have not yet been updated, as the corresponding current $D$ 
+values dependent on the dates in i). 
+Finally, we propose to update all currently
+correctly recorded dates ($E = 0$) to a be incorrectly recorded ($E = 1$). 
+We update the corresponding dates $D$ one at a time by drawing a candidate value 
+in the marginal mixture distribution of posterior delays this particular date is 
+directly involved in (i.e. is directly connected to in the underlying timeline 
+graph for that group), but as before, ignoring delays involving dates which were
+currently correctly recorded ($E = 0$) and have not yet been updated to $E = 1$.
+We then accept or reject the candidate set of dates $D$ and error statuses $E$
+for that individual. The acceptance probability accounts for the asymetry in 
+the proposal distribution. 
+[FOR THE ABOVE TO WORK I THINK WE NEED TO HAVE A FULLY CONNECTED GRAPH. 
+IF THAT'S NOT THE CASE, THE SWAPPING NEEDS TO HAPPEN INDEPENDENTLY ON EACH
+PORTION OF THE GRAPH]
+
+4) Move the probability of error $\zeta$. This is done using a Gibbs sampler, 
+drawing from the marginal Beta distribution. 
+
+5) Move the mean delays. For each group and each delay in that group, we update
+the mean corresponding delay $\mu$ using a Metropolis algorithm with Lognormal 
+proposal. 
+
+6) Move the coeeficient of variation of the delays. For each group and each 
+delay in that group, we update the mean corresponding delay $CV$ using a 
+Metropolis algorithm with Lognormal proposal. 
 
 ## Simulation study
 
-TO DESCRIBE
+I order to assess the ability of our model to correctly estimate delay
+distributions while at the same time inferring missing dates and identifying and
+correcting erroneous dates, we performed an extensive simulation study. 
+
+The simulation study was designed to mimick an Ebola like dataset. We considered 
+4 groups of individuals defined by their combination of hospitalisation status
+(hospitalised or not) and their outcome (dead / alive). For each group, we 
+considered a timeline which included date of symtpom onset and date of report 
+(for all groups), date of hospitalisation (for those hospitalised), date of 
+discharge (for those who were hospitalised and survived) and date of death (for
+ those who died). Relationship between these dates were defined through the 
+ directed acyclic graphs (DAGs) shown in Figure XXX, where a directed edge 
+ between two dates defines both an order between the edge (an edge from date 1
+ to date 2 indicating that date 2 is after date 1) as well as an 
+ epidemiologically relevant delay (from date 1 to date 2 in the previous 
+ example). 
+
+```{r, echo = FALSE}
+delay_tab_caption <- table_captions(
+  name = "delay_tab", 
+  caption = "Epidemiological delays used for the baseline Ebola simulation")
+```
+
+We defined different simulation scenarios as variations of a baseline scenario. 
+In the baseline scenario, we simulated 100 individuals in each of the 4 groups. 
+For each individual, a date of symptom onset was randomly drawn uniformly 
+between 1st January and 31st December 2014. Dates of hospitalisation, discharge, 
+death and report were drawn for the relevant groups by sampling delays defined 
+by the DAGs (or timeline) from Gamma distributions with parameters reflecting 
+the epidemiological delays estimated for Ebola in the first year of the 2013-16 
+West African epidemic 
+[REF https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true], 
+shown in `r t.ref("delay_tab")`.
+We assumed $20\%$ of dates were missing (approximately as in 
+[REF https://royalsocietypublishing.org/doi/abs/10.1098/rstb.2016.0308])
+and $5\%$ of the recorded dates were recorded erroneously. The missingness and
+erroneous status was drawn independently for each date using Bernoulli 
+distributions. For erroneously recorded dates, an observed date was drawn based 
+on the "true" date according to the error model described in XXXXXXXX, designed
+from the Typo Challenge data. We ketp track of both the true dates and the 
+recorded dates for each person in each group, so that we could later assess the
+ability of our approach to correctly identify which dates were correctly or 
+erroneously recorded. 
+
+```{r ebola_delays, echo = FALSE}
+### values for simulation from the NEJM one year [USED]
+# https://www.nejm.org/doi/pdf/10.1056/NEJMc1414992?articleTools=true
+# numbers below are actually from supplement: 
+# https://www.nejm.org/doi/suppl/10.1056/NEJMc1414992/suppl_file/nejmc1414992_appendix.pdf
+
+# mean / CI (for the mean) for all countries, Dec 2013 to 25 Nov 2014
+# sd / CI (for the sd) for all countries, Dec 2013 to 25 Nov 2014
+# for confirmed and probable cases
+
+### onset to hosp 
+# 5.0 / 4.9-5.1
+mean_onset_2_hosp <- 5.0
+# 4.4 / 4.3-4.6
+sd_onset_2_hosp <- 4.4
+
+### hosp to discharge
+# 11.2 / 10.8-11.7
+mean_hosp_2_disch <- 11.2
+# 7.2 / 6.8-7.6
+sd_hosp_2_disch <- 7.2
+
+### hosp to death
+# 4.3 / 4.1-4.5
+mean_hosp_2_death <- 4.3
+# 4.0 / 3.8-4.3
+sd_hosp_2_death <- 4.0
+
+### onset to report (not reported in main text?)
+# 5.5 / 5.4-5.7
+mean_onset_2_report <- 5.5
+# 5.2 / 5.1-5.3
+sd_onset_2_report <- 5.2
+
+tab <- data.frame(
+  "Delay" = c("Onset to hospitalisation", 
+              "Hospitalisation to discharge", 
+              "Hospitalisation to death", 
+              "Onset to report"),
+  "Mean (days)" = c(mean_onset_2_hosp, 
+                    mean_hosp_2_disch,
+                    mean_hosp_2_death,
+                    mean_onset_2_report),
+  "Sd (days)" = c(sd_onset_2_hosp, 
+                  sd_hosp_2_disch,
+                  sd_hosp_2_death,
+                  sd_onset_2_report),
+  "Groups using delay" = c("$HD$, $H\\bar{D}$", 
+                           "$H\\bar{D}$", 
+                           "$HD$", 
+                           "$HD$, $H\\bar{D}$, $\\bar{H}D$, $\\bar{H}\\bar{D}$")
+)
+names(tab) <- c("Delays", "Mean (days)", "Sd (days)", "Groups using delay")
+```
+
+`r delay_tab_caption`
+```{r ebola_delays_table, echo = FALSE}
+
+kableExtra::kable(
+  tab, format = "markdown")
+                  
+```
+
+
+```{r, echo = FALSE}
+simulation_scenarios_tab_caption <- table_captions(
+  name = "simul_tab", 
+  caption = "Ebola-like simulation scenarios")
+```
+
+A set of simulation scenarios was then explored to assess the model performance
+in contexts which differed from this baseline scenario in several aspects; all 
+simulation scenarios are summarised in `r t.ref("simul_tab")`.
+
+\newpage
+\blandscape
+
+`r simulation_scenarios_tab_caption`
+
+| Simulation scenario        | Group size | Mean delays                     | CV delays                       | Parametric form delays | Missingness rate | Error rate | Error model    |
+|--------------------        | ---------- | -----------                     | ---------                       | ---------------------- | ---------------- | ---------- | -----------    |
+| Baseline                   | 100        | as in in `r t.ref("simul_tab")` | as in in `r t.ref("simul_tab")` | Discretised Gamma      | $20\%$           | $5\%$      | Typo challenge |       
+| Low missingess             | *          | *                               | *                               | *                      | $5\%$            | *          | *              |       
+| Low error                  | *          | *                               | *                               | *                      | *                | $2\%$      | *              |       
+| High error                 | *          | *                               | *                               | *                      | *                | $20\%$     | *              |
+| Lognormal delays           | *          | *                               | *                               | Discretised Lognormal  | *                | *          | *              |
+| Weibull delays             | *          | *                               | *                               | Discretised Weibull    | *                | *          | *              |
+| Very small sample size     | 10         | *                               | *                               | *                      | *                | *          | *              |
+| Small sample size          | 20         | *                               | *                               | *                      | *                | *          | *              |
+| Moderate sample size       | 50         | *                               | *                               | *                      | *                | *          | *              |
+| Very large sample size     | 500        | *                               | *                               | *                      | *                | *          | *              |
+| XXX Uniform error model    | *          | *                               | *                               | *                      | *                | *          | XXX Uniform    |
+| XXX?? other error model    | *          | *                               | *                               | *                      | *                | *          | XXX???         |
+| Long delays                | *          | Twice as long as baseline       | *                               | *                      | *                | *          | *              |
+| Short delays               | *          | Half as long as baseline        | *                               | *                      | *                | *          | *              |
+| High variability in delays | *          | *                               | Twice the CVs in baseline       | *                      | *                | *          | *              |
+| Low variability in delays  | *          | *                               | *                               | *                      | *                | *          | *              |
+
+*: as baseline
+
+CV: coefficient of variation (i.e. standard deviation / mean)
+
+\elandscape
+
+\newpage
+
+[THINK ABOUT WHETHER WE COULD HAVE SEVERAL ARROWS WITH THE SAME DATE 2?? 
+IF SO WILL NEED TO ACCOUNT FOR THIS IN THE SIMULATION AS AT THE MOMENT WE ASSUME
+EACH DATE IS DEFINED AS THE TIP OF THE ARROW OF A SINGLE OTHER DATE - WHICH
+MAKES SIMULATION EASIER AS CAN DRAW FROM A SINGLE GAMMA RATHER THAN A MIXTURE]
+
+SAY THAT FOR EACH SCENARIO WE MEASURED PERFORMANCE AGAINST SEVERAL ERROR MODELS - AND DO IT!
+
+## Performance of the model on simulated data
+
+For each simulation scenario, we simulated a set of 100 datasets, which we 
+analysed using the framework described in this study. We measured the 
+performance of our approach on each simulated dataset by assessing the model's
+ability to correclty i) estimate the delay distributions; ii) identify erroneous
+date entries and iii) infer missing dates. 
+
+### Estimation of the delay distributions
+
+We measured the ability of our approach to correctly estimate the delay 
+distributions through three indicators. 
+First, for each delay we measured the 
+proportion of simulated datasets for which the 95% credible interval (95%CrI) 
+of the mean (respectively of the coefficient of variation) contained the "true 
+value" (i.e. that used for simulation. 
+Second, we considered a binary indicator measuring whether 
+or not, when aggregating the samples from the posterior distribution of the mean 
+(respectively the coefficient of variation) obtained for each individual 
+dataset, the interval between the 2.5% and the 97.5% quantile of this joint 
+sample did contain the "true value". 
+Finally, we measured the relative error between the "true" value and the median
+estimate obtained from this unique joint posterior sample. The relative error
+was defined as (median estimate - true value) / true value. 
+
+[NEED TO ACTUALLY DO THE WORK FOR INDICATORS 2 AND 3...]
+
+### Detection of erroneous data entries
+
+For each date which was not missing in a dataset ($E \neq -1$), our approach 
+provided a posterior distribution of the erroneous status for this date. The 
+frequency of $E = 1$ in the posterior sample for that date therefore defined 
+a posterior support for error for that specific date. For a given threshold $T$
+($0.5 \leq T \leq 1$), we could therefore classify dates as erroneously recorded
+if their posterior support for error is $\geq T$ and correctly recorded 
+otherwise. This binary classification can then be compared to the "true" 
+corresponding error status in the simulated dataset, to classify each date
+as "true positives" ($TP$, when our method correctly identified an erroneous date), 
+"true negatives" ($TN$, when our method correctly identified a date as non erroneous),
+"false positives" ($FP$, when out method incorrectly identified a date as erroneous)" 
+and "dalse negatives" ($FN$, when our method did not detect an errouneous date). 
+For a given threshold $T$, we therefore measured the sensitivity of our 
+approach as
+$Se_{date}(t) = \frac{TP}{TP + FN}$
+and the specificity as
+$Sp_{date}(t) = \frac{TN}{TN + FP}$.
+
+### Detection of individuals with at least one erroneous data entry
+
+It is clear that for individuals who, because of missing data, have only one 
+date recorded, our approach will not be able to identify that this date is 
+erroneous. 
+Similarly, for individuals with only two recorded dates (either because their
+pathway involves only two dates as in the $\bar{H}\bar{D}$ group in our example,
+or because they have some missing data), if one of the two dates is incorrectly
+recorded, our approach should be able to identify that one of the two dates is 
+erroneous, but may not be able to identify which of the two. 
+
+For this reason, we also measured the performance of our approach in terms of 
+its ability to correctly identify, among individuals with at least two dates
+recorded, individuals with at least one erroneous date. This is again based on
+choosing a threshold $T$ so that dates with posterior support for error above 
+that threshold are classified as erroneous, and comparing this classification 
+with the true error status. 
+
+For a given threshold $T$, we therefore measured the sensitivity of our 
+approach as
+$Se_{indiv}(t) = \frac{TP_{indiv}}{TP_{indiv} + FN_{indiv}}$
+and the specificity as
+$Sp_{indiv}(t) = \frac{TN_{indiv}}{TN_{indiv} + FP_{indiv}}$, 
+
+where 
+$TP_{indiv}$ is the number of individuals who are true positives, i.e. 
+correctly identified by our method as having at least one erroneous date 
+recorded; 
+$TN_{indiv}$ is the number of individuals who are true negatives, i.e. 
+correctly identified by our method as having no erroneous date recorded; 
+$FP_{indiv}$ is the number of individuals who are false positives, i.e. 
+wrongly identified by our method as having at least one erroneous date recorded;
+and finally 
+$FN_{indiv}$ is the number of individuals who are false negatives, i.e. 
+wrongly identified by our method as having no erroneous date recorded
+(all of these measured only among individuals with at least two recorded dates).
+
+NEED TO CHECK / CHANGE CODE SO THAT DENOMINATOR FOR SENSITIVITY/SPECIFICITY BY INDIVIDUAL
+IS CORRECTLY CALCULATED IE RESTRICTED TO THOSE WITH AT LEAST TWO RECORDED DATES
+
+### Estimation of the missing and erroneously recorded dates
+
+PROPOSED MEASURES (NOT OBVIOUS AS DISCRETE VARAIBLES...): 
+for each simulation: 
+1) proportion of missing dates (respectively erroneous dates identified as such 
+with 50% threshold for posterior support for error) for which the true date is 
+within the 95% credible interval of the corresponding augmented date. 
+2) residual between the inferred augmented date (for a given threshold for
+support) and the true date
+
+### TO DO AND WRITE: how do delay distributions differ from those estimated from the raw data - especially when high error rate
 
 ## Error model
 
@@ -96,21 +533,14 @@ TO DESCRIBE
 
 ## Website
 
-* Think about a reward -> "unlock" a donation to MSF?
-* Frame the whole operation as the "Typing challenge"
-* Promotional film, kickstarter style
-* Maria Piggin? public involvement? LSHTM media people? ask about potential for tweet etc of how to reach the maximum amount of people
-* Short question about ID and how to grab from the browser information (e.g. keyboard?)
-* Option tick for email in order to give feedback
-* We will have 5 possible ways of proposing a date
+* We have 5 possible ways of proposing a date
 1. Plain writing e.g. "Thursday 24th June 2014"
 2. American way e.g. June 24th 2014
 3. Month of calendar (image) with a date circle in rate
-4. Relative day, e.g, "last Monday"
+4. Relative day, e.g, "last Monday" [I DON'T THINK WE DID THIS BUT COULD ADD TO THE DISCUSSION]
 5. Use image database of handwriting training set to generate a "handwritten" data in the right format (reading error)
-* Timer to perturbate people?
-* First entry should not be too challenging,
-* We should store the response entry and the proposed things to read, we can do regression to see if particular entries are associate with particular error (or simply more errors)
+
+Regression to see if particular entries are associate with particular error (or simply more errors)
 
 # Plan d'attaque
 

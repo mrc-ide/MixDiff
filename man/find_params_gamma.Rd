@@ -11,7 +11,7 @@ find_params_gamma(mean, sigma = mean * CV, CV)
 
 \item{sigma}{Standard deviation of the gamma distribution}
 
-\item{CV}{An alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}}
+\item{CV}{An alternative way to specify the standard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}}
 }
 \value{
 A vector containing the shape and scale parameters of the gamma distribution.

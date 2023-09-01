@@ -10,13 +10,13 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 ### D contains the unobserved true dates ###
 
 #' Initialises augmented data based on observed data (for the MCMC)
-#' 
-#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#'
+#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param MCMC_settings A list of settings to be used for initialising the augmented data for the MCMC, see details.
-#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-#' 
-#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+#'
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
 #' \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{init_options}}{: A list of the following elements:
@@ -27,7 +27,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #'  }
 #'  }
 #' }
-#' @return A list with two elements: 
+#' @return A list with two elements:
 #' \itemize{
 #'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules inherent to \code{index_dates}}
 #'  \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
@@ -68,7 +68,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
     for(e in seq_len(nrow(D[[g]])))
     {
       #print(e)
-      
+
       # first deal with incompatible dates
       for(j in seq_len(ncol(index_dates_order[[g]])))
       {
@@ -109,11 +109,15 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
           }
         }
       }
-      
+      print("At the end of the first loop")
+      message("g = ", g)
+      message("e = ", e)
       # now deal with missing dates
       missing_dates <- which(is.na(D[[g]][e,]))
       while(length(missing_dates)>0)
-      {
+    {
+
+      message("length of missing_dates ", length(missing_dates))
         can_be_inferred_from <- lapply(missing_dates, function(i) {
           x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
           from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
@@ -149,14 +153,16 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
               }
             }
           }
+
           D[[g]][e,missing_dates[k]] <- inferred
         }
         missing_dates <- which(is.na(D[[g]][e,]))
+
       }
     }
   }
   names(D) <- names(obs_dat)
-  
+
   # compute E accordingly
   E <- list()
   for(g in seq_len(n_groups) )
@@ -172,10 +178,10 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
     names(E[[g]]) <- names(obs_dat[[g]])
   }
   names(E) <- names(obs_dat)
-  
+
   aug_dat <- list(D = D,
                   E = E)
-  
+
   return(aug_dat)
 }
 
@@ -184,10 +190,10 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
 ###############################################
 
 #' Initialises parameters data on augmented data (for the MCMC)
-#' 
-#' @param aug_dat A list of data, in the format returned by \code{\link{simul_true_data}}. 
+#'
+#' @param aug_dat A list of data, in the format returned by \code{\link{simul_true_data}}.
 #' @param index_dates A list containing indications on which delays to consider in the simulation, same as in \code{\link{simul_true_data}}.
-#' @param zeta_init A scalar giving the value zeta should be initialised to. 
+#' @param zeta_init A scalar giving the value zeta should be initialised to.
 #' @return A list containing:
 #' \itemize{
 #'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
@@ -225,7 +231,7 @@ initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) #
 {
   n_groups <- length(aug_dat$D)
   n_dates <- sapply(aug_dat$D, ncol)
-    
+
   ### mean and std of distribution of various delays, by group
   ### we use a the starting point the observed mean and std of each delay in each group
   obs_delta <- compute_delta(aug_dat$D, index_dates)
@@ -235,7 +241,7 @@ initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) #
   names(sigma) <- names(n_dates)
   CV <- lapply(seq_len(n_groups), function(g) sigma[[g]]/mu[[g]])
   names(CV) <- names(n_dates)
-  
+
   ### list of all parameters
   theta <- list(zeta = zeta_init, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
                 # TODO:
@@ -243,7 +249,7 @@ initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) #
                 # time specific and/or space specific
                 mu = mu, # mean of gamma distributions used to characterise the various delays in different groups: mu[[g]][k] is the mean k^th delay in group g
                 CV = CV) # CV of gamma distributions used to characterise the various delays in different groups: CV[[g]][k] is the CV k^th delay in group g
-  
+
   return(theta)
-  
+
 }

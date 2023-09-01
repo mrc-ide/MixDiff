@@ -4,8 +4,13 @@
 \alias{compute_delta_group_delay_and_indiv}
 \title{Compute relevant delays for one individual, based on data}
 \usage{
-compute_delta_group_delay_and_indiv(D, group_idx, indiv_idx, delay_idx,
-  index_dates)
+compute_delta_group_delay_and_indiv(
+  D,
+  group_idx,
+  indiv_idx,
+  delay_idx,
+  index_dates
+)
 }
 \arguments{
 \item{D}{A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.}

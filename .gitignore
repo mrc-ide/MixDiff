@@ -6,3 +6,9 @@ Rprof.out
 MixDiff.html
 .Rapp.history
 .Rhistory
+
+SimulatedData/.DS_Store
+
+*.pdf
+
+*.rds

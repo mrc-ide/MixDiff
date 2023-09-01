@@ -4,8 +4,17 @@
 \alias{move_Di}
 \title{Performs one iteration of an MCMC move for the augmented data}
 \usage{
-move_Di(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
-  hyperparameters, index_dates, range_dates = NULL)
+move_Di(
+  i,
+  group_idx,
+  date_idx,
+  curr_aug_dat,
+  theta,
+  obs_dat,
+  hyperparameters,
+  index_dates,
+  range_dates = NULL
+)
 }
 \arguments{
 \item{i}{The index of the individual(s) for whom augmented data should be moved}

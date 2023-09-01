@@ -58,16 +58,16 @@ index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)), cbind(c(1,
 ###############################################
 
 MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
-                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10, 
-                                          sdlog_mu = list(0.05, c(0.15, 0.15), c(0.15, 0.15, 0.15), c(0.25, 0.25, 0.25)), 
-                                          sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))), 
+                       moves_options=list(fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10,
+                                          sdlog_mu = list(0.05, c(0.15, 0.15), c(0.15, 0.15, 0.15), c(0.25, 0.25, 0.25)),
+                                          sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))),
                        init_options=list(mindelay=0, maxdelay=100),
                        #                       chain_properties=list(n_iter = 200, burnin = 1, record_every=1))
                        #chain_properties=list(n_iter = 500, burnin = 250, record_every=2))
                        chain_properties=list(n_iter = 5000, burnin = 500, record_every=10))
 #chain_properties=list(n_iter = 50000, burnin = 5000, record_every=50))
 #chain_properties=list(n_iter = 250000, burnin = 50000, record_every=100))
-# for now moving all mus and CVs with the same sd, 
+# for now moving all mus and CVs with the same sd,
 # might need to revisit this as some delays might be longer than others an require different sdlog to optimise mixing of the chain
 
 ###############################################
@@ -75,9 +75,9 @@ MCMC_settings <- list( moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = T
 ###############################################
 
 hyperparameters <- list(
-  shape1_prob_error=3, 
-  shape2_prob_error=12, 
-  mean_mean_delay=100, 
+  shape1_prob_error=3,
+  shape2_prob_error=12,
+  mean_mean_delay=100,
   mean_CV_delay=100)
 
 ###############################################
@@ -88,7 +88,7 @@ set.seed(1)
 #Rprof()
 system.time({
   #  profvis::profvis({
-  MCMCres <- RunMCMC(obs_dat, 
+ MCMCres <- RunMCMC(obs_dat,
                      MCMC_settings,
                      hyperparameters,
                      index_dates)
@@ -131,7 +131,7 @@ if(!USE_SIMULATED_DATA)
 ###############################################
 
 # If working on simulated data, load the parameters used for simulation for comparison with MCMC estimates
-if(USE_SIMULATED_DATA) 
+if(USE_SIMULATED_DATA)
 {
   theta_true <- readRDS(paste0(where_to_load_from,"/ThetaUsedForSimulation.rds"))
   aug_dat_true <- readRDS(paste0(where_to_load_from,"/SimulatedAugData.rds"))
@@ -208,25 +208,25 @@ for(g in 1:4)
   abline(h=table(aug_dat_true$E[[g]])[3], col="red")
 }
 
-### define inferred E as wrong if support for true E < 1/4 
+### define inferred E as wrong if support for true E < 1/4
 
 posterior_support_for_real_status_of_entry <- function(g, j)
 {
   tmp <- sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$E[[g]][,j] )
   # remove missing entries to focus on true errors, not just missing data
   tmp [tmp == -1] <- NA
-  ### definition using the mode posterior -- sesems a bit restrictive 
-  #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
+  ### definition using the mode posterior -- sesems a bit restrictive
+  #tmp2 <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i)
   # as.numeric(names(which.max(table(tmp[i,]))) ) == aug_dat_true$E[[g]][i,j] )
   ### definition using threshold 1/4 posterior support
-  prob <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i) 
+  prob <- sapply(seq_len(nrow(MCMCres$aug_dat_chain[[1]]$E[[g]])), function(i)
   {
     if(all(is.na(tmp[i,])))
     {
       res <- NA
-    } else if (any(tmp[i,] == as.character(aug_dat_true$E[[g]][i,j]))) 
+    } else if (any(tmp[i,] == as.character(aug_dat_true$E[[g]][i,j])))
     {
-      res <- as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,]))) 
+      res <- as.vector(table(tmp[i,])[as.character(aug_dat_true$E[[g]][i,j])]/sum(table(tmp[i,])))
     } else res <- 0
     return(res)
   })
@@ -239,8 +239,8 @@ find_problematic_Es <- function(g, j, threshold_posterior_support = 1/4)
   return(prob)
 }
 
-posterior_support_list <- lapply(seq_len(length(index_dates)), 
-                                 function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
+posterior_support_list <- lapply(seq_len(length(index_dates)),
+                                 function(g) lapply(seq_len(1+lengths(index_dates)[g]/2),
                                                     function(j) posterior_support_for_real_status_of_entry(g, j)))
 
 posterior_support <- unlist(posterior_support_list)
@@ -253,14 +253,14 @@ threshold_posterior_support <- 0.25
 abline(v = threshold_posterior_support, col = "red", lty = 2)
 
 # using threshold 1/4
-prob <- lapply(seq_len(length(index_dates)), 
-               function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
-                                  function(j) find_problematic_Es(g, j, 
+prob <- lapply(seq_len(length(index_dates)),
+               function(g) lapply(seq_len(1+lengths(index_dates)[g]/2),
+                                  function(j) find_problematic_Es(g, j,
                                                                   threshold_posterior_support = threshold_posterior_support)))
 
 # using threshold 1/2
-# prob <- lapply(seq_len(length(index_dates)), 
-#                function(g) lapply(seq_len(1+lengths(index_dates)[g]/2), 
+# prob <- lapply(seq_len(length(index_dates)),
+#                function(g) lapply(seq_len(1+lengths(index_dates)[g]/2),
 #                                   function(j) find_problematic_Es(g, j, threshold_posterior_support = 1/2)))
 #prob
 #prob[[4]]
@@ -286,22 +286,22 @@ MCMCres$aug_dat_chain[[length(MCMCres$aug_dat_chain)]]$D[[g]][prob_i,]
 ### TO DO ###
 ###############################################
 
-# Anne: 
+# Anne:
 # check the MCMC, [DO WE RECOVER PRIOR IF WE REMOVE LIKELIHOOD?]
 # try to speed up if possible
-# keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others. 
+# keep track of acceptance rate for D and for mu/CV per group and per delay rather than altogether, to check if some moves are more successful than others.
 # write some code to start from last point in the chain
 # where we use ncol(curr_aug_dat$D[[g]]), check this as I think it may need to be defined from index_dates rather than from D
 # question for Rich: should all functions used in tests be "public"?
-# do we indeed want to update zeta after each D_i move? maybe not useful? 
+# do we indeed want to update zeta after each D_i move? maybe not useful?
 
-# Marc: 
+# Marc:
 # finish writing
 # think about the 1/(T-T0)
 
-# Future ideas: 
+# Future ideas:
 # simulation study
-# other datasets - Marc to talk to John? 
+# other datasets - Marc to talk to John?
 # outputs: proportion erroneous data - ... - nice graphs
 
 
@@ -343,13 +343,13 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
   consensus_E_no_missing <- consensus_E
   for(g in 1:length(tmp))
   {
-    aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA 
+    aug_dat_true_E_no_missing[[g]] [tmp[[g]] == -1] <- NA
     consensus_E_no_missing[[g]] [consensus_E[[g]] == -1] <- NA
   }
-  
+
   sensitivity <- specificity <- rep(NA, 4)
   false_pos <- false_neg <- list()
-  
+
   for(g in 1:length(tmp))
   {
     tab <- table(aug_dat_true_E_no_missing[[g]], consensus_E_no_missing[[g]])
@@ -357,19 +357,19 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
     n_true_pos <- tab["1", "1"]
     n_false_pos <- tab["0", "1"]
     n_false_neg <- tab["1", "0"]
-    
+
     sensitivity[g] <- n_true_pos / (n_true_pos + n_false_neg)
     specificity[g] <- n_true_neg / (n_true_neg + n_false_pos)
-    
+
     false_pos[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 0) & # are really NOT an error
                               (consensus_E_no_missing[[g]]  == 1), # and are detected as errors
                             arr.ind = TRUE)
-    
+
     false_neg[[g]] <- which((aug_dat_true_E_no_missing[[g]] == 1) & # are really  an error
                               (consensus_E_no_missing[[g]]  == 0), # and are NOT detected as errors
                             arr.ind = TRUE)
   }
-  
+
   return(list(sensitivity = sensitivity,
               specificity = specificity,
               false_pos = false_pos,
@@ -378,7 +378,7 @@ compute_sensitivity_specificity_from_consensus <- function(aug_dat_true, consens
 
 detec <- compute_sensitivity_specificity_from_consensus(aug_dat_true, consensus_E)
 
-### specificity: where we've detected an error which did not exist, what was the reason? 
+### specificity: where we've detected an error which did not exist, what was the reason?
 
 false_pos <- detec$false_pos
 # posterior support for erroneous entry
@@ -394,7 +394,7 @@ aug_dat_true$D[[g]][i,j]
 table(sapply(seq_len(length(MCMCres$aug_dat_chain)), function(e) MCMCres$aug_dat_chain[[e]]$D[[g]][i, j]))
 aug_dat_true$E[[g]][i,]
 consensus_E[[g]][i,]
-# -> so this case is interesting: 1 wrong, 1 true, 2 missing, and we never manage to swap the wrong and true because of the missing... 
+# -> so this case is interesting: 1 wrong, 1 true, 2 missing, and we never manage to swap the wrong and true because of the missing...
 # -> will need to propose swaps of true/wrong where we update the missings accordingly !!!
 
 i <- 5
@@ -407,7 +407,7 @@ consensus_E[[g]][i,]
 # same as above
 # and of course this only happens in the last group because of having many dates recorded (you need at least three dates to get this issue)
 
-### sensitivity: where we've not detected an error, what was the reason? 
+### sensitivity: where we've not detected an error, what was the reason?
 
 false_neg <- detec$false_neg
 # posterior support for correct entry

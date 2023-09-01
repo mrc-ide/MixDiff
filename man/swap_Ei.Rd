@@ -4,8 +4,16 @@
 \alias{swap_Ei}
 \title{Performs one iteration of an MCMC move for the augmented data where the indicators of error in observations for one individual are swapped, i.e. the errors become non errors and vice versa.}
 \usage{
-swap_Ei(i, group_idx, curr_aug_dat, theta, obs_dat, hyperparameters,
-  index_dates, range_dates = NULL)
+swap_Ei(
+  i,
+  group_idx,
+  curr_aug_dat,
+  theta,
+  obs_dat,
+  hyperparameters,
+  index_dates,
+  range_dates = NULL
+)
 }
 \arguments{
 \item{i}{The index of the individual for whom augmented data should be moved}

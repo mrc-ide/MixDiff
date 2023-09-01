@@ -4,8 +4,17 @@
 \alias{move_Ei}
 \title{Performs one iteration of an MCMC move for the augmented data representing the indicator of error in observations}
 \usage{
-move_Ei(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
-  hyperparameters, index_dates, range_dates = NULL)
+move_Ei(
+  i,
+  group_idx,
+  date_idx,
+  curr_aug_dat,
+  theta,
+  obs_dat,
+  hyperparameters,
+  index_dates,
+  range_dates = NULL
+)
 }
 \arguments{
 \item{i}{The index of the individual for whom augmented data should be moved}

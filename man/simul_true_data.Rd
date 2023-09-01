@@ -4,8 +4,14 @@
 \alias{simul_true_data}
 \title{Simulates data; see details}
 \usage{
-simul_true_data(theta, n_per_group, range_dates, index_dates,
-  simul_error = FALSE, remove_allNA_indiv = FALSE)
+simul_true_data(
+  theta,
+  n_per_group,
+  range_dates,
+  index_dates,
+  simul_error = FALSE,
+  remove_allNA_indiv = FALSE
+)
 }
 \arguments{
 \item{theta}{List of parameters; see details.}

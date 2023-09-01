@@ -14,6 +14,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
 #' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
 #' @param MCMC_settings A list of settings to be used for initialising the augmented data for the MCMC, see details.
+#' @inheritParams RunMCMC
 #' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
 #'
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
@@ -57,7 +58,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #' ### Initialise augmented data ###
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 #' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
-initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
+initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings, verbose = FALSE)
 {
   index_dates_order <- compute_index_dates_order(index_dates)
   n_groups <- length(obs_dat)
@@ -65,9 +66,11 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
   for(g in seq_len(n_groups) )
   {
     D[[g]] <- obs_dat[[g]]
+
+    if (verbose) message("Processing group ", g)
     for(e in seq_len(nrow(D[[g]])))
     {
-      #print(e)
+      if (verbose) message(paste0("Row ", e, "for group ", g))
 
       # first deal with incompatible dates
       for(j in seq_len(ncol(index_dates_order[[g]])))
@@ -77,6 +80,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
           # there is a problem if the dates have too short or too long delay
           if(are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )
           {
+            if (verbose) message("Incompatible dates. Checking if there is a date that is involved in more than one problematic delay")
             # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
             tmp <- table(as.vector(index_dates_order[[g]][,sapply(seq_len(ncol(index_dates_order[[g]])), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
             if(any(tmp>1))

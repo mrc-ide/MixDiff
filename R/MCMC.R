@@ -52,6 +52,7 @@
 #'  \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded step of the MCMC chain}
 #'  \item{\code{logpost_chain}}{: a vector of values of the log posterior at each recorded step of the MCMC chain}
 #'  \item{\code{accept_prob}}{: A list of the proababilities of acceptance for each parameter across all MCMC iterations}
+#' \item{\code{convergence}}{: a list of logicals. TRUE if the chain has converged i.e., if Gelman-Rubin diagnostic is less than 1.1, FALSE otherwise}
 #' }
 #' @export
 #' @examples
@@ -325,15 +326,40 @@ RunMCMC <- function(obs_dat,
     CV_moves=lapply(seq_len(n_groups), function(g) n_accepted_CV_moves[[g]] / n_proposed_CV_moves[[g]]),
     zeta_moves=1)
 
+###############################################
+  ## Check for convergence
+###############################################
+  convergence <- lapply(theta_chain, function(x) check_convergence(x))
   ###############################################
   ### Return list of outputs of interest ###
   ###############################################
 
-  res <- list(theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob)
+  res <- list(
+    theta_chain = theta_chain, aug_dat_chain = aug_dat_chain,
+    logpost_chain = logpost_chain, accept_prob = accept_prob,
+    convergence = convergence
+  )
 
-  return(res)
+  res
 }
 
+##' Check for convergence of MCMC chain
+##'
+##' .. content for \details{} ..
+##' @title
+##' @param x
+##' @param threshold
+##' @return logical indicating whenther the chain has converged
+##' @author Sangeeta Bhatia
+##' @importFrom coda as.mcmc
+##' @importFrom coda mcmc.list
+##' @importFrom coda gelman.diag
+check_convergence <- function(x, threshold = 1.1) {
+  convergence <- FALSE
+
+
+
+}
 #' Plots the MCMC chains of parameters
 #'
 #' @param MCMCres The output of function \code{\link{RunMCMC}}.

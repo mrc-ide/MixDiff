@@ -348,6 +348,7 @@ RunMCMC <- function(obs_dat,
 ##' @details This is a utility function
 ##' and should not have to be called directly
 ##' by the user.
+##' @param chain numeric vector, samples from MCMC chain.
 ##' @importFrom coda as.mcmc
 ##' @importFrom coda mcmc.list
 ##' @return \code{mcmc.list} from {coda}
@@ -368,10 +369,10 @@ split_chain_in_two <- function(chain) {
 ##' all parameters
 ##'
 ##'
-##' @title Check convergence
-##' @param x
+##' @title Check convergence of MCMC chain
+##' @param x MCMC chain, this is \code{theta_chain} from \code{RunMCMC}
 ##' @param threshold numeric, set to 1.1. This can be configured
-##' but it is probably best not to change it. Gelam-Rubin diagnostic
+##' but it is probably best not to change it. Gelman-Rubin diagnostic
 ##' should be approximately 1 at convergence.
 ##' @return a list with the same structure as a single
 ##' element of the input. Each element of th return value is a

@@ -4,7 +4,7 @@
 \alias{RunMCMC}
 \title{Runs the MCMC estimation procedure.}
 \usage{
-RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
+RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates, verbose = FALSE)
 }
 \arguments{
 \item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
@@ -14,16 +14,19 @@ RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
 \item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+
+\item{verbose}{logical. If TRUE messages will be printed. Useful for debugging. Defaults to FALSE}
 }
 \value{
 A list of the following elements:
  \itemize{
- 
+
  theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob
  \item{\code{theta_chain}}{: a list of parameters, at each recorded step of the MCMC chain}
  \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded step of the MCMC chain}
  \item{\code{logpost_chain}}{: a vector of values of the log posterior at each recorded step of the MCMC chain}
  \item{\code{accept_prob}}{: A list of the proababilities of acceptance for each parameter across all MCMC iterations}
+\item{\code{convergence}}{: a list of logicals. TRUE if the chain has converged i.e., if Gelman-Rubin diagnostic is less than 1.1, FALSE otherwise}
 }
 }
 \description{
@@ -64,8 +67,8 @@ Runs the MCMC estimation procedure.
  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
 }
-\code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+\code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]]
 
 If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
 }

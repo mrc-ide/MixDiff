@@ -300,13 +300,13 @@ RunMCMC <- function(obs_dat,
                                 index_dates)
           n_proposed_CV_moves[[g]][j-1] <- n_proposed_CV_moves[[g]][j-1] + 1
           n_accepted_CV_moves[[g]][j-1] <- n_accepted_CV_moves[[g]][j-1] + tmp$accept
-          if(tmp$accept==1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
+          if (tmp$accept == 1) curr_theta <- tmp$new_theta # if accepted move, update accordingly
         }
       }
     }
 
     # recording value of parameters and corresponding posterior after all moves
-    if( output_stuff )
+    if (output_stuff)
     {
       idx <- (k - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every+1
       theta_chain[[idx]] <- curr_theta
@@ -329,7 +329,7 @@ RunMCMC <- function(obs_dat,
 ###############################################
   ## Check for convergence
 ###############################################
-  convergence <- lapply(theta_chain, function(x) check_convergence(x))
+  convergence <- check_convergence(theta_chain)
   ###############################################
   ### Return list of outputs of interest ###
   ###############################################
@@ -343,22 +343,92 @@ RunMCMC <- function(obs_dat,
   res
 }
 
-##' Check for convergence of MCMC chain
-##'
-##' .. content for \details{} ..
-##' @title
-##' @param x
-##' @param threshold
-##' @return logical indicating whenther the chain has converged
-##' @author Sangeeta Bhatia
+##' Splits a single MCMC chain into two
+## to pretend we have run multiple chains
+##' @details This is a utility function
+##' and should not have to be called directly
+##' by the user.
 ##' @importFrom coda as.mcmc
 ##' @importFrom coda mcmc.list
+##' @return \code{mcmc.list} from {coda}
+##'
+##' @export
+split_chain_in_two <- function(chain) {
+  len <- length(chain)
+  if (len %% 2 != 0) {
+    c1 <- as.mcmc(chain[1:((len + 1)/2)])
+    c2 <- as.mcmc(chain[((len + 1)/2):len])
+  } else {
+    c1 <- as.mcmc(chain[1:(len/2)])
+    c2 <- as.mcmc(chain[(len/2):len])
+  }
+  mcmc.list(c1, c2)
+}
+##' Check convergence of MCMC chains for
+##' all parameters
+##'
+##'
+##' @title Check convergence
+##' @param x
+##' @param threshold numeric, set to 1.1. This can be configured
+##' but it is probably best not to change it. Gelam-Rubin diagnostic
+##' should be approximately 1 at convergence.
+##' @return a list with the same structure as a single
+##' element of the input. Each element of th return value is a
+##' logical indicating whether the chain has converged
+##' @author Sangeeta Bhatia
 ##' @importFrom coda gelman.diag
+##' @export
 check_convergence <- function(x, threshold = 1.1) {
-  convergence <- FALSE
+  ## check that the upper ci is
+  ## smaller than the threshold. If below
+  ## threshold, convergence is TRUE if not
+  ## FALSE
+  f <- function(gr) {
+    unname(gr$psrf[ , "Upper C.I."] < threshold)
+  }
+  ## length of theta_chain is (n_iter - burnin)/record_every
+  ## each element is a list with components mu and CV
+  ## mu and CV are lists of length = number of groups
+  ## Each element of mu (or CV) is a sample for the
+  ## corresponding parameter for the group.
+  ## To check convergence, we pull out the
+  ## samples for each parameter from x and
+  ## then compute the gelman.rubin diagnostic
+  ## Return a list with the same structure
+  ## as one element of x, but with
+  ## logicals instead of samples from
+  ## the parameter distribution
+  out <- x[[1]]
+  ## Check convergence of zeta
+  zeta_chain <- vapply(x, function(y) y$zeta, numeric(1))
+  zeta_chain <- split_chain_in_two(zeta_chain)
+  gr_diag <- gelman.diag(zeta_chain, confidence = 0.95)
+  out$zeta <- f(gr_diag)
+  ngroups <- length(x[[1]]$mu)
+  ## mu and CV, do one at a time
+  for (group in seq_len(ngroups)) {
+    ## Each group might have a different
+    ## number of delays
+    ndelays <- length(x[[group]]$mu)
+    for (delay in seq_len(ndelays)) {
+      chain <- vapply(
+        x, function(y) y$mu[[group]][[delay]],
+        numeric(1)
+      )
+      gr_diag <- gelman.diag(split_chain_in_two(chain), confidence = 0.95)
+      out$mu[[group]][[delay]] <- f(gr_diag)
 
-
-
+      ## Same for CV for this group and this delay
+      chain <- vapply(
+        x, function(y) y$CV[[group]][[delay]],
+        numeric(1)
+      )
+      gr_diag <- gelman.diag(split_chain_in_two(chain), confidence = 0.95)
+      out$CV[[group]][[delay]] <- f(gr_diag)
+    }
+  }
+  out
 }
 #' Plots the MCMC chains of parameters
 #'

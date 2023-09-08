@@ -63,7 +63,7 @@ RunMCMC <- function(obs_dat,
                     index_dates, verbose = FALSE)
 {
 
-  n_dates <- sapply(obs_dat, ncol )
+  n_dates <- sapply(obs_dat, ncol)
   n_groups <- length(n_dates)
 
   ###############################################
@@ -422,8 +422,7 @@ check_convergence <- function(x, threshold = 1.1) {
 
       ## Same for CV for this group and this delay
       chain <- vapply(
-        x, function(y) y$CV[[group]][[delay]],
-        numeric(1)
+        x, function(y) y$CV[[group]][[delay]], numeric(1)
       )
       gr_diag <- gelman.diag(split_chain_in_two(chain), confidence = 0.95)
       out$CV[[group]][[delay]] <- f(gr_diag)

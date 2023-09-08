@@ -8,6 +8,7 @@ Description: Reconstruct dataset with missing or erroneous data for outbreaks in
 License: GPL-2
 RoxygenNote: 7.2.1
 Imports: stats, graphics, rmnist, coda
-Remotes: richfitz/rmnist
-Suggests: testthat
+Remotes: mrc-ide/rmnist
+Suggests: testthat (>= 3.0.0)
+Config/testthat/edition: 3
 Encoding: UTF-8

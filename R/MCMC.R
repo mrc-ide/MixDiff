@@ -60,8 +60,7 @@
 RunMCMC <- function(obs_dat,
                     MCMC_settings,
                     hyperparameters,
-                    index_dates, verbose = FALSE)
-{
+                    index_dates, verbose = FALSE) {
 
   n_dates <- sapply(obs_dat, ncol)
   n_groups <- length(n_dates)
@@ -128,25 +127,20 @@ RunMCMC <- function(obs_dat,
   {
     output_stuff <- (k>=MCMC_settings$chain_properties$burnin) & (k %% MCMC_settings$chain_properties$record_every)==0
 
-    if(output_stuff)
-    {
+    if(output_stuff) {
       print(sprintf("... %d / %d ...", k, MCMC_settings$chain_properties$n_iter))
     }
 
     # move some of the D_i
     #print("Move some D_i")
-    if(MCMC_settings$moves_switch$D_on)
-    {
-      for(g in seq_len(n_groups))
-      {
+    if (MCMC_settings$moves_switch$D_on) {
+      for(g in seq_len(n_groups)) {
         #print(g)
-        for(j in seq_len(ncol(curr_aug_dat$D[[g]])))
-        {
+        for(j in seq_len(ncol(curr_aug_dat$D[[g]]))) {
           #print(j)
           to_update <- sample(seq_len(nrow(obs_dat[[g]])), round(nrow(obs_dat[[g]])*MCMC_settings$moves_options$fraction_Di_to_update)) # proposing moves for only a certain fraction of dates
           n_groups_to_update <- floor(length(to_update) / MCMC_settings$moves_options$move_D_by_groups_of_size)
-          for(i in seq_len(n_groups_to_update))
-          {
+          for(i in seq_len(n_groups_to_update)) {
             #print(i)
             tmp <- move_Di (to_update[MCMC_settings$moves_options$move_D_by_groups_of_size*(i-1)+(seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))], g, j,
                             curr_aug_dat,
@@ -157,8 +151,7 @@ RunMCMC <- function(obs_dat,
                             range_dates)
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
-            if(tmp$accept==1)
-            {
+            if (tmp$accept == 1) {
               curr_aug_dat <- tmp$new_aug_dat # if accepted move, update accordingly
 
               # if accepted move, update zeta
@@ -175,8 +168,7 @@ RunMCMC <- function(obs_dat,
 
     # move some of the E_i
     #print("Move some E_i")
-    if(MCMC_settings$moves_switch$E_on)
-    {
+    if (MCMC_settings$moves_switch$E_on) {
       for(g in seq_len(n_groups))
       {
         #print(g)
@@ -214,15 +206,12 @@ RunMCMC <- function(obs_dat,
 
     # swap the E_is that can be swapped (i.e. where exactly one is =1 and exactly one is =0)
     #print("Swap some E_i")
-    if(MCMC_settings$moves_switch$swapE_on)
-    {
-      for(g in seq_len(n_groups))
-      {
+    if (MCMC_settings$moves_switch$swapE_on) {
+      for(g in seq_len(n_groups)) {
         #print(g)
         candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
         #print(candidates_for_swap)
-        for(i in candidates_for_swap)
-        {
+        for(i in candidates_for_swap) {
           #print(i)
           tmp <- swap_Ei(i, g,
                   curr_aug_dat,
@@ -250,8 +239,7 @@ RunMCMC <- function(obs_dat,
 
     # move zeta using Gibbs sampler
     #print("Move zeta")
-    if(MCMC_settings$moves_switch$zeta_on)
-    {
+    if (MCMC_settings$moves_switch$zeta_on) {
       tmp <- move_zeta_gibbs(curr_aug_dat,
                              curr_theta,
                              obs_dat,
@@ -261,13 +249,10 @@ RunMCMC <- function(obs_dat,
 
     # move mu
     #print("Move mu")
-    if(MCMC_settings$moves_switch$mu_on)
-    {
-      for(g in seq_len(n_groups))
-      {
+    if (MCMC_settings$moves_switch$mu_on) {
+      for (g in seq_len(n_groups)) {
         #print(g)
-        for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
-        {
+        for (j in seq(2,ncol(curr_aug_dat$D[[g]]),1)) {
           #print(j)
           tmp <- move_lognormal(what="mu", g, j-1, MCMC_settings$moves_options$sdlog_mu[[g]][[j-1]],
                                 curr_aug_dat,
@@ -284,10 +269,8 @@ RunMCMC <- function(obs_dat,
 
     # move CV
     #print("Move cv")
-    if(MCMC_settings$moves_switch$CV_on)
-    {
-      for(g in seq_len(n_groups))
-      {
+    if (MCMC_settings$moves_switch$CV_on) {
+      for(g in seq_len(n_groups)) {
         #print(g)
         for(j in seq(2,ncol(curr_aug_dat$D[[g]]),1))
         {
@@ -306,8 +289,7 @@ RunMCMC <- function(obs_dat,
     }
 
     # recording value of parameters and corresponding posterior after all moves
-    if (output_stuff)
-    {
+    if (output_stuff) {
       idx <- (k - MCMC_settings$chain_properties$burnin) / MCMC_settings$chain_properties$record_every+1
       theta_chain[[idx]] <- curr_theta
       aug_dat_chain[[idx]] <- curr_aug_dat
@@ -361,7 +343,7 @@ split_chain_in_two <- function(chain) {
     c2 <- as.mcmc(chain[((len + 1)/2):len])
   } else {
     c1 <- as.mcmc(chain[1:(len/2)])
-    c2 <- as.mcmc(chain[(len/2):len])
+    c2 <- as.mcmc(chain[(1 + len/2):len])
   }
   mcmc.list(c1, c2)
 }
@@ -400,7 +382,7 @@ check_convergence <- function(x, threshold = 1.1) {
   ## as one element of x, but with
   ## logicals instead of samples from
   ## the parameter distribution
-  out <- x[[1]]
+  out <- list(zeta = NULL, mu = NULL, CV = NULL)
   ## Check convergence of zeta
   zeta_chain <- vapply(x, function(y) y$zeta, numeric(1))
   zeta_chain <- split_chain_in_two(zeta_chain)
@@ -419,7 +401,6 @@ check_convergence <- function(x, threshold = 1.1) {
       )
       gr_diag <- gelman.diag(split_chain_in_two(chain), confidence = 0.95)
       out$mu[[group]][[delay]] <- f(gr_diag)
-
       ## Same for CV for this group and this delay
       chain <- vapply(
         x, function(y) y$CV[[group]][[delay]], numeric(1)
@@ -444,8 +425,7 @@ check_convergence <- function(x, threshold = 1.1) {
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-plot_parameter_chains <- function(MCMCres, theta_true=NULL)
-{
+plot_parameter_chains <- function(MCMCres, theta_true = NULL) {
   par(mfrow=c(2, 5),mar=c(5, 6, 1, 1))
 
   n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol )
@@ -776,8 +756,7 @@ compute_correlations_mu_CV <- function(MCMCres, plot=TRUE)
 #' @export
 #' @examples
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_autocorr <- function(MCMCres)
-{
+compute_autocorr <- function(MCMCres) {
   autocorr <- list()
   autocorr$mu <- list()
   autocorr$CV <- list()

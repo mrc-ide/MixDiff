@@ -16,7 +16,7 @@ date_to_int <- function(date, origin = "1970-01-01")
 }
 
 #' Convert integer to date, based on a given origin from which the integer counts the number of days
-#' 
+#'
 #' @param int integer to be converted to \code{Date}.
 #' @param origin The date used as origin for counting days.
 #' @return A \code{Date} object corresponding to \code{int} days after \code{origin}.
@@ -33,7 +33,7 @@ int_to_date <- function(int, origin = "1970-01-01")
 ###############################################
 
 #' Finds the two shape parameters of the beta distribution, given a mean and variance
-#' 
+#'
 #' @param mean Mean of the beta distribution
 #' @param var Variance of the beta distribution
 #' @return A vector containing the two shape parameters of the beta distribution.
@@ -46,8 +46,8 @@ int_to_date <- function(int, origin = "1970-01-01")
 find_params_beta <- function(mean, var) # function to determine parameters of the beta distribution corresponding to a given mean and variance
 {
   # for a beta distribution:
-  # mean = shape1/(shape1+shape2) 
-  # var = shape1*shape2/((shape1+shape2)^2*(shape1+shape2+1)) 
+  # mean = shape1/(shape1+shape2)
+  # var = shape1*shape2/((shape1+shape2)^2*(shape1+shape2+1))
   # after solving we find that
   shape1 <- mean^2*(1-mean)/var - mean
   shape2 <- shape1*(1/mean-1)
@@ -55,7 +55,7 @@ find_params_beta <- function(mean, var) # function to determine parameters of th
 }
 
 #' Finds the shape and scale parameters of the gamma distribution, given a mean and standard deviation
-#' 
+#'
 #' @param mean Mean of the gamma distribution
 #' @param sigma Standard deviation of the gamma distribution
 #' @param CV An alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}
@@ -78,15 +78,15 @@ find_params_gamma <- function(mean, sigma=mean*CV, CV) # function to determine p
 ###############################################
 
 #' Compute relevant delays for one individual, based on data
-#' 
-#' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
+#'
+#' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.
 #' @param group_idx a scalar or vector giving the index of the group(s) for which to calculate the delays
 #' @param indiv_idx a scalar or vector giving the index of the individuals in group \code{group_idx} for which to calculate the delays
 #' @param delay_idx a scalar or vector giving the index of the delay(s) to be calculated
-#' @param index_dates A list containing indications on which delays to consider in the simulation. 
-#' @details \code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. 
-#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-#' @return A list of same length as \code{D}. Each element in the list is a matrix with same number of rows as in \code{D}, but potentially a different number of columns, corresponding to the relevant delays calculated for that group. 
+#' @param index_dates A list containing indications on which delays to consider in the simulation.
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group.
+#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+#' @return A list of same length as \code{D}. Each element in the list is a matrix with same number of rows as in \code{D}, but potentially a different number of columns, corresponding to the relevant delays calculated for that group.
 #' @export
 #' @examples
 #' ### Number of groups of individuals to simulate ###
@@ -114,12 +114,12 @@ compute_delta_group_delay_and_indiv<-function(D, group_idx, indiv_idx, delay_idx
 }
 
 #' Compute relevant delays based on data
-#' 
-#' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}. 
-#' @param index_dates A list containing indications on which delays to consider in the simulation. 
-#' @details \code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. 
-#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-#' @return A list of same length as \code{D}. Each element in the list is a matrix with same number of rows as in \code{D}, but potentially a different number of columns, corresponding to the relevant delays calculated for that group. 
+#'
+#' @param D A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.
+#' @param index_dates A list containing indications on which delays to consider in the simulation.
+#' @details \code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group.
+#' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+#' @return A list of same length as \code{D}. Each element in the list is a matrix with same number of rows as in \code{D}, but potentially a different number of columns, corresponding to the relevant delays calculated for that group.
 #' @export
 #' @examples
 #' ### Number of groups of individuals to simulate ###
@@ -158,9 +158,9 @@ compute_delta <- function(D, index_dates)
 ###############################################
 
 #' Find range of dates from a dataset
-#' 
-#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @return A vector of two integers coresponding to the range in \code{obs_dat}. 
+#'
+#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
+#' @return A vector of two integers coresponding to the range in \code{obs_dat}.
 #' @import stats
 #' @export
 #' @examples
@@ -182,7 +182,7 @@ compute_delta <- function(D, index_dates)
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 #' ### Find the range ###
 #' find_range(D$true_dat)
-#' ### Compare with range specified in the first place ### 
+#' ### Compare with range specified in the first place ###
 #' range_dates
 find_range <- function(obs_dat)
 {
@@ -194,7 +194,7 @@ find_range <- function(obs_dat)
     {
       min_date_tmp <- min(obs_dat[[g]][,j], na.rm=TRUE)
       min_date <- min(c(min_date, min_date_tmp), na.rm=TRUE)
-      
+
       max_date_tmp <- max(obs_dat[[g]][,j], na.rm=TRUE)
       max_date <- max(c(max_date, max_date_tmp), na.rm=TRUE)
     }
@@ -208,30 +208,30 @@ find_range <- function(obs_dat)
 ###############################################
 
 #' Compute rules on the order of dates based on index_dates object; see details
-#' 
+#'
 #' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
-#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-#' 
-#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
-#' 
-#' This function is used to find appropriate starting points for the MCMC, i.e. when choosing initial values for the missing dates, this allows making sure the chosen value is consistent with the ordering of dates in that group, and hence will not generate a null likelihood. 
-#' 
-#' @return A list of same lenght as index_dates, containing indications on ordering of dates for each group. More specifically, each element of \code{index_dates_order} is a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group. 
+#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+#'
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
+#'
+#' This function is used to find appropriate starting points for the MCMC, i.e. when choosing initial values for the missing dates, this allows making sure the chosen value is consistent with the ordering of dates in that group, and hence will not generate a null likelihood.
+#'
+#' @return A list of same lenght as index_dates, containing indications on ordering of dates for each group. More specifically, each element of \code{index_dates_order} is a matrix with 2 rows and a number of columns corresponding to the delays with order rules for that group.
 #' For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
-#' Each column specifies a rule saying that the origin date must be before the destination date.  
-#' This is computed from \code{index_dates} assuming all delays specified in \code{index_dates} have to be positive, and using transitivity rules to derive potential additional rules of positivity. 
-#' In the example below, in group 3, \code{index_dates} indicates that the delay between dates 1 and 2, and the delay between dates 2 and 3, are positive. Hence by transitivity, the delay between date 1 and 3 has to be positive as well, as seen in the output of the function in that example. 
+#' Each column specifies a rule saying that the origin date must be before the destination date.
+#' This is computed from \code{index_dates} assuming all delays specified in \code{index_dates} have to be positive, and using transitivity rules to derive potential additional rules of positivity.
+#' In the example below, in group 3, \code{index_dates} indicates that the delay between dates 1 and 2, and the delay between dates 2 and 3, are positive. Hence by transitivity, the delay between date 1 and 3 has to be positive as well, as seen in the output of the function in that example.
 #' @export
 #' @examples
-#' index_dates <- list(matrix(c(1, 2), nrow=2), 
-#'                        cbind(c(1, 2), c(1, 3)), 
-#'                        cbind(c(1, 2), c(2, 3), c(1, 4)), 
+#' index_dates <- list(matrix(c(1, 2), nrow=2),
+#'                        cbind(c(1, 2), c(1, 3)),
+#'                        cbind(c(1, 2), c(2, 3), c(1, 4)),
 #'                        cbind(c(1, 2), c(2, 3), c(1, 4)) )
 #' index_dates_order <- compute_index_dates_order(index_dates)
 compute_index_dates_order <- function(index_dates)
 {
   index_dates_order <- index_dates
-  
+
   number_cols_added_at_this_round <- 0
   for(e in 1:length(index_dates))
   {
@@ -283,11 +283,11 @@ compute_index_dates_order <- function(index_dates)
 
 
 
-check_MCMC_settings <- function(MCMC_settings, index_dates)
-{
-  if(MCMC_settings$chain_properties$n_iter < MCMC_settings$chain_properties$burnin)
+check_MCMC_settings <- function(MCMC_settings, index_dates) {
+
+  if (MCMC_settings$chain_properties$n_iter < MCMC_settings$chain_properties$burnin)
     stop("Burnin must be <= n_iter")
-  if(length(MCMC_settings$moves_options$sdlog_mu) != length(index_dates))
+  if (length(MCMC_settings$moves_options$sdlog_mu) != length(index_dates))
     stop("sdlog_mu does not have the correct length")
   if(length(MCMC_settings$moves_options$sdlog_CV) != length(index_dates))
     stop("sdlog_CV does not have the correct length")

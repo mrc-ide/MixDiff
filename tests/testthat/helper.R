@@ -17,7 +17,7 @@ simulate_single_group <- function() {
   )
   all_NAs <- apply(siml$obs_dat[[1]], 1, function(row) all(is.na(row)))
   siml$obs_dat[[1]] <- siml$obs_dat[[1]][!all_NAs, ]
-  siml$obs_dat
+  list(obs_dat = siml$obs_dat, index_dates = index_dates)
 }
 
 simulate_four_groups <- function() {
@@ -33,8 +33,10 @@ bad_settings_one_group <- function() {
       CV_on = TRUE, zeta_on = TRUE
     ),
     moves_options = list(
-      fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10,
-      sdlog_mu = list(0.05),
+        fraction_Di_to_update = 1/10,
+        move_D_by_groups_of_size = 1,
+        fraction_Ei_to_update = 1/10,
+        sdlog_mu = list(0.05),
       sdlog_CV = list(0.25)
     ),
     init_options = list(mindelay = 0, maxdelay = 100),

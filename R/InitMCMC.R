@@ -113,9 +113,6 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings, verbose = F
           }
         }
       }
-      print("At the end of the first loop")
-      message("g = ", g)
-      message("e = ", e)
       # now deal with missing dates
       missing_dates <- which(is.na(D[[g]][e,]))
       while(length(missing_dates)>0)

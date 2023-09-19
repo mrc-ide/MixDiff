@@ -57,8 +57,8 @@ bad_settings_one_group <- function() {
 
 good_settings_one_group  <- function() {
   settings <- bad_settings_one_group()
-  settings$mcmc_settings$n_iter <- 1000
-  settings$mcmc_settings$burnin <- 500
+  settings$mcmc_settings$chain_properties$n_iter <- 10000
+  settings$mcmc_settings$chain_properties$burnin <- 5000
   settings
 }
 

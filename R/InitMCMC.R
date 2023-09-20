@@ -107,7 +107,6 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings, verbose = F
       # now deal with missing dates
       missing_dates <- which(is.na(D[[g]][e, ]))
       while (length(missing_dates) > 0) {
-        message("length of missing_dates ", length(missing_dates))
         can_be_inferred_from <- lapply(missing_dates, function(i) {
           x <- which(index_dates_order[[g]] == i, arr.ind = TRUE)
           from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k, 1], x[k, 2]])

@@ -8,14 +8,15 @@ test_that("RunMCMC checks for convergence", {
     settings$hyperparameters,
     obs$index_dates
   )
-  ptype <- list(
-      zeta = FALSE,
-      mu =list(list(FALSE)),
-      CV = list(list(FALSE))
-  )
-  expect_mapequal(
-    out$convergence, expected = ptype
-  )
+  expect_named(out$convergence, c("zeta", "mu", "CV"))
+
+  expect_vector(out$convergence$zeta, size = 1)
+  expect_vector(out$convergence$mu, size = 1)
+  expect_vector(out$convergence$CV, size = 1)
+
+  expect_vector(out$convergence$mu[[1]], size = 1)
+  expect_vector(out$convergence$CV[[1]], size = 1)
+
 
 })
 
@@ -35,10 +36,8 @@ test_that("RunMCMC checks for convergence", {
       mu =list(list(TRUE)),
       CV = list(list(TRUE))
   )
-  expect_mapequal(
-    out$convergence, expected = ptype
-  )
-
+  ## Here we can expect convergence
+  expect_mapequal(out$convergence, ptype)
 })
 
 
@@ -53,13 +52,39 @@ test_that(
     settings$hyperparameters,
     obs$index_dates
   )
-  ptype <- list(
-      zeta = FALSE,
-      mu =list(list(FALSE)),
-      CV = list(list(FALSE))
+  ## Check for structure here because one of the flags might be TRUE
+  ## just by chance.
+  expect_named(out$convergence, c("zeta", "mu", "CV"))
+
+  expect_vector(out$convergence$zeta, size = 1)
+  expect_vector(out$convergence$mu, size = 4)
+  expect_vector(out$convergence$CV, size = 4)
+
+  expect_vector(out$convergence$mu[[1]], size = 1)
+  expect_vector(out$convergence$mu[[2]], size = 2)
+  expect_vector(out$convergence$mu[[3]], size = 3)
+  expect_vector(out$convergence$mu[[3]], size = 3)
+
+  expect_vector(out$convergence$CV[[1]], size = 1)
+  expect_vector(out$convergence$CV[[2]], size = 2)
+  expect_vector(out$convergence$CV[[3]], size = 3)
+  expect_vector(out$convergence$CV[[3]], size = 3)
+
+})
+
+
+test_that(
+    "RunMCMC checks for convergence for multiple groups", {
+
+  obs <- simulate_four_groups()
+  settings <- good_settings(ngroups = 4L)
+  out <- RunMCMC(
+    obs$obs_dat,
+    settings$mcmc_settings,
+    settings$hyperparameters,
+    obs$index_dates
   )
-  expect_mapequal(
-    out$convergence, expected = ptype
-  )
+  ## Check that all flags are TRUE
+
 
 })

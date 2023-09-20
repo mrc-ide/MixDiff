@@ -392,31 +392,36 @@ check_convergence <- function(x, threshold = 1.1) {
   ## as one element of x, but with
   ## logicals instead of samples from
   ## the parameter distribution
-  out <- list(zeta = NULL, mu = NULL, CV = NULL)
+  ## out <- x[[1]]
+    ## out <- rapply(out, as.logical, how = "list")
+   out <- list(zeta = NULL, mu = NULL, CV = NULL)
   ## Check convergence of zeta
   zeta_chain <- vapply(x, function(y) y$zeta, numeric(1))
   zeta_chain <- split_chain_in_two(zeta_chain)
   gr_diag <- gelman.diag(zeta_chain, confidence = 0.95)
   out$zeta <- f(gr_diag)
   ngroups <- length(x[[1]]$mu)
+  out$mu <- vector(mode = "list", length = ngroups)
   ## mu and CV, do one at a time
   for (group in seq_len(ngroups)) {
     ## Each group might have a different
     ## number of delays
-    ndelays <- length(x[[group]]$mu)
+      ndelays <- length(x[[1]]$mu[[group]])
+      out$mu[[group]] <- vector(mode = "logical", length = ndelays)
+      out$CV[[group]] <- vector(mode = "logical", length = ndelays)
     for (delay in seq_len(ndelays)) {
       chain <- vapply(
-        x, function(y) y$mu[[group]][[delay]],
+        x, function(y) y$mu[[group]][delay],
         numeric(1)
       )
       gr_diag <- gelman.diag(split_chain_in_two(chain), confidence = 0.95)
-      out$mu[[group]][[delay]] <- f(gr_diag)
+      out$mu[[group]][delay] <- f(gr_diag)
       ## Same for CV for this group and this delay
       chain <- vapply(
-        x, function(y) y$CV[[group]][[delay]], numeric(1)
+        x, function(y) y$CV[[group]][delay], numeric(1)
       )
       gr_diag <- gelman.diag(split_chain_in_two(chain), confidence = 0.95)
-      out$CV[[group]][[delay]] <- f(gr_diag)
+      out$CV[[group]][delay] <- f(gr_diag)
     }
   }
   out

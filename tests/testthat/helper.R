@@ -65,9 +65,10 @@ bad_settings_one_group <- function() {
       sdlog_CV = list(0.25)
     ),
     init_options = list(mindelay = 0, maxdelay = 100),
-    mcmc_settings = list(
-        chain_properties = list(n_iter = 50, burnin = 10, record_every = 10)
+    chain_properties = list(
+        n_iter = 50, burnin = 10, record_every = 10
     )
+
   )
 
 
@@ -97,19 +98,27 @@ good_settings  <- function(ngroups = 1L) {
 
 
 bad_settings_four_groups <- function() {
-    list(
+
+    mcmc_settings <- list(
         moves_switch=list(D_on = TRUE, E_on = TRUE,  swapE_on = TRUE,  mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
         moves_options=list(
             fraction_Di_to_update = 1/10, move_D_by_groups_of_size = 1, fraction_Ei_to_update = 1/10,
             sdlog_mu = list(0.05, c(0.15, 0.15), c(0.15, 0.15, 0.15), c(0.25, 0.25, 0.25)),
             sdlog_CV = list(0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))),
          init_options = list(mindelay = 0, maxdelay = 100),
-        mcmc_settings = list(
-            chain_properties = list(
-                n_iter = 500, burnin = 100, record_every = 10
-            )
+        chain_properties = list(
+            n_iter = 100, burnin = 1, record_every = 10
         )
     )
+    hyperparams <- list(
+        shape1_prob_error = 3,
+        shape2_prob_error = 12,
+        mean_mean_delay = 100,
+        mean_CV_delay = 100
+  )
+
+  list(mcmc_settings = mcmc_settings, hyperparameters = hyperparams)
+
 }
 
 

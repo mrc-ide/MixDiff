@@ -278,20 +278,22 @@ compute_index_dates_order <- function(index_dates) {
 
 
 
+
 check_MCMC_settings <- function(MCMC_settings, index_dates) {
-  if (MCMC_settings$chain_properties$n_iter < MCMC_settings$chain_properties$burnin) {
-    stop("Burnin must be <= n_iter")
-  }
-  if (length(MCMC_settings$moves_options$sdlog_mu) != length(index_dates)) {
-    stop("sdlog_mu does not have the correct length")
-  }
-  if (length(MCMC_settings$moves_options$sdlog_CV) != length(index_dates)) {
-    stop("sdlog_CV does not have the correct length")
-  }
-  if (!all(lengths(MCMC_settings$moves_options$sdlog_mu) == lengths(index_dates) / 2)) {
-    stop("sdlog_mu does not have the correct structure")
-  }
-  if (!all(lengths(MCMC_settings$moves_options$sdlog_CV) == lengths(index_dates) / 2)) {
-    stop("sdlog_CV does not have the correct structure")
-  }
+
+    if (MCMC_settings$chain_properties$n_iter < MCMC_settings$chain_properties$burnin) {
+        stop("Burnin must be <= n_iter")
+    }
+    if (length(MCMC_settings$moves_options$sdlog_mu) != length(index_dates)) {
+        stop("sdlog_mu does not have the correct length")
+    }
+    if (length(MCMC_settings$moves_options$sdlog_CV) != length(index_dates)) {
+        stop("sdlog_CV does not have the correct length")
+    }
+    if (!all(lengths(MCMC_settings$moves_options$sdlog_mu) == lengths(index_dates) / 2)) {
+        stop("sdlog_mu does not have the correct structure")
+    }
+    if (!all(lengths(MCMC_settings$moves_options$sdlog_CV) == lengths(index_dates) / 2)) {
+        stop("sdlog_CV does not have the correct structure")
+    }
 }

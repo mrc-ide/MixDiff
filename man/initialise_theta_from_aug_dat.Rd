@@ -40,12 +40,12 @@ n_per_group <- rep(10, n_groups)
 ### Range of dates in which to draw the first set of dates for each group ###
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
 ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 ### Perform the simulation ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv = TRUE)
 ### Initialise augmented data first ###
-MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
+MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 ### Now initialise parameters based on the augmented data above ###
 theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)

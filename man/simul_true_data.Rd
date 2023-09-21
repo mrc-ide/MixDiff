@@ -27,12 +27,12 @@ simul_true_data(
 \item{remove_allNA_indiv}{A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).}
 }
 \value{
-A list of three items. 
+A list of three items.
  \itemize{
- \item{\code{true_dat}}{ A list of length \code{length(n_per_group)} matrices; each has \code{length(n_per_group)} rows corresponding to individuals and a certain number of columns derived from \code{index_dates}. 
+ \item{\code{true_dat}}{ A list of length \code{length(n_per_group)} matrices; each has \code{length(n_per_group)} rows corresponding to individuals and a certain number of columns derived from \code{index_dates}.
  Elements of the matrices are integers corresponding to dates (see \code{\link[MixDiff]{int_to_date}} and \code{\link[MixDiff]{date_to_int}})}
  \item{\code{obs_dat}}{ A list structured as \code{true_dat} but where missing data and errors have been introduced (NULL if \code{simul_error} is FALSE)}
- \item{\code{E}} { A list structured similarly to \code{true_dat} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), 
+ \item{\code{E}} { A list structured similarly to \code{true_dat} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}),
  where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0}) (NULL if \code{simul_error} is FALSE)}
  }
 }
@@ -49,12 +49,12 @@ Simulates data; see details
 }
 \code{n_per_group} should be a vector of length \code{n_groups}.
 
-\code{index_dates} should be a list of length \code{n_groups}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+\code{index_dates} should be a list of length \code{n_groups}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]]
 
-If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
-In the simulation, date 1 will be drawn uniformly within \code{range_dates}. 
-Then date 2 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
+If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
+In the simulation, date 1 will be drawn uniformly within \code{range_dates}.
+Then date 2 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1].
 Finally, date 3 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1].
 }
 \examples{
@@ -71,7 +71,7 @@ n_per_group <- rep(10, n_groups)
 ### Range of dates in which to draw the first set of dates for each group ###
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
 ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 ### Perform the simulation ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 }

@@ -16,7 +16,7 @@ simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = FALSE)
 \item{remove_allNA_indiv}{A boolean stating whether individuals with only NA dates should be removed or not.}
 }
 \value{
-A list with two elements: 
+A list with two elements:
 \itemize{
  \item{\code{obs_dat}}{: A list similar to \code{D}, but where some data points are now missing, and some are erroneous}
  \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
@@ -48,11 +48,11 @@ n_per_group <- rep(10, n_groups)
 ### Range of dates in which to draw the first set of dates for each group ###
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
 ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 ### Perform the simulation ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
-### the observed dataset is smaller than the true one 
+observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv = TRUE)
+### the observed dataset is smaller than the true one
 ### (some individuals with only missing data do not appear in the observed dataset)
 nrow(D$true_dat[[1]])
 nrow(observed_D$obs_dat[[1]])

@@ -40,8 +40,8 @@ Performs one iteration of an MCMC move for the parameter zeta (probability of a 
  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
 }
 
-The function performs the move, using a Gibbs sampler. 
-A new value of parameter zeta is drawn from its marginal posterior distribution, that is a beta distribution with parameters: 
+The function performs the move, using a Gibbs sampler.
+A new value of parameter zeta is drawn from its marginal posterior distribution, that is a beta distribution with parameters:
 \itemize{
  \item{\code{first shape parameter}}{: Equal to \code{hyperparameters$shape1_prob_error} + number_of_errors, where number_of_errors is the number of data points recorded with errors}
  \item{\code{second shape parameter}}{: Equal to \code{hyperparameters$shape2_prob_error} + number_of_recorded_dates-number_of_errors, where number_of_recorded_dates is the number of data points which are not missing, and number_of_errors is the number of data points recorded with errors}

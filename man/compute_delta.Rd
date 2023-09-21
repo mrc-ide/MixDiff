@@ -18,7 +18,7 @@ A list of same length as \code{D}. Each element in the list is a matrix with sam
 Compute relevant delays based on data
 }
 \details{
-\code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. 
+\code{index_dates} should be a list of length \code{n_groups=length(D)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group.
 For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
 }
 \examples{
@@ -35,7 +35,7 @@ n_per_group <- rep(10, n_groups)
 ### Range of dates in which to draw the first set of dates for each group ###
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
 ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 ### Perform the simulation ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 ### Compute the corresponding delays ###

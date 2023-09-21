@@ -20,8 +20,8 @@ A vector containing the shape and scale parameters of the gamma distribution.
 Finds the shape and scale parameters of the gamma distribution, given a mean and standard deviation
 }
 \examples{
-param_gamma <- find_params_gamma(mean=0.1, sigma=0.05)
-sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
+param_gamma <- find_params_gamma(mean = 0.1, sigma = 0.05)
+sample_gamma <- rgamma(1000, shape = param_gamma[1], scale = param_gamma[2])
 mean(sample_gamma) # compare to 0.1
 sd(sample_gamma) # compare to 0.05
 }

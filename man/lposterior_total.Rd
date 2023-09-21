@@ -46,8 +46,8 @@ Compute the log joint posterior distribution of augmented data and parameters gi
  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
 }
-\code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+\code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date.
+The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]]
 
 If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
 }
@@ -67,20 +67,22 @@ n_per_group <- rep(10, n_groups)
 ### Range of dates in which to draw the first set of dates for each group ###
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
 ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 ### Simulate data ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv = TRUE)
 obs_dat <- observed_D$obs_dat
-true_aug_dat <- list(D=D$true_dat, E=observed_D$E)
+true_aug_dat <- list(D = D$true_dat, E = observed_D$E)
 ### Define hyperparameters ###
-hyperparameters <- list(shape1_prob_error=3, shape2_prob_error=12, 
-                     mean_mean_delay=100, mean_CV_delay=100)
+hyperparameters <- list(
+  shape1_prob_error = 3, shape2_prob_error = 12,
+  mean_mean_delay = 100, mean_CV_delay = 100
+)
 ### Compute log posterior distribution for that data
-lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
-### Now use initalised augmented data 
+lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates = NULL)
+### Now use initalised augmented data
 ### and check that posterior value for this is lower than for true data:
-MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
+MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
-lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates=NULL)
+lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates = NULL)
 }

@@ -98,13 +98,21 @@ find_params_gamma <- function(mean, sigma = mean * CV, CV) # function to determi
 #' ### Number of individuals to simulate in each group ###
 #' n_per_group <- rep(10, n_groups)
 #' ### Range of dates in which to draw the first set of dates for each group ###
-#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
-#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-#' index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
+#' range_dates <- date_to_int(
+#'   c(as.Date("01/01/2014", "%d/%m/%Y"),
+#'     as.Date("01/01/2015", "%d/%m/%Y"))
+#' )
+#' ### Which delays to use to simulate subsequent dates from the first,
+#' ### in each group? ###
+#' index_dates <- list(
+#' matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3))
+#' )
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 #' ### Compute the first delay for first individual in first group ###
-#' compute_delta_group_delay_and_indiv(D$true_dat, group_idx = 1, indiv_idx = 1, delay_idx = 1, index_dates)
+#' compute_delta_group_delay_and_indiv(
+#'   D$true_dat, group_idx = 1, indiv_idx = 1, delay_idx = 1, index_dates
+#' )
 compute_delta_group_delay_and_indiv <- function(D, group_idx, indiv_idx, delay_idx, index_dates) {
   Delta <- D[[group_idx]][indiv_idx, index_dates[[group_idx]][, delay_idx][2]] - D[[group_idx]][indiv_idx, index_dates[[group_idx]][, delay_idx][1]]
   return(Delta)

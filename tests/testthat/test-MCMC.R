@@ -71,20 +71,3 @@ test_that(
   expect_vector(out$convergence$CV[[3]], size = 3)
 
 })
-
-
-test_that(
-    "RunMCMC checks for convergence for multiple groups", {
-
-  obs <- simulate_four_groups()
-  settings <- good_settings(ngroups = 4L)
-  out <- RunMCMC(
-    obs$obs_dat,
-    settings$mcmc_settings,
-    settings$hyperparameters,
-    obs$index_dates
-  )
-  ## Check that all flags are TRUE
-
-
-})

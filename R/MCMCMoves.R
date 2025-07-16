@@ -327,9 +327,10 @@ propose_move_from_E0_to_E1 <- function(i,
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
 
   get_one_proposed_aug_value <- function(e) {
-    sample_delay <- round(
-      rgamma(1, shape = param_delay[[e]][1], scale = param_delay[[e]][2])
-    )
+    mu <- theta$mu[[group_idx]][which_delay[[e]]]
+    cv <- theta$CV[[group_idx]][which_delay[[e]]]
+    
+    sample_delay <- discr_gamma_sample(1, mu = mu, cv = cv)
 
     if (date_idx[e] < from_idx[e]) {
       proposed_aug_dat_value <- from_value[e] - sample_delay
@@ -337,17 +338,17 @@ propose_move_from_E0_to_E1 <- function(i,
       proposed_aug_dat_value <- from_value[e] + sample_delay
     }
 
-    ### whilst we haven't moved to a place where E=1, try again
+    # while we haven't moved to a situation where E = 1, try again
     while (proposed_aug_dat_value == obs_dat[[group_idx]][i, date_idx[e]]) {
-      sample_delay <- round(
-        rgamma(1, shape = param_delay[[e]][1], scale = param_delay[[e]][2])
-      )
+      sample_delay <- discr_gamma_sample(1, mu = mu, cv = cv)
+      
       if (date_idx[e] < from_idx[e]) {
         proposed_aug_dat_value <- from_value[e] - sample_delay
       } else {
         proposed_aug_dat_value <- from_value[e] + sample_delay
       }
     }
+
     proposed_aug_dat_value
   }
 

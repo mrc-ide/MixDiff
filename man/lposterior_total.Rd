@@ -4,8 +4,14 @@
 \alias{lposterior_total}
 \title{Compute the log joint posterior distribution of augmented data and parameters given observed data}
 \usage{
-lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates,
-  range_dates = NULL)
+lposterior_total(
+  aug_dat,
+  theta,
+  obs_dat,
+  hyperparameters,
+  index_dates,
+  range_dates = NULL
+)
 }
 \arguments{
 \item{aug_dat}{A list of augmented data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.}

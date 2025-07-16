@@ -132,69 +132,26 @@ move_Di <- function(i,
     theta$mu[[group_idx]][which_delay],
     CV = theta$CV[[group_idx]][which_delay]
   )
-
-  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
   
   # sample_delay <- round(
   #   rgamma(length(i), shape = param_delay[1], scale = param_delay[2])
   # )
   
   ## Changed sampling to use the sampler corresponding to pmf DiscrGamma
-  
-  # Taken DiscrGamma function from MixDiff/R/LikelihoodPrior.R
-  DiscrGamma <- function (k, mu, cv = NULL, sigma = mu * cv, log = TRUE) 
-  {
-    if (!is.null(cv)) {
-      if (cv < 0)
-        stop ("cv must be >=0.")
-    }
-    if (sigma < 0) {
-      stop ("sigma must be >=0.")
-    }
-    shape <- (mu / sigma) ^ 2
-    rate <- mu / (sigma ^ 2)
-    
-    res <- (k + 1) * pgamma(k + 1, shape, rate) +
-      (k - 1) * pgamma(k - 1, shape, rate) -
-      2 * k * pgamma(k, shape, rate)
-    
-    res <- res +
-      (shape / rate) * (
-        2 * pgamma(k, shape + 1, rate) -
-          pgamma(k - 1, shape + 1, rate) -
-          pgamma(k + 1, shape + 1, rate)
-      )
-    
-    res <- pmax(0, res)
-    
-    return(if (log) log(res) else res)
-  }
-  
-  # Add function discr_gamma_sample to sample n delay values
-  discr_gamma_sample <- function(n, mu, cv) {
-    # convert to gamma params:
-    shape <- (mu / (mu * cv)) ^ 2
-    rate <- mu / (mu * cv) ^ 2
-    # range of possible ks (99.9th percentile)
-    k_max <- ceiling(qgamma(0.999, shape = shape, rate = rate))
-    ks <- 0:k_max
-    # compute probabilities using function taken from LikelihoodPrior (above):
-    probs <- pmax(0, DiscrGamma(ks, mu, cv, log = FALSE))
-    probs <- probs / sum(probs)
-    # sample ks using probabilities:
-    sample(ks, size = n, replace = TRUE, prob = probs)
-  }
-  
+  # DiscrGamma and discr_gamma_sample now defined in Utilities.R
+  # remember devtools::load_all()
   sample_delay <- discr_gamma_sample(length(i),
                                      mu = theta$mu[[group_idx]][which_delay],
                                      cv = theta$CV[[group_idx]][which_delay])
 
+  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
+  
   if (date_idx < from_idx) {
     proposed_aug_dat_value <- from_value - sample_delay
-    ## TODO: curr_delay <- from_value - curr_aug_dat_value
+    curr_delay <- from_value - curr_aug_dat_value
   } else {
     proposed_aug_dat_value <- from_value + sample_delay
-    ## TODO: curr_delay <- curr_aug_dat_value - from_value
+    curr_delay <- curr_aug_dat_value - from_value
   }
 
   proposed_aug_dat <- curr_aug_dat
@@ -263,31 +220,41 @@ move_Di <- function(i,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
 
-  # no correction needed as this move is symetrical
-  ## TODO: correct the statement above - this move is NOT symmetrical
-  ## prob_proposing_new_value <- DiscrGamma(sample_delay, shape=param_delay[1],
-  # scale=param_delay[2], log = TRUE) # make sure it's the log
-  ## prob_proposing_curr_value <- DiscrGamma(curr_delay, shape=param_delay[1],
-  # scale=param_delay[2], log = TRUE) # make sure it's the log
-  ## ratio_prop <- prob_proposing_curr_value - prob_proposing_new_value
-  ## this uses the sampler corresponding to pmf DiscrGamma
-
-  p_accept <- ratio_post # TODO: add this: + ratio_prop
+  # Correction factor needed as this move is not symmetrical
+  # where Q = proposal distribution, theta_old = curr_delay and theta_new = sample_delay:
+  # corr = Q(theta_old | theta_new) / Q(theta_new | theta_old)
+  # log_corr = log(Q(theta_old | theta_new)) - log(Q(theta_new | theta_old))
+  
+  prob_proposing_curr_value <- DiscrGamma(curr_delay,
+                                     mu = theta$mu[[group_idx]][which_delay],
+                                     cv = theta$CV[[group_idx]][which_delay],
+                                     log = TRUE)
+  
+  prob_proposing_new_value <- DiscrGamma(sample_delay,
+                                         mu = theta$mu[[group_idx]][which_delay],
+                                         cv = theta$CV[[group_idx]][which_delay],
+                                         log = TRUE)
+  
+  ratio_prop <- prob_proposing_curr_value - prob_proposing_new_value
+  
+  p_accept <- ratio_post + ratio_prop
   if (p_accept > 0) p_accept <- 0
 
   # accept/reject step
   tmp <- log(runif(1))
-  if (tmp < p_accept) {# accepting with a certain probability
+  # accept with a certain probability
+  if (tmp < p_accept) {
     new_aug_dat <- proposed_aug_dat
     accept <- 1
-  } else { # reject
+  } else {
+    # reject
     new_aug_dat <- curr_aug_dat
     accept <- 0
   }
 
   # return a list of size 2 where
-  #		the first value is the new augmented data set in the chain
-  #		the second value is 1 if the proposed value was accepted, 0 otherwise
+  #		- the first value is the new augmented data set in the chain
+  #		- the second value is 1 if the proposed value was accepted, 0 otherwise
   return(list(new_aug_dat = new_aug_dat, accept = accept))
 
 }

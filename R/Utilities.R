@@ -1,4 +1,63 @@
 ###############################################
+### discrete Gamma Probability Mass Function
+###############################################
+
+#' Computes the probability mass of the discrete gamma distribution at integer k.
+#'
+#' @param k Integer (or vector of integers).
+#' @param mu Mean of the gamma distribution.
+#' @param cv Coefficient of variation.
+#' @param sigma Optional standard deviation. Defaults to mu * cv.
+#' @param log Logical; if TRUE, returns log-probabilities.
+#'
+#' @return Probability or log-probability mass at k.
+#' @export
+DiscrGamma <- function(k, mu, cv = NULL, sigma = mu * cv, log = TRUE) {
+  if (!is.null(cv)) {
+    if (cv < 0) stop("cv must be >= 0.")
+  }
+  if (sigma < 0) stop("sigma must be >= 0.")
+  
+  shape <- (mu / sigma)^2
+  rate <- mu / (sigma^2)
+  
+  res <- (k + 1) * pgamma(k + 1, shape, rate) +
+    (k - 1) * pgamma(k - 1, shape, rate) -
+    2 * k * pgamma(k, shape, rate)
+  
+  res <- res + (shape / rate) * (
+    2 * pgamma(k, shape + 1, rate) -
+      pgamma(k - 1, shape + 1, rate) -
+      pgamma(k + 1, shape + 1, rate)
+  )
+  
+  res <- pmax(0, res)
+  if (log) return(log(res)) else return(res)
+}
+
+
+#' Sample from the Discrete Gamma Distribution
+#'
+#' @param n Number of samples.
+#' @param mu Mean of the gamma.
+#' @param cv Coefficient of variation.
+#'
+#' @return Integer vector of samples.
+#' @export
+discr_gamma_sample <- function(n, mu, cv) {
+  shape <- (mu / (mu * cv))^2
+  rate <- mu / (mu * cv)^2
+  k_max <- ceiling(qgamma(0.999, shape = shape, rate = rate))
+  ks <- 0:k_max
+  probs <- pmax(0, DiscrGamma(ks, mu, cv, log = FALSE))
+  probs <- probs / sum(probs)
+  sample(ks, size = n, replace = TRUE, prob = probs)
+}
+
+
+
+
+###############################################
 ### functions to handle dates ###
 ###############################################
 

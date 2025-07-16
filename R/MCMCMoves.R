@@ -134,14 +134,60 @@ move_Di <- function(i,
   )
 
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-  ## TODO: change this to something like:
-  ## sample_delay <- discr_gamma_sample(length(i), shape=param_delay[1],
-  # scale=param_delay[2])
-  ## this uses the sampler corresponding to pmf DiscrGamma
-
-  sample_delay <- round(
-    rgamma(length(i), shape = param_delay[1], scale = param_delay[2])
-  )
+  
+  # sample_delay <- round(
+  #   rgamma(length(i), shape = param_delay[1], scale = param_delay[2])
+  # )
+  
+  ## Changed sampling to use the sampler corresponding to pmf DiscrGamma
+  
+  # Taken DiscrGamma function from MixDiff/R/LikelihoodPrior.R
+  DiscrGamma <- function (k, mu, cv = NULL, sigma = mu * cv, log = TRUE) 
+  {
+    if (!is.null(cv)) {
+      if (cv < 0)
+        stop ("cv must be >=0.")
+    }
+    if (sigma < 0) {
+      stop ("sigma must be >=0.")
+    }
+    shape <- (mu / sigma) ^ 2
+    rate <- mu / (sigma ^ 2)
+    
+    res <- (k + 1) * pgamma(k + 1, shape, rate) +
+      (k - 1) * pgamma(k - 1, shape, rate) -
+      2 * k * pgamma(k, shape, rate)
+    
+    res <- res +
+      (shape / rate) * (
+        2 * pgamma(k, shape + 1, rate) -
+          pgamma(k - 1, shape + 1, rate) -
+          pgamma(k + 1, shape + 1, rate)
+      )
+    
+    res <- pmax(0, res)
+    
+    return(if (log) log(res) else res)
+  }
+  
+  # Add function discr_gamma_sample to sample n delay values
+  discr_gamma_sample <- function(n, mu, cv) {
+    # convert to gamma params:
+    shape <- (mu / (mu * cv)) ^ 2
+    rate <- mu / (mu * cv) ^ 2
+    # range of possible ks (99.9th percentile)
+    k_max <- ceiling(qgamma(0.999, shape = shape, rate = rate))
+    ks <- 0:k_max
+    # compute probabilities using function taken from LikelihoodPrior (above):
+    probs <- pmax(0, DiscrGamma(ks, mu, cv, log = FALSE))
+    probs <- probs / sum(probs)
+    # sample ks using probabilities:
+    sample(ks, size = n, replace = TRUE, prob = probs)
+  }
+  
+  sample_delay <- discr_gamma_sample(length(i),
+                                     mu = theta$mu[[group_idx]][which_delay],
+                                     cv = theta$CV[[group_idx]][which_delay])
 
   if (date_idx < from_idx) {
     proposed_aug_dat_value <- from_value - sample_delay
@@ -940,7 +986,8 @@ swap_Ei <- function(i,
         date_idx_E1_to_E0[e],
         curr_aug_dat,
         proposed_aug_dat_intermediate,
-        theta, obs_dat,
+        theta,
+        obs_dat,
         hyperparameters,
         index_dates,
         range_dates

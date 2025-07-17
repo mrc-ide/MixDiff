@@ -738,14 +738,15 @@ move_Ei <- function(i,
 ## and one without error, propose to swap the two
 ##############################################################################
 
-# Identify rows in E where one E is 1 and one is 0 - candidates for swap
-find_2Eis_to_swap <- function(group_idx, curr_aug_dat) {
-  Es <- curr_aug_dat$E[[group_idx]]
-  which(apply(Es, 1, function(row) {
-    # returns TRUE if row contains one 1 and one 0
-    sum(row == 1) == 1 && sum(row == 0) == 1
-  }))
-}
+# # Can't find this function being used elsewhere - dead code?
+# # Identify rows in E where one E is 1 and one is 0 - candidates for swap
+# find_2Eis_to_swap <- function(group_idx, curr_aug_dat) {
+#   Es <- curr_aug_dat$E[[group_idx]]
+#   which(apply(Es, 1, function(row) {
+#     # returns TRUE if row contains one 1 and one 0
+#     sum(row == 1) == 1 && sum(row == 0) == 1
+#   }))
+# }
 
 # Identify rows where (other than -1s) errors are not all the same
 # i.e. mixed errors and non-errors

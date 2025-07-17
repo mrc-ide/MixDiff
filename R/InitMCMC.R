@@ -97,6 +97,11 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
   MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
   # -------------------
 
+  # reminder - index_dates_order e.g.:
+  # delay_1             | delay_2
+  # date_1 (origin)     | date_1 (origin)
+  # date_2 (destination)| date_2 
+  
   index_dates_order <- compute_index_dates_order(index_dates)
   n_groups <- length(obs_dat)
   D <- vector("list", n_groups)
@@ -173,7 +178,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
         }
       }
 
-      # now deal with missing dates
+      # now deal with missing dates - think this part is the issue currently
       missing_dates <- which(is.na(D[[g]][e, ]))
       while (length(missing_dates) > 0) {
 
@@ -187,6 +192,10 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
             seq_len(nrow(x)),
             function(k) D[[g]][e, index_dates_order[[g]][-x[k, 1], x[k, 2]]]
           )
+          # when one of the dates in a delay pair is missing:
+          # check whether missing date is date1 (origin) or date2 (destination)
+          # first row of the matrix = date1, which is before the other date
+          # second row of the matrix = date2, which is after the other date
           rule <- sapply(
             seq_len(nrow(x)),
             function(k) if (x[k, 1] == 1) "before" else "after"
@@ -205,10 +214,13 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
             inferred <- can_be_inferred_from[[k]]$from_value[x]
           } else {
             if (all(can_be_inferred_from[[k]]$rule[x] == "before")) {
+              # if a date should be "before" a known date, inferred using min
               inferred <- min(can_be_inferred_from[[k]]$from_value[x])
             } else if (all(can_be_inferred_from[[k]]$rule[x] == "after")) {
+              # if a date should be "after" a known date, inferred using max
               inferred <- max(can_be_inferred_from[[k]]$from_value[x])
             } else {
+              # if it is both before and after other known dates, median chosen
               max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
               min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
               if (min_val > max_val) {

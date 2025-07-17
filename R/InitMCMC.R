@@ -3,15 +3,15 @@
 ###############################################
 
 are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
-  return (date2 - date1 < mindelay | date2 - date1 > maxdelay)
+  date2 - date1 < mindelay | date2 - date1 > maxdelay
 }
 
 ### D contains the unobserved true dates ###
 
 #' Initialises augmented data based on observed data (for the MCMC)
-#' 
+#'
 #' @param obs_dat A list of data, in the format of the first element (called
-#'  \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#'  \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
 #' @param index_dates A list containing indications on which delays to consider
 #'  in the estimation, see details.
 #' @param MCMC_settings A list of settings to be used for initialising the
@@ -21,13 +21,13 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #'   should be a matrix with 2 rows and a number of columns corresponding to
 #'    the delays of interest for that group. For each column (i.e. each delay),
 #'     the first row gives the index of the origin date, and the second row
-#'      gives the index of the destination date. 
-#' 
+#'      gives the index of the destination date.
+#'
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and
 #'  c(1, 3), this indicates that for group \code{k} we are interested in two
 #'   delays: the first delay being between date 1 and date 2, and the second
 #'    being between date 1 and date 3.
-#'    
+#'
 #' \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{init_options}}{: A list of the following elements:
@@ -43,7 +43,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #'  }
 #'  }
 #' }
-#' @return A list with two elements: 
+#' @return A list with two elements:
 #' \itemize{
 #'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data
 #'   points are missing, and some dates have been corrected to be consistent
@@ -66,21 +66,26 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
 #' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
 #' theta$prop_missing_data <- 0.25 # probability of data missing in observations
-#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
+#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded
+#'  with error
 #' ### Number of individuals to simulate in each group ###
 #' n_per_group <- rep(10, n_groups)
-#' ### Range of dates in which to draw the first set of dates for each group ###
-#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
-#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' ## Range of dates in which to draw the first set of dates for each group ##
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
+#'  as.Date("01/01/2015", "%d/%m/%Y")))
+#' ## Which delays to use to simulate subsequent dates from the first,
+#'  in each group? ##
 #' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
+#'  remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data ###
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates,
+#'  MCMC_settings)
 initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
-  
+
   # REMOVE THIS -------
   obs_dat <- sim_data$obs_dat
   index_dates <- index_dates_order <- list(
@@ -91,55 +96,74 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
   )
   MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
   # -------------------
-  
+
   index_dates_order <- compute_index_dates_order(index_dates)
   n_groups <- length(obs_dat)
   D <- vector("list", n_groups)
-  
+
   for (g in seq_len(n_groups)) {
     D[[g]] <- obs_dat[[g]]
     for (e in seq_len(nrow(D[[g]]))) {
-      
+
       # first deal with incompatible dates
       for (j in seq_len(ncol(index_dates_order[[g]]))) {
         if (!any(is.na(D[[g]][e, index_dates_order[[g]][, j]]))) {
           # there is a problem if the dates have too short or too long delay
-          if(are_dates_incompatible(
+          if (are_dates_incompatible(
             D[[g]][e, index_dates_order[[g]][1, j]],
             D[[g]][e, index_dates_order[[g]][2, j]],
             MCMC_settings$init_options$mindelay,
             MCMC_settings$init_options$maxdelay)) {
-            # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
+
+            # check if there is one of the dates involved in more than one
+            # problematic delays, if so must be the problematic one:
             tmp <- table(as.vector(index_dates_order[[g]][, sapply(
               seq_len(ncol(index_dates_order[[g]])),
-              function(j) are_dates_incompatible(
-                D[[g]][e,index_dates_order[[g]][1,j]],
-                D[[g]][e,index_dates_order[[g]][2,j]],
+              function(j) {
+                are_dates_incompatible(
+                D[[g]][e, index_dates_order[[g]][1, j]],
+                D[[g]][e, index_dates_order[[g]][2, j]],
                 MCMC_settings$init_options$mindelay,
-                MCMC_settings$init_options$maxdelay))]))
-            if(any(tmp > 1)) {
+                MCMC_settings$init_options$maxdelay
+                )
+                }
+              )]))
+            if (any(tmp > 1)) {
               must_be_wrong <- which.max(tmp)[1]
             } else {
-              # check which of all dates is most outlier compared to all other dates, and if several take the first one as the wrong one
+              # check which of all dates is most outlier compared to all other
+              # dates, and if several take the first one as the wrong one
               diff_from_median <- abs(
-                D[[g]][e,index_dates_order[[g]][, j]] -
-                  median(D[[g]][e,], na.rm = TRUE)
-                )
-              must_be_wrong <- which(diff_from_median %in% max(diff_from_median))[1]
+                D[[g]][e, index_dates_order[[g]][, j]] -
+                  median(D[[g]][e, ], na.rm = TRUE)
+              )
+              must_be_wrong <- which(
+                diff_from_median %in% max(diff_from_median)
+                )[1]
               must_be_wrong <- index_dates_order[[g]][, j][must_be_wrong]
             }
             D[[g]][e, must_be_wrong] <- NA
-            while (!(must_be_wrong %in% index_dates_order[[g]][, j]))
-            {
-              # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
-              tmp <- table(as.vector(index_dates_order[[g]][,sapply(seq_len(ncol(index_dates_order[[g]])), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
+            while (!(must_be_wrong %in% index_dates_order[[g]][, j])) {
+              # check if there is one of the dates involved in more than one
+              # problematic delays, if so must be the problematic one:
+              tmp <- table(as.vector(index_dates_order[[g]][, sapply(
+                seq_len(ncol(index_dates_order[[g]])),
+                function(j) {
+                  are_dates_incompatible(
+                  D[[g]][e, index_dates_order[[g]][1, j]],
+                  D[[g]][e, index_dates_order[[g]][2, j]],
+                  MCMC_settings$init_options$mindelay,
+                  MCMC_settings$init_options$maxdelay)
+                  }
+                )]))
               if (any(tmp > 1)) {
                 must_be_wrong <- which.max(tmp)[1]
               } else {
-                # check which of all dates is most outlier compared to all other dates, and if several take the first one as the wrong one
+                # check which of all dates is most outlier compared to all other
+                # dates, and if several take the first one as the wrong one
                 diff_from_median <- abs(
-                  D[[g]][e, index_dates_order[[g]][,j]] -
-                    median(D[[g]][e,], na.rm = TRUE))
+                  D[[g]][e, index_dates_order[[g]][, j]] -
+                    median(D[[g]][e, ], na.rm = TRUE))
                 must_be_wrong <- which(diff_from_median %in% max(diff_from_median))[1]
                 must_be_wrong <- index_dates_order[[g]][, j][must_be_wrong]
               }
@@ -148,73 +172,76 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
           }
         }
       }
-      
+
       # now deal with missing dates
-      missing_dates <- which(is.na(D[[g]][e,]))
-      while(length(missing_dates)>0)
-      {
+      missing_dates <- which(is.na(D[[g]][e, ]))
+      while (length(missing_dates) > 0) {
+
         can_be_inferred_from <- lapply(missing_dates, function(i) {
-          x <- which(index_dates_order[[g]]==i, arr.ind = TRUE)
-          from_idx <- sapply(seq_len(nrow(x)), function(k) index_dates_order[[g]][-x[k,1],x[k,2]] )
-          from_value <- sapply(seq_len(nrow(x)), function(k) D[[g]][e,index_dates_order[[g]][-x[k,1],x[k,2]]])
-          rule <- sapply(seq_len(nrow(x)), function(k) if(x[k,1]==1) "before" else "after"  )
-          return(list(rule=rule,from_idx=from_idx, from_value=from_value))
+          x <- which(index_dates_order[[g]] == i, arr.ind = TRUE)
+          from_idx <- sapply(
+            seq_len(nrow(x)),
+            function(k) index_dates_order[[g]][-x[k, 1], x[k, 2]]
+          )
+          from_value <- sapply(
+            seq_len(nrow(x)),
+            function(k) D[[g]][e, index_dates_order[[g]][-x[k, 1], x[k, 2]]]
+          )
+          rule <- sapply(
+            seq_len(nrow(x)),
+            function(k) if (x[k, 1] == 1) "before" else "after"
+          )
+          return(list(
+            rule = rule, from_idx = from_idx, from_value = from_value
+          ))
         })
-        can_be_inferred <- which(sapply(seq_len(length(missing_dates)), function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
-        for(k in can_be_inferred)
-        {
+
+        can_be_inferred <- which(
+          sapply(seq_len(length(missing_dates)),
+                 function(i) any(!is.na(can_be_inferred_from[[i]]$from_value))))
+        for (k in can_be_inferred) {
           x <- which(!is.na(can_be_inferred_from[[k]]$from_value))
-          if(length(x)==1)
-          {
+          if (length(x) == 1) {
             inferred <- can_be_inferred_from[[k]]$from_value[x]
-          }else
-          {
-            if(all(can_be_inferred_from[[k]]$rule[x] == "before"))
-            {
+          } else {
+            if (all(can_be_inferred_from[[k]]$rule[x] == "before")) {
               inferred <- min(can_be_inferred_from[[k]]$from_value[x])
-            }else if (all(can_be_inferred_from[[k]]$rule[x] == "after"))
-            {
+            } else if (all(can_be_inferred_from[[k]]$rule[x] == "after")) {
               inferred <- max(can_be_inferred_from[[k]]$from_value[x])
-            }else
-            {
+            } else {
               max_val <- min(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "before"])
               min_val <- max(can_be_inferred_from[[k]]$from_value[x][can_be_inferred_from[[k]]$rule[x] %in% "after"])
-              if(min_val>max_val)
-              {
-                stop("Incompatible data to infer from. ")
-              }else
-              {
+              if (min_val > max_val) {
+                stop("Incompatible data to infer from.")
+              } else {
                 inferred <- floor(median(c(min_val, max_val)))
               }
             }
           }
-          D[[g]][e,missing_dates[k]] <- inferred
+          D[[g]][e, missing_dates[k]] <- inferred
         }
-        missing_dates <- which(is.na(D[[g]][e,]))
+        missing_dates <- which(is.na(D[[g]][e, ]))
       }
     }
   }
   names(D) <- names(obs_dat)
-  
+
   # compute E accordingly
   E <- list()
-  for(g in seq_len(n_groups) )
-  {
-    E[[g]] <- matrix(NA,nrow(obs_dat[[g]]),ncol(obs_dat[[g]]))
-    for(j in seq_len(ncol(obs_dat[[g]])) )
-    {
-      error <- D[[g]][,j] != obs_dat[[g]][,j]
-      E[[g]][which(error),j] <- 1 # error
-      E[[g]][which(!error),j] <- 0 # no error
+  for(g in seq_len(n_groups)) {
+    E[[g]] <- matrix(NA, nrow(obs_dat[[g]]), ncol(obs_dat[[g]]))
+    for(j in seq_len(ncol(obs_dat[[g]]))) {
+      error <- D[[g]][, j] != obs_dat[[g]][, j]
+      E[[g]][which(error), j] <- 1 # error
+      E[[g]][which(!error), j] <- 0 # no error
       E[[g]][is.na(error)] <- -1 # missing value
     }
     names(E[[g]]) <- names(obs_dat[[g]])
   }
   names(E) <- names(obs_dat)
-  
-  aug_dat <- list(D = D,
-                  E = E)
-  
+
+  aug_dat <- list(D = D, E = E)
+
   return(aug_dat)
 }
 
@@ -223,15 +250,23 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
 ###############################################
 
 #' Initialises parameters data on augmented data (for the MCMC)
-#' 
-#' @param aug_dat A list of data, in the format returned by \code{\link{simul_true_data}}. 
-#' @param index_dates A list containing indications on which delays to consider in the simulation, same as in \code{\link{simul_true_data}}.
-#' @param zeta_init A scalar giving the value zeta should be initialised to. 
+#'
+#' @param aug_dat A list of data, in the format returned by
+#'  \code{\link{simul_true_data}}.
+#' @param index_dates A list containing indications on which delays to consider
+#'  in the simulation, same as in \code{\link{simul_true_data}}.
+#' @param zeta_init A scalar giving the value zeta should be initialised to.
 #' @return A list containing:
 #' \itemize{
-#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
-#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
-#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups
+#'   to be simulated data). Each element of \code{mu} should be a scalar of
+#'    vector giving the mean delay(s) to use for simulation of dates in that
+#'    group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
+#'   \code{CV} should be a scalar of vector giving the coefficient of variation
+#'    of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a
+#'   data point is not missing, it is recorded with error.}
 #' }
 #' @import stats
 #' @export
@@ -245,44 +280,63 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
 #' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
 #' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
 #' theta$prop_missing_data <- 0.25 # probability of data missing in observations
-#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
+#' theta$zeta <- 0.05 # probability that, when not missing, the date is recorded
+#'  with error
 #' ### Number of individuals to simulate in each group ###
 #' n_per_group <- rep(10, n_groups)
 #' ### Range of dates in which to draw the first set of dates for each group ###
-#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
-#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
+#'  as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each
+#'  group? ###
 #' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+#' observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
+#'  remove_allNA_indiv=TRUE)
 #' ### Initialise augmented data first ###
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
+#' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates,
+#'  MCMC_settings)
 #' ### Now initialise parameters based on the augmented data above ###
 #' theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
-initialise_theta_from_aug_dat <- function(aug_dat, index_dates, zeta_init=0.1) # zeta_init doesn't really matter as we then use Gibbs sampler so will move fast to better values
-{
+initialise_theta_from_aug_dat <- function(aug_dat,
+                                          index_dates,
+                                          zeta_init = 0.1) {
+
+  # zeta_init doesn't really matter as we then use Gibbs sampler so will move
+  # fast to better values
+
   n_groups <- length(aug_dat$D)
   n_dates <- sapply(aug_dat$D, ncol)
-    
+
   ### mean and std of distribution of various delays, by group
-  ### we use a the starting point the observed mean and std of each delay in each group
+  ### we use as the starting point the observed mean and std of each delay in
+  ### each group
   obs_delta <- compute_delta(aug_dat$D, index_dates)
-  mu <- lapply(seq_len(n_groups), function(g) abs(apply(obs_delta[[g]], 2, mean, na.rm=TRUE) ))
+  mu <- lapply(seq_len(n_groups),
+               function(g) abs(apply(obs_delta[[g]], 2, mean, na.rm = TRUE)))
   names(mu) <- names(n_dates)
-  sigma <- lapply(seq_len(n_groups), function(g) abs(apply(obs_delta[[g]], 2, sd, na.rm=TRUE) ))
+  sigma <- lapply(seq_len(n_groups),
+                  function(g) abs(apply(obs_delta[[g]], 2, sd, na.rm = TRUE)))
   names(sigma) <- names(n_dates)
-  CV <- lapply(seq_len(n_groups), function(g) sigma[[g]]/mu[[g]])
+  CV <- lapply(seq_len(n_groups), function(g) sigma[[g]] / mu[[g]])
   names(CV) <- names(n_dates)
-  
+
   ### list of all parameters
-  theta <- list(zeta = zeta_init, # zeta is the probability for a date to be misrecorded, conditional on being recorded (<-> Ei != - 1)
-                # TODO:
-                # could consider having zeta being type of date specific (e.g. more error on onset than death dates),
-                # time specific and/or space specific
-                mu = mu, # mean of gamma distributions used to characterise the various delays in different groups: mu[[g]][k] is the mean k^th delay in group g
-                CV = CV) # CV of gamma distributions used to characterise the various delays in different groups: CV[[g]][k] is the CV k^th delay in group g
-  
+  # zeta is the probability for a date to be misrecorded, conditional on being
+  # recorded (<-> Ei != - 1)
+  # TODO:
+  # could consider having zeta being type of date specific (e.g. more error on
+  # onset than death dates), time specific and/or space specific.
+  # mu = mean of gamma distributions used to characterise the various delays in
+  # different groups: mu[[g]][k] is the mean k^th delay in group g
+  # cv = CV of gamma distributions used to characterise the various delays in
+  # different groups: CV[[g]][k] is the CV k^th delay in group g
+  theta <- list(zeta = zeta_init,
+                mu = mu,
+                CV = CV)
+
   return(theta)
-  
+
 }

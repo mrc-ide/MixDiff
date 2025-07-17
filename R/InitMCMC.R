@@ -2,35 +2,57 @@
 ### define augmented data to be used for initialisation of the chain ###
 ###############################################
 
-are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
-{
-  return (date2-date1<mindelay | date2-date1>maxdelay)
+are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
+  return (date2 - date1 < mindelay | date2 - date1 > maxdelay)
 }
 
 ### D contains the unobserved true dates ###
 
 #' Initialises augmented data based on observed data (for the MCMC)
 #' 
-#' @param obs_dat A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
-#' @param index_dates A list containing indications on which delays to consider in the estimation, see details.
-#' @param MCMC_settings A list of settings to be used for initialising the augmented data for the MCMC, see details.
-#' @details \code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+#' @param obs_dat A list of data, in the format of the first element (called
+#'  \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param index_dates A list containing indications on which delays to consider
+#'  in the estimation, see details.
+#' @param MCMC_settings A list of settings to be used for initialising the
+#'  augmented data for the MCMC, see details.
+#' @details \code{index_dates} should be a list; each elements corresponding to
+#'  a group of individuals of interest. Each element of \code{index_dates}
+#'   should be a matrix with 2 rows and a number of columns corresponding to
+#'    the delays of interest for that group. For each column (i.e. each delay),
+#'     the first row gives the index of the origin date, and the second row
+#'      gives the index of the destination date. 
 #' 
-#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and
+#'  c(1, 3), this indicates that for group \code{k} we are interested in two
+#'   delays: the first delay being between date 1 and date 2, and the second
+#'    being between date 1 and date 3.
+#'    
 #' \code{MCMC_settings} should be a list containing:
 #' \itemize{
 #'  \item{\code{init_options}}{: A list of the following elements:
 #'  \itemize{
-#'  \item{\code{mindelay}}{: The minimum delay, below which dates are considered incompatile with one another at the initialisation stage of the MCMC.}
-#'  \item{\code{maxdelay}}{: The maximum delay, above which dates are considered incompatile with one another at the initialisation stage of the MCMC.  }
-#'  \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
+#'  \item{\code{mindelay}}{: The minimum delay, below which dates are
+#'   considered incompatile with one another at the initialisation stage of the
+#'    MCMC.}
+#'  \item{\code{maxdelay}}{: The maximum delay, above which dates are
+#'   considered incompatile with one another at the initialisation stage of the
+#'    MCMC.}
+#'  \item{\code{record_every}}{: A number indicating, after the burnin, every
+#'   how many iterations outputs should be recorded.}
 #'  }
 #'  }
 #' }
 #' @return A list with two elements: 
 #' \itemize{
-#'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules inherent to \code{index_dates}}
-#'  \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
+#'  \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data
+#'   points are missing, and some dates have been corrected to be consistent
+#'    with the ordering rules inherent to \code{index_dates}}
+#'  \item{\code{E}}{: A list structured similarly to \code{D} and
+#'   \code{obs_dat}, containing indicators of where \code{obs_dat} is missing
+#'    (\code{E=-1}), where \code{obs_dat} is recorded but with error
+#'     (\code{E=1}), and where \code{obs_dat} is recorded with no error
+#'      (\code{E=0})}
 #' }
 #' @import stats
 #' @export
@@ -57,54 +79,71 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay)
 #' ### Initialise augmented data ###
 #' MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
 #' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
-initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings)
-{
+initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
+  
+  # REMOVE THIS -------
+  obs_dat <- sim_data$obs_dat
+  index_dates <- index_dates_order <- list(
+    matrix(c(1, 2), nrow = 2),
+    cbind(c(1, 2), c(1, 3)),
+    cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)),
+    cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4))
+  )
+  MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
+  # -------------------
+  
   index_dates_order <- compute_index_dates_order(index_dates)
   n_groups <- length(obs_dat)
-  D <- list()
-  for(g in seq_len(n_groups) )
-  {
+  D <- vector("list", n_groups)
+  
+  for (g in seq_len(n_groups)) {
     D[[g]] <- obs_dat[[g]]
-    for(e in seq_len(nrow(D[[g]])))
-    {
-      #print(e)
+    for (e in seq_len(nrow(D[[g]]))) {
       
       # first deal with incompatible dates
-      for(j in seq_len(ncol(index_dates_order[[g]])))
-      {
-        if(!any(is.na(D[[g]][e,index_dates_order[[g]][,j]])))
-        {
+      for (j in seq_len(ncol(index_dates_order[[g]]))) {
+        if (!any(is.na(D[[g]][e, index_dates_order[[g]][, j]]))) {
           # there is a problem if the dates have too short or too long delay
-          if(are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )
-          {
+          if(are_dates_incompatible(
+            D[[g]][e, index_dates_order[[g]][1, j]],
+            D[[g]][e, index_dates_order[[g]][2, j]],
+            MCMC_settings$init_options$mindelay,
+            MCMC_settings$init_options$maxdelay)) {
             # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
-            tmp <- table(as.vector(index_dates_order[[g]][,sapply(seq_len(ncol(index_dates_order[[g]])), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
-            if(any(tmp>1))
-            {
+            tmp <- table(as.vector(index_dates_order[[g]][, sapply(
+              seq_len(ncol(index_dates_order[[g]])),
+              function(j) are_dates_incompatible(
+                D[[g]][e,index_dates_order[[g]][1,j]],
+                D[[g]][e,index_dates_order[[g]][2,j]],
+                MCMC_settings$init_options$mindelay,
+                MCMC_settings$init_options$maxdelay))]))
+            if(any(tmp > 1)) {
               must_be_wrong <- which.max(tmp)[1]
-            }else
-            {
+            } else {
               # check which of all dates is most outlier compared to all other dates, and if several take the first one as the wrong one
-              diff_from_median <- abs(D[[g]][e,index_dates_order[[g]][,j]] - median(D[[g]][e,], na.rm=TRUE))
+              diff_from_median <- abs(
+                D[[g]][e,index_dates_order[[g]][, j]] -
+                  median(D[[g]][e,], na.rm = TRUE)
+                )
               must_be_wrong <- which(diff_from_median %in% max(diff_from_median))[1]
-              must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
+              must_be_wrong <- index_dates_order[[g]][, j][must_be_wrong]
             }
-            D[[g]][e,must_be_wrong] <- NA
-            while(!(must_be_wrong %in% index_dates_order[[g]][,j]))
+            D[[g]][e, must_be_wrong] <- NA
+            while (!(must_be_wrong %in% index_dates_order[[g]][, j]))
             {
               # check if there is one of the dates involved in more than one problematic delays, if so must be the problematic one:
               tmp <- table(as.vector(index_dates_order[[g]][,sapply(seq_len(ncol(index_dates_order[[g]])), function(j) are_dates_incompatible(D[[g]][e,index_dates_order[[g]][1,j]], D[[g]][e,index_dates_order[[g]][2,j]], MCMC_settings$init_options$mindelay, MCMC_settings$init_options$maxdelay) )]))
-              if(any(tmp>1))
-              {
+              if (any(tmp > 1)) {
                 must_be_wrong <- which.max(tmp)[1]
-              }else
-              {
+              } else {
                 # check which of all dates is most outlier compared to all other dates, and if several take the first one as the wrong one
-                diff_from_median <- abs(D[[g]][e,index_dates_order[[g]][,j]] - median(D[[g]][e,], na.rm=TRUE))
+                diff_from_median <- abs(
+                  D[[g]][e, index_dates_order[[g]][,j]] -
+                    median(D[[g]][e,], na.rm = TRUE))
                 must_be_wrong <- which(diff_from_median %in% max(diff_from_median))[1]
-                must_be_wrong <- index_dates_order[[g]][,j][must_be_wrong]
+                must_be_wrong <- index_dates_order[[g]][, j][must_be_wrong]
               }
-              D[[g]][e,must_be_wrong] <- NA
+              D[[g]][e, must_be_wrong] <- NA
             }
           }
         }

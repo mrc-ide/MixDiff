@@ -74,26 +74,26 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 # discretised Gamma distribution - see Cori et al. AJE 2013
 ####################################
 
-DiscrGamma <- function (k, mu, CV = NULL, sigma = mu*CV, log=TRUE) 
-{
-  if (!is.null(CV)) {
-    if(CV < 0)
-      stop("CV must be >=0.")
-  }
-  if (sigma < 0) {
-    stop("sigma must be >=0.")
-  }
-  shape <- (mu/sigma)^2
-  rate <- mu/(sigma^2)
-  
-  res <- (k + 1) * pgamma(k + 1, shape, rate) + (k - 1) * pgamma(k - 1, shape, rate) - 2 * k * pgamma(k, shape, rate)
-  
-  res <- res + (shape / rate) * (2 * pgamma(k, shape + 1, rate) - pgamma(k - 1, shape + 1, rate) - pgamma(k + 1, shape + 1, rate))
-  
-  res <- pmax(0, res)
-  
-  return(if(log) log(res) else res)
-}
+# DiscrGamma <- function (k, mu, CV = NULL, sigma = mu*CV, log=TRUE) 
+# {
+#   if (!is.null(CV)) {
+#     if(CV < 0)
+#       stop("CV must be >=0.")
+#   }
+#   if (sigma < 0) {
+#     stop("sigma must be >=0.")
+#   }
+#   shape <- (mu/sigma)^2
+#   rate <- mu/(sigma^2)
+#   
+#   res <- (k + 1) * pgamma(k + 1, shape, rate) + (k - 1) * pgamma(k - 1, shape, rate) - 2 * k * pgamma(k, shape, rate)
+#   
+#   res <- res + (shape / rate) * (2 * pgamma(k, shape + 1, rate) - pgamma(k - 1, shape + 1, rate) - pgamma(k + 1, shape + 1, rate))
+#   
+#   res <- pmax(0, res)
+#   
+#   return(if(log) log(res) else res)
+# }
 
 # DiscrGamma_approx <- function (k, mu, CV = NULL, sigma=mu*CV, log=TRUE) 
 # {

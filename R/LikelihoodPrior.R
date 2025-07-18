@@ -114,7 +114,7 @@ LL_error_term<-function(aug_dat, theta, obs_dat)
 LL_delays_term_by_group_delay_and_indiv <- function(aug_dat, theta, obs_dat, group_idx, delay_idx, indiv_idx, index_dates, Delta=NULL)
 {
   if(is.null(Delta)) Delta <- compute_delta_group_delay_and_indiv(aug_dat$D, group_idx, indiv_idx, delay_idx, index_dates)
-  LL <- DiscrGamma(Delta, mu=theta$mu[[group_idx]][delay_idx], CV=theta$CV[[group_idx]][delay_idx], log=TRUE)
+  LL <- DiscrGamma(Delta, mu=theta$mu[[group_idx]][delay_idx], cv=theta$CV[[group_idx]][delay_idx], log=TRUE)
   return(LL)
 }
 

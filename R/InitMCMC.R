@@ -86,15 +86,15 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #'  MCMC_settings)
 initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
 
-  # REMOVE THIS -------
-  obs_dat <- sim_data$obs_dat
-  index_dates <- index_dates_order <- list(
-    matrix(c(1, 2), nrow = 2),
-    cbind(c(1, 2), c(1, 3)),
-    cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)),
-    cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4))
-  )
-  MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
+  # # REMOVE THIS -------
+  # obs_dat <- sim_data$obs_dat
+  # index_dates <- index_dates_order <- list(
+  #   matrix(c(1, 2), nrow = 2),
+  #   cbind(c(1, 2), c(1, 3)),
+  #   cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)),
+  #   cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4))
+  # )
+  # MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
   # -------------------
 
   # reminder - index_dates_order e.g.:

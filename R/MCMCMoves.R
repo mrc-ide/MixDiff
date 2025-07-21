@@ -426,18 +426,25 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
     }
 
-    param_delay <- find_params_gamma(
-      theta$mu[[group_idx]][which_delay[e]],
-      CV = theta$CV[[group_idx]][which_delay][e]
-    )
+    # param_delay <- find_params_gamma(
+    #   theta$mu[[group_idx]][which_delay[e]],
+    #   CV = theta$CV[[group_idx]][which_delay][e]
+    # )
 
-    # Prob mass for delay adjusting for invalid delays
-    K <- diff(pgamma(delay + c(-0.5, 0.5),
-                     shape = param_delay[1],
-                     scale = param_delay[2])) /
-      (1 - diff(pgamma(forbidden_delay + c(-0.5, 0.5),
-                       shape = param_delay[1],
-                       scale = param_delay[2])))
+    # # Prob mass for delay adjusting for invalid delays
+    # K <- diff(pgamma(delay + c(-0.5, 0.5),
+    #                  shape = param_delay[1],
+    #                  scale = param_delay[2])) /
+    #   (1 - diff(pgamma(forbidden_delay + c(-0.5, 0.5),
+    #                    shape = param_delay[1],
+    #                    scale = param_delay[2])))
+    
+    mu <- theta$mu[[group_idx]][which_delay[e]]
+    cv <- theta$CV[[group_idx]][which_delay][e]
+    
+    K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
+      (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
+    
     K
   }
 
@@ -535,18 +542,25 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
     }
 
-    param_delay <- find_params_gamma(
-      theta$mu[[group_idx]][which_delay[e]],
-      CV = theta$CV[[group_idx]][which_delay][e]
-    )
-
-    # Prob mass for delay adjusting for invalid delays
-    K <- diff(pgamma(delay + c(-0.5, 0.5),
-                     shape = param_delay[1],
-                     scale = param_delay[2])) /
-      (1 - diff(pgamma(forbidden_delay + c(-0.5, 0.5),
-                       shape = param_delay[1],
-                       scale = param_delay[2])))
+    # param_delay <- find_params_gamma(
+    #   theta$mu[[group_idx]][which_delay[e]],
+    #   CV = theta$CV[[group_idx]][which_delay][e]
+    # )
+    # 
+    # # Prob mass for delay adjusting for invalid delays
+    # K <- diff(pgamma(delay + c(-0.5, 0.5),
+    #                  shape = param_delay[1],
+    #                  scale = param_delay[2])) /
+    #   (1 - diff(pgamma(forbidden_delay + c(-0.5, 0.5),
+    #                    shape = param_delay[1],
+    #                    scale = param_delay[2])))
+    
+    mu <- theta$mu[[group_idx]][which_delay[e]]
+    cv <- theta$CV[[group_idx]][which_delay][e]
+    
+    K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
+      (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
+    
     K
   }
 

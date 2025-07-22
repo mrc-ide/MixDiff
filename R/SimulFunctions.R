@@ -124,11 +124,11 @@ simul_true_data <- function(
   
   if (simul_error) {
     # Add remove_allNA_indiv = TRUE here to remove rows with only NAs:
-    observed_D <- simul_obs_dat_alt(D,
-                                    theta,
-                                    range_dates,
-                                    remove_allNA_indiv = TRUE,
-                                    n_group = n_per_group)
+    observed_D <- simul_obs_dat(D,
+                                theta,
+                                range_dates,
+                                remove_allNA_indiv = TRUE,
+                                n_group = n_per_group)
     
     return(list(true_dat = observed_D$true_dat,
                 obs_dat = observed_D$obs_dat,
@@ -183,30 +183,47 @@ simul_true_data <- function(
 #' ### (some individuals with only missing data do not appear in the observed dataset)
 #' nrow(D$true_dat[[1]])
 #' nrow(observed_D$obs_dat[[1]])
-simul_obs_dat <- function(D, theta, range_dates, remove_allNA_indiv=FALSE)
-{
+simul_obs_dat <- function(D,
+                          theta,
+                          range_dates,
+                          remove_allNA_indiv = FALSE,
+                          n_group) {
+  
   E <- D
   obs_dat <- D
-  for(g in seq_len(length(D)) )
-  {
-    for(j in seq_len(ncol(D[[g]])) )
-    {
-      E[[g]][,j] <- sample(c(-1, 1, 0), nrow(D[[g]]), replace=TRUE, prob=c(theta$prop_missing_data, (1-theta$prop_missing_data)*theta$zeta, (1-theta$prop_missing_data)*(1-theta$zeta)))
-      obs_dat[[g]][E[[g]][,j]==-1,j]  <- NA
-      obs_dat[[g]][E[[g]][,j]==0,j]  <- D[[g]][E[[g]][,j]==0,j]
-      obs_dat[[g]][E[[g]][,j]==1,j]  <- sample(seq(range_dates[1], range_dates[2], 1), sum(E[[g]][,j]==1), replace = TRUE) # need to update if change error model
+  for (g in seq_len(length(D))) {
+    for (j in seq_len(ncol(D[[g]]))) {
+      E[[g]][,j] <- sample(
+        c(-1, 1, 0), nrow(D[[g]]), replace = TRUE,
+        prob = c(
+          theta$prop_missing_data,
+          (1 - theta$prop_missing_data) * theta$zeta,
+          (1 - theta$prop_missing_data) * (1 - theta$zeta))
+      )
+      obs_dat[[g]][E[[g]][, j] == -1, j]  <- NA
+      obs_dat[[g]][E[[g]][, j] == 0, j]  <- D[[g]][E[[g]][, j] == 0, j]
+      obs_dat[[g]][E[[g]][, j] == 1, j]  <- sample(
+        seq(range_dates[1], range_dates[2], 1),
+        sum(E[[g]][, j] == 1),
+        replace = TRUE
+        ) # need to update if change error model
     }
-    if(remove_allNA_indiv)
-    {
-      exclude <- which(rowSums(is.na(obs_dat[[g]]))==ncol(obs_dat[[g]]))
-      if(length(exclude)>0)
-      {
-        obs_dat[[g]] <- obs_dat[[g]][-exclude,]
-        E[[g]] <- E[[g]][-exclude,]
+    if (remove_allNA_indiv) {
+      exclude <- which(rowSums(is.na(obs_dat[[g]])) == ncol(obs_dat[[g]]))
+      if (length(exclude) > 0) {
+        # remove corresponding true_dat for excluded rows
+        obs_dat[[g]] <- obs_dat[[g]][-exclude, ]
+        E[[g]] <- E[[g]][-exclude, ]
+        D[[g]] <- D[[g]][-exclude, ]
       }
     }
+    # remove extra rows: select nrow == n_per_group
+    if (nrow(obs_dat[[g]]) > n_group[g]) {
+      obs_dat[[g]] <- obs_dat[[g]][1:n_group[g], ]
+      E[[g]] <- E[[g]][1:n_group[g], ]
+      D[[g]] <- D[[g]][1:n_group[g], ]
+    }
   }
-  return(list(obs_dat=obs_dat, E=E))
+  return(list(true_dat = D, obs_dat = obs_dat, E = E))
 }
-
 

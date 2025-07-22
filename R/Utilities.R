@@ -1,5 +1,5 @@
 ###----------------------------------------------------------------------------
-### discrete Gamma Probability Mass Function
+### discrete Gamma Probability Mass Function - see Cori et al. AJE 2013
 ###----------------------------------------------------------------------------
 
 #' Computes the probability mass of the discrete gamma distribution at integer
@@ -35,6 +35,23 @@ DiscrGamma <- function(k, mu, cv = NULL, sigma = mu * cv, log = TRUE) {
   res <- pmax(0, res)
   if (log) return(log(res)) else return(res)
 }
+
+# Copied across from likelihood prior in case helpful
+# DiscrGamma_approx <- function (k, mu, CV = NULL, sigma=mu*CV, log=TRUE) 
+# {
+#   if (!is.null(CV)) {
+#     if(CV < 0)
+#       stop("CV must be >=0.")
+#   }
+#   if (sigma < 0) {
+#     stop("sigma must be >=0.")
+#   }
+#   shape <- (mu/sigma)^2
+#   rate <- mu/(sigma^2)
+#   
+#   res <- distcrete::distcrete("gamma", 1, shape, rate, w = 0.5)$d(k)
+#   return(if(log) log(res) else res)
+# }
 
 
 #' Sample from the Discrete Gamma Distribution

@@ -99,7 +99,6 @@ simul_true_data <- function(
     remove_allNA_indiv = FALSE
 ) {
   
-  discretise_method <- match.arg(discretise_method)
   D <- list()
   
   for (g in seq_along(theta$mu)) {

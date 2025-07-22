@@ -1,38 +1,74 @@
 #######################################
-### functions to simulate a dataset ###
+### Functions to simulate a dataset ###
 #######################################
 
 #' Simulates data; see details
 #' 
 #' @param theta List of parameters; see details.
-#' @param n_per_group Vector containing the number of individuals to simulate in each group
-#' @param range_dates Range of integers in which to draw the first set of dates (these will ve drawn unifromly in that range)
-#' @param index_dates A list containing indications on which delays to consider in the simulation, see details.
-#' @param simul_error A boolean indicating whether to also simulate missingness and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
-#' @param remove_allNA_indiv A boolean stating whether individuals with only missing observations should be removed or not; only used if \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
+#' @param n_per_group Vector containing the number of individuals to simulate
+#'  in each group
+#' @param range_dates Range of integers in which to draw the first set of dates
+#'  (these will ve drawn unifromly in that range)
+#' @param index_dates A list containing indications on which delays to consider
+#'  in the simulation, see details.
+#' @param simul_error A boolean indicating whether to also simulate missingness
+#'  and error in data or not (also see \code{\link[MixDiff]{simul_obs_dat}}).
+#' @param remove_allNA_indiv A boolean stating whether individuals with only
+#'  missing observations should be removed or not; only used if
+#'   \code{simul_error} is TRUE (also see \code{\link[MixDiff]{simul_obs_dat}}).
 #' @details \code{theta} should be a list containing:
 #' \itemize{
-#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups to be simulated data). Each element of \code{mu} should be a scalar of vector giving the mean delay(s) to use for simulation of dates in that group.}
-#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of \code{CV} should be a scalar of vector giving the coefficient o variation of the delay(s) to use for simulation of dates in that group.}
-#'  \item{\code{prop_missing_data} (only required if \code{simul_error} is TRUE)}{: A scalar in [0;1] giving the probability of each data point being missing.}
-#'  \item{\code{zeta} (only required if \code{simul_error} is TRUE)}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups
+#'   to be simulated data). Each element of \code{mu} should be a scalar of
+#'    vector giving the mean delay(s) to use for simulation of dates in that
+#'     group.}
+#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
+#'   \code{CV} should be a scalar of vector giving the coefficient of variation
+#'    of the delay(s) to use for simulation of dates in that group.}
+#'  \item{\code{prop_missing_data} (only required if \code{simul_error} is
+#'   TRUE)}{: A scalar in [0;1] giving the probability of each data point being
+#'    missing.}
+#'  \item{\code{zeta} (only required if \code{simul_error} is TRUE)}{: A scalar
+#'   in [0;1] giving the probability that, if a data point is not missing, it
+#'    is recorded with error.}
 #' }
 #' \code{n_per_group} should be a vector of length \code{n_groups}.
 #' 
-#' \code{index_dates} should be a list of length \code{n_groups}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-#' The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+#' \code{index_dates} should be a list of length \code{n_groups}. Each element
+#'  of \code{index_dates} should be a matrix with 2 rows and a number of columns
+#'   corresponding to the delays of interest for that group. For each column
+#'    (i.e. each delay), the first row gives the index of the origin date, and
+#'     the second row gives the index of the destination date. 
+#' The number of columns of index_dates[[k]] should match the length of
+#'  theta$mu[[k]] and theta$CV[[k]] 
 #' 
-#' If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+#' If index_dates[[k]] has two columns containing respectively c(1, 2) and
+#'  c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are
+#'   respectively the mean and coefficient of variation of two delays: the
+#'    first delay being between date 1 and date 2, and the second being between
+#'     date 1 and date 3. 
 #' In the simulation, date 1 will be drawn uniformly within \code{range_dates}. 
-#' Then date 2 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
-#' Finally, date 3 will be drawn as date 1 + a discretised gamma distribution with mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
+#' Then date 2 will be drawn as date 1 + a discretised gamma distribution with
+#'  mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
+#' Finally, date 3 will be drawn as date 1 + a discretised gamma distribution
+#'  with mean theta$mu[[k]][1] and theta$CV[[k]][1]. 
 #' @return A list of three items. 
 #'  \itemize{
-#'  \item{\code{true_dat}}{ A list of length \code{length(n_per_group)} matrices; each has \code{length(n_per_group)} rows corresponding to individuals and a certain number of columns derived from \code{index_dates}. 
-#'  Elements of the matrices are integers corresponding to dates (see \code{\link[MixDiff]{int_to_date}} and \code{\link[MixDiff]{date_to_int}})}
-#'  \item{\code{obs_dat}}{ A list structured as \code{true_dat} but where missing data and errors have been introduced (NULL if \code{simul_error} is FALSE)}
-#'  \item{\code{E}} { A list structured similarly to \code{true_dat} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), 
-#'  where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0}) (NULL if \code{simul_error} is FALSE)}
+#'  \item{\code{true_dat}}{ A list of length \code{length(n_per_group)}
+#'   matrices; each has \code{length(n_per_group)} rows corresponding to
+#'    individuals and a certain number of columns derived from
+#'     \code{index_dates}. 
+#'  Elements of the matrices are integers corresponding to dates (see
+#'   \code{\link[MixDiff]{int_to_date}} and \code{\link[MixDiff]{date_to_int}})}
+#'  \item{\code{obs_dat}}{ A list structured as \code{true_dat} but where
+#'   missing data and errors have been introduced (NULL if \code{simul_error}
+#'    is FALSE)}
+#'  \item{\code{E}} { A list structured similarly to \code{true_dat} and
+#'   \code{obs_dat}, containing indicators of where \code{obs_dat} is missing
+#'    (\code{E=-1}), 
+#'  where \code{obs_dat} is recorded but with error (\code{E=1}), and where
+#'   \code{obs_dat} is recorded with no error (\code{E=0}) (NULL if
+#'    \code{simul_error} is FALSE)}
 #'  }
 #' @export
 #' @examples
@@ -43,13 +79,15 @@
 #' ### Setting up the parameters for the simulation ###
 #' theta <- list()
 #' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
-#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of delays
 #' ### Number of individuals to simulate in each group ###
 #' n_per_group <- rep(10, n_groups)
-#' ### Range of dates in which to draw the first set of dates for each group ###
-#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"), as.Date("01/01/2015", "%d/%m/%Y")))
-#' ### Which delays to use to simulate subsequent dates from the first, in each group? ###
-#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#' ### Range of dates in which to draw first set of dates for each group ###
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
+#'  as.Date("01/01/2015", "%d/%m/%Y")))
+#' ### Which delays to use to simulate subsequent dates from the first, in each
+#'  group? ###
+#' index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 simul_true_data <- function(
@@ -70,7 +108,9 @@ simul_true_data <- function(
     extra_rows <- n_per_group[g] * 1.2
     
     D[[g]] <- matrix(NA, extra_rows, length(theta$mu[[g]]) + 1)
-    D[[g]][, 1] <- sample(seq(range_dates[1], range_dates[2], 1), extra_rows, replace = TRUE)
+    D[[g]][, 1] <- sample(
+      seq(range_dates[1], range_dates[2], 1), extra_rows, replace = TRUE
+      )
     
     for (j in seq_len(ncol(index_dates[[g]]))) {
       mu <- theta$mu[[g]][j]
@@ -78,7 +118,8 @@ simul_true_data <- function(
       
       delay <- discr_gamma_sample(extra_rows, mu, CV)
       
-      D[[g]][, index_dates[[g]][2, j]] <- D[[g]][, index_dates[[g]][1, j]] + delay
+      D[[g]][, index_dates[[g]][2, j]] <-
+        D[[g]][, index_dates[[g]][1, j]] + delay
     }
   }
   
@@ -90,7 +131,9 @@ simul_true_data <- function(
                                     remove_allNA_indiv = TRUE,
                                     n_group = n_per_group)
     
-    return(list(true_dat = observed_D$true_dat, obs_dat = observed_D$obs_dat, E = observed_D$E))
+    return(list(true_dat = observed_D$true_dat,
+                obs_dat = observed_D$obs_dat,
+                E = observed_D$E))
     
   } else {
     

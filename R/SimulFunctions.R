@@ -52,27 +52,52 @@
 #' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 #' ### Perform the simulation ###
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-simul_true_data <- function(theta, n_per_group, range_dates, index_dates, simul_error=FALSE, remove_allNA_indiv=FALSE)
-{
-  D <- list() 
-  for(g in seq_len(length(theta$mu)) )
-  {
-    D[[g]] <- matrix(NA, n_per_group[g], length(theta$mu[[g]])+1)
-    D[[g]][,1] <- sample(seq(range_dates[1],range_dates[2],1), n_per_group[g], replace = TRUE)
-    for(j in seq_len(ncol(index_dates[[g]])) )
-    {
-      params <- find_params_gamma(theta$mu[[g]][j], CV=theta$CV[[g]][j])
-      delay <- rgamma(n_per_group[g], shape=params[1], scale=params[2])
-      D[[g]][,index_dates[[g]][2,j]]  <- D[[g]][,index_dates[[g]][1,j]] + round(delay)
+simul_true_data <- function(
+    theta,
+    n_per_group,
+    range_dates,
+    index_dates,
+    simul_error = FALSE,
+    remove_allNA_indiv = FALSE
+) {
+  
+  discretise_method <- match.arg(discretise_method)
+  D <- list()
+  
+  for (g in seq_along(theta$mu)) {
+    
+    # Simulate 20% more per group than needed in case of NA rows
+    extra_rows <- n_per_group[g] * 1.2
+    
+    D[[g]] <- matrix(NA, extra_rows, length(theta$mu[[g]]) + 1)
+    D[[g]][, 1] <- sample(seq(range_dates[1], range_dates[2], 1), extra_rows, replace = TRUE)
+    
+    for (j in seq_len(ncol(index_dates[[g]]))) {
+      mu <- theta$mu[[g]][j]
+      CV <- theta$CV[[g]][j]
+      
+      delay <- discr_gamma_sample(extra_rows, mu, CV)
+      
+      D[[g]][, index_dates[[g]][2, j]] <- D[[g]][, index_dates[[g]][1, j]] + delay
     }
   }
-  if(simul_error)
-  {
-    observed_D <- simul_obs_dat(D, theta, range_dates)
-    return(list(true_dat=D, obs_dat=observed_D$obs_dat, E=observed_D$E))
-  }else{
-    return(list(true_dat=D, obs_dat=NULL, E=NULL))
+  
+  if (simul_error) {
+    # Add remove_allNA_indiv = TRUE here to remove rows with only NAs:
+    observed_D <- simul_obs_dat_alt(D,
+                                    theta,
+                                    range_dates,
+                                    remove_allNA_indiv = TRUE,
+                                    n_group = n_per_group)
+    
+    return(list(true_dat = observed_D$true_dat, obs_dat = observed_D$obs_dat, E = observed_D$E))
+    
+  } else {
+    
+    return(list(true_dat = D, obs_dat = NULL, E = NULL))
+    
   }
+  
 }
 
 #' Introduces missingness and errors in data

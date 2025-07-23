@@ -2,58 +2,76 @@
 % Please edit documentation in R/SimulFunctions.R
 \name{simul_obs_dat}
 \alias{simul_obs_dat}
-\title{Introduces missingness and errors in data}
+\title{Create dataset which introduces missingness and errors.}
 \usage{
-simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = FALSE)
+simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE, n_group)
 }
 \arguments{
-\item{D}{A list of data, in the format of the first element (called \code{true_dat}) in the list returned by \code{\link{simul_true_data}}.}
+\item{D}{A list of true data (\code{true_dat}) matrices returned by
+\code{\link{simul_true_data}}).}
 
-\item{theta}{A list of parameters; see details.}
+\item{theta}{A list of parameters including:
+\itemize{
+ \item{\code{prop_missing_data}: probability of each date being missing}
+ \item{\code{zeta}: probability that a non-missing date is recorded with error}
+ }}
 
-\item{range_dates}{Range of integers in which to draw the erroneous data (these will ve drawn unifromly in that range)}
+\item{range_dates}{The range of dates (as integers) to draw the erroneous
+values from (uniformly).}
 
-\item{remove_allNA_indiv}{A boolean stating whether individuals with only NA dates should be removed or not.}
+\item{remove_allNA_indiv}{Boolean. If TRUE, individuals with only NA dates
+will be removed.}
 }
 \value{
-A list with two elements: 
+A list with two elements:
 \itemize{
- \item{\code{obs_dat}}{: A list similar to \code{D}, but where some data points are now missing, and some are erroneous}
- \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
+ \item{\code{obs_dat}: Same structure as \code{D}, but where some dates are
+  now missing, and some are erroneous.}
+ \item{\code{E}: Error indicator matrices with the same structure as
+  \code{D} and \code{obs_dat}, where each element indicates: -1 for a
+   missing date, 1 for an erroneous date, or 0 for a correctly recorded
+    date.}
 }
 }
 \description{
-Introduces missingness and errors in data
+Create dataset which introduces missingness and errors.
 }
 \details{
-\code{theta} should be a list containing
+\code{theta} should be a list containing:
 \itemize{
- \item{\code{prop_missing_data}}{: A scalar in [0;1] giving the probability of each data point being missing.}
- \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a data point is not missing, it is recorded with error.}
+ \item{\code{prop_missing_data} (only required if \code{simul_error = TRUE}):
+  A scalar in [0,1] giving the probability that a date is missing.}
+ \item{\code{zeta} (only required if \code{simul_error = TRUE}): A scalar
+  in [0,1] giving the probability that, if a date is not missing, it is
+   recorded with error.}
 }
 }
 \examples{
-### Number of groups of individuals to simulate ###
+# Number of groups of individuals to simulate
 n_groups <- 2
-### Number of dates to simulate for each group ###
+
+# Number of dates to simulate for each group
 n_dates <- c(2, 3)
-### Setting up the parameters for the simulation ###
+
+# Setting up the parameters for the simulation
 theta <- list()
 theta$mu <- list(5, c(10, 15)) # mean delays, for each group
-theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
-theta$prop_missing_data <- 0.25 # probability of data missing in observations
-theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
-### Number of individuals to simulate in each group ###
+theta$CV <- list(0.5, c(0.5, 0.5)) # CV of these delays
+theta$prop_missing_data <- 0.25 # prob of date missing in observations
+theta$zeta <- 0.05 # prob that non-missing date is recorded with error
+
+# Number of individuals to simulate in each group
 n_per_group <- rep(10, n_groups)
-### Range of dates in which to draw the first set of dates for each group ###
-range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
-### Which delays to use to simulate subsequent dates from the first, in each group? ###
-index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
-### Perform the simulation ###
+
+# Range of dates in which to draw the first set of dates for each group
+range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"),
+                             as.Date("01/01/2015", "\%d/\%m/\%Y")))
+
+# Delays to use to simulate subsequent dates from the first, in each group
+index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
+
+# Perform the simulation
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
-### the observed dataset is smaller than the true one 
-### (some individuals with only missing data do not appear in the observed dataset)
-nrow(D$true_dat[[1]])
-nrow(observed_D$obs_dat[[1]])
+observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
+                            remove_allNA_indiv = TRUE)
 }

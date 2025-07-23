@@ -2,7 +2,8 @@
 % Please edit documentation in R/Utilities.R
 \name{find_params_beta}
 \alias{find_params_beta}
-\title{Finds the two shape parameters of the beta distribution, given a mean and variance}
+\title{Finds the two shape parameters of the beta distribution, given a mean and
+ variance}
 \usage{
 find_params_beta(mean, var)
 }
@@ -12,10 +13,12 @@ find_params_beta(mean, var)
 \item{var}{Variance of the beta distribution}
 }
 \value{
-A vector containing the two shape parameters of the beta distribution.
+A vector containing the two shape parameters of the beta
+ distribution.
 }
 \description{
-Finds the two shape parameters of the beta distribution, given a mean and variance
+Finds the two shape parameters of the beta distribution, given a mean and
+ variance
 }
 \examples{
 param_beta <- find_params_beta(0.1, 0.05)

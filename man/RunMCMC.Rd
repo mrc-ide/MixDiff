@@ -7,23 +7,31 @@
 RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
 }
 \arguments{
-\item{obs_dat}{A list of observed data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
+\item{obs_dat}{A list of observed data, in the format of the first element
+(called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
-\item{MCMC_settings}{A list of settings to be used for running the MCMC, see details.}
+\item{MCMC_settings}{A list of settings to be used for running the MCMC, see
+details.}
 
 \item{hyperparameters}{A list of hyperparameters: see details.}
 
-\item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+\item{index_dates}{A list containing indications on which delays to consider
+in the estimation, see details.}
 }
 \value{
 A list of the following elements:
  \itemize{
  
- theta_chain=theta_chain, aug_dat_chain=aug_dat_chain, logpost_chain=logpost_chain, accept_prob=accept_prob
- \item{\code{theta_chain}}{: a list of parameters, at each recorded step of the MCMC chain}
- \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded step of the MCMC chain}
- \item{\code{logpost_chain}}{: a vector of values of the log posterior at each recorded step of the MCMC chain}
- \item{\code{accept_prob}}{: A list of the proababilities of acceptance for each parameter across all MCMC iterations}
+ theta_chain = theta_chain, aug_dat_chain = aug_dat_chain, logpost_chain =
+  logpost_chain, accept_prob = accept_prob
+ \item{\code{theta_chain}}{: a list of parameters, at each recorded step of
+  the MCMC chain}
+ \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded
+  step of the MCMC chain}
+ \item{\code{logpost_chain}}{: a vector of values of the log posterior at
+  each recorded step of the MCMC chain}
+ \item{\code{accept_prob}}{: A list of the proababilities of acceptance for
+  each parameter across all MCMC iterations}
 }
 }
 \description{
@@ -32,42 +40,74 @@ Runs the MCMC estimation procedure.
 \details{
 \code{MCMC_settings} should be a list containing:
 \itemize{
- \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on, zeta_on) stating whether each parameter/augmented data should be moved in the procedure or not.}
+ \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on,
+  zeta_on) stating whether each parameter/augmented data should be moved in
+   the procedure or not.}
  \item{\code{moves_options}}{: A list of the following elements:
  \itemize{
- \item{\code{fraction_Di_to_update}}{: The fraction of augmented dates to be updated at each iteration of the MCMC.}
- \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be updated simultaneously in each group.}
- \item{\code{fraction_Ei_to_update}}{: The fraction of indicators of whether observed dates are erroneous to be updated at each iteration of the MCMC.}
- \item{\code{sdlog_mu}}{: The standard deviations to be used for proposing moves of the mean delays. This should be a list of length \code{n_groups=length(obs_dat)}. Each element in the list should be a vector with length given by the numbers of delays to be considered in this group.}
- \item{\code{sdlog_CV}}{: The standard deviations to be used for proposing moves of the CV of delays. This should be a list of length \code{n_groups=length(obs_dat)}. Each element in the list should be a vector with length given by the numbers of delays to be considered in this group.}
+ \item{\code{fraction_Di_to_update}}{: The fraction of augmented dates to be
+  updated at each iteration of the MCMC.}
+ \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be
+  updated simultaneously in each group.}
+ \item{\code{fraction_Ei_to_update}}{: The fraction of indicators of whether
+  observed dates are erroneous to be updated at each iteration of the MCMC.}
+ \item{\code{sdlog_mu}}{: The standard deviations to be used for proposing
+  moves of the mean delays. This should be a list of length
+   \code{n_groups = length(obs_dat)}. Each element in the list should be a
+    vector with length given by the numbers of delays to be considered in
+     this group.}
+ \item{\code{sdlog_CV}}{: The standard deviations to be used for proposing
+  moves of the CV of delays. This should be a list of length
+   \code{n_groups = length(obs_dat)}. Each element in the list should be a
+    vector with length given by the numbers of delays to be considered in
+     this group.}
  }
  }
  \item{\code{init_options}}{: A list of the following elements:
  \itemize{
- \item{\code{mindelay}}{: The minimum delay, below which dates are considered incompatile with one another at the initialisation stage of the MCMC.}
- \item{\code{maxdelay}}{: The maximum delay, above which dates are considered incompatile with one another at the initialisation stage of the MCMC.  }
- \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
+ \item{\code{mindelay}}{: The minimum delay, below which dates are considered
+  incompatile with one another at the initialisation stage of the MCMC.}
+ \item{\code{maxdelay}}{: The maximum delay, above which dates are considered
+  incompatile with one another at the initialisation stage of the MCMC.}
+ \item{\code{record_every}}{: A number indicating, after the burnin, every
+  how many iterations outputs should be recorded.}
  }
  }
  \item{\code{chain_properties}}{: A list of the following elements:
  \itemize{
  \item{\code{n_iter}}{: The total number of iteration of MCMC to run.}
- \item{\code{burnin}}{: The number of initial iterations to consider as the burnin period - no output is recorded for these initial MCMC iterations. }
- \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
+ \item{\code{burnin}}{: The number of initial iterations to consider as the
+  burnin period - no output is recorded for these initial MCMC iterations.}
+ \item{\code{record_every}}{: A number indicating, after the burnin, every
+  how many iterations outputs should be recorded.}
  }
  }
 }
 \code{hyperparameters} should be a list containing:
 \itemize{
- \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter for the beta prior used for parameter \code{theta$zeta}}
- \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter for the beta prior used for parameter \code{theta$zeta}}
- \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$mu}}
- \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential prior used for parameter \code{theta$CV}}
+ \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter
+  for the beta prior used for parameter \code{theta$zeta}}
+ \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter
+  for the beta prior used for parameter \code{theta$zeta}}
+ \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential
+  prior used for parameter \code{theta$mu}}
+ \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential
+  prior used for parameter \code{theta$CV}}
 }
-\code{index_dates} should be a list of length \code{n_groups=length(obs_dat)}. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
-The number of columns of index_dates[[k]] should match the length of theta$mu[[k]] and theta$CV[[k]] 
+\code{index_dates} should be a list of length
+ \code{n_groups = length(obs_dat)}. Each element of \code{index_dates} should
+  be a matrix with 2 rows and a number of columns corresponding to the delays
+   of interest for that group. For each column (i.e. each delay), the first
+    row gives the index of the origin date, and the second row gives the
+     index of the destination date. 
+The number of columns of index_dates[[k]] should match the length of
+ theta$mu[[k]] and theta$CV[[k]] 
 
-If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are respectively the mean and coefficient of variation of two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3.
+If index_dates[[k]] has two columns containing respectively c(1, 2) and
+ c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are
+  respectively the mean and coefficient of variation of two delays: the
+   first delay being between date 1 and date 2, and the second being between
+    date 1 and date 3.
 }
 \examples{
 ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###

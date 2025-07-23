@@ -2,7 +2,8 @@
 % Please edit documentation in R/Utilities.R
 \name{find_params_gamma}
 \alias{find_params_gamma}
-\title{Finds the shape and scale parameters of the gamma distribution, given a mean and standard deviation}
+\title{Finds the shape and scale parameters of the gamma distribution, given a mean
+ and standard deviation}
 \usage{
 find_params_gamma(mean, sigma = mean * CV, CV)
 }
@@ -11,17 +12,20 @@ find_params_gamma(mean, sigma = mean * CV, CV)
 
 \item{sigma}{Standard deviation of the gamma distribution}
 
-\item{CV}{An alternative way to specify the stndard deviation, through the coefficient of variation, that is \code{sigma}/\code{mean}}
+\item{CV}{An alternative way to specify the stndard deviation, through the
+coefficient of variation, that is \code{sigma}/\code{mean}}
 }
 \value{
-A vector containing the shape and scale parameters of the gamma distribution.
+A vector containing the shape and scale parameters of the gamma
+ distribution.
 }
 \description{
-Finds the shape and scale parameters of the gamma distribution, given a mean and standard deviation
+Finds the shape and scale parameters of the gamma distribution, given a mean
+ and standard deviation
 }
 \examples{
-param_gamma <- find_params_gamma(mean=0.1, sigma=0.05)
-sample_gamma <- rgamma(1000, shape=param_gamma[1], scale=param_gamma[2])
+param_gamma <- find_params_gamma(mean = 0.1, sigma = 0.05)
+sample_gamma <- rgamma(1000, shape = param_gamma[1], scale = param_gamma[2])
 mean(sample_gamma) # compare to 0.1
 sd(sample_gamma) # compare to 0.05
 }

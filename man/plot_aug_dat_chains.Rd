@@ -9,7 +9,9 @@ plot_aug_dat_chains(MCMCres, aug_dat_true = NULL)
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}
 
-\item{aug_dat_true}{A list containing the data to which the output chains should be compared. If not \code{NULL}, this should have the format of the output of function \code{\link{simul_true_data}}.}
+\item{aug_dat_true}{A list containing the data to which the output chains
+should be compared. If not \code{NULL}, this should have the format of the
+ output of function \code{\link{simul_true_data}}.}
 }
 \value{
 Nothing. Only performs a plot.

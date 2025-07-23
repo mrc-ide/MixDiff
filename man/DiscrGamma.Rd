@@ -2,7 +2,8 @@
 % Please edit documentation in R/Utilities.R
 \name{DiscrGamma}
 \alias{DiscrGamma}
-\title{Computes the probability mass of the discrete gamma distribution at integer k.}
+\title{Computes the probability mass of the discrete gamma distribution at integer
+ k.}
 \usage{
 DiscrGamma(k, mu, cv = NULL, sigma = mu * cv, log = TRUE)
 }
@@ -21,5 +22,6 @@ DiscrGamma(k, mu, cv = NULL, sigma = mu * cv, log = TRUE)
 Probability or log-probability mass at k.
 }
 \description{
-Computes the probability mass of the discrete gamma distribution at integer k.
+Computes the probability mass of the discrete gamma distribution at integer
+ k.
 }

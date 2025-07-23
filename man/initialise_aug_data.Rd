@@ -7,33 +7,56 @@
 initialise_aug_data(obs_dat, index_dates, MCMC_settings)
 }
 \arguments{
-\item{obs_dat}{A list of data, in the format of the first element (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
+\item{obs_dat}{A list of data, in the format of the first element (called
+\code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
-\item{index_dates}{A list containing indications on which delays to consider in the estimation, see details.}
+\item{index_dates}{A list containing indications on which delays to consider
+in the estimation, see details.}
 
-\item{MCMC_settings}{A list of settings to be used for initialising the augmented data for the MCMC, see details.}
+\item{MCMC_settings}{A list of settings to be used for initialising the
+augmented data for the MCMC, see details.}
 }
 \value{
-A list with two elements: 
+A list with two elements:
 \itemize{
- \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data points are missing, and some dates have been corrected to be consistent with the ordering rules inherent to \code{index_dates}}
- \item{\code{E}}{: A list structured similarly to \code{D} and \code{obs_dat}, containing indicators of where \code{obs_dat} is missing (\code{E=-1}), where \code{obs_dat} is recorded but with error (\code{E=1}), and where \code{obs_dat} is recorded with no error (\code{E=0})}
+ \item{\code{D}}{: A list similar to \code{obs_dat}, but where no data
+  points are missing, and some dates have been corrected to be consistent
+   with the ordering rules inherent to \code{index_dates}}
+ \item{\code{E}}{: A list structured similarly to \code{D} and
+  \code{obs_dat}, containing indicators of where \code{obs_dat} is missing
+   (\code{E=-1}), where \code{obs_dat} is recorded but with error
+    (\code{E=1}), and where \code{obs_dat} is recorded with no error
+     (\code{E=0})}
 }
 }
 \description{
 Initialises augmented data based on observed data (for the MCMC)
 }
 \details{
-\code{index_dates} should be a list; each elements corresponding to a group of individuals of interest. Each element of \code{index_dates} should be a matrix with 2 rows and a number of columns corresponding to the delays of interest for that group. For each column (i.e. each delay), the first row gives the index of the origin date, and the second row gives the index of the destination date. 
+\code{index_dates} should be a list; each elements corresponding to
+ a group of individuals of interest. Each element of \code{index_dates}
+  should be a matrix with 2 rows and a number of columns corresponding to
+   the delays of interest for that group. For each column (i.e. each delay),
+    the first row gives the index of the origin date, and the second row
+     gives the index of the destination date.
 
-If index_dates[[k]] has two columns containing respectively c(1, 2) and c(1, 3), this indicates that for group \code{k} we are interested in two delays: the first delay being between date 1 and date 2, and the second being between date 1 and date 3. 
+If index_dates[[k]] has two columns containing respectively c(1, 2) and
+ c(1, 3), this indicates that for group \code{k} we are interested in two
+  delays: the first delay being between date 1 and date 2, and the second
+   being between date 1 and date 3.
+
 \code{MCMC_settings} should be a list containing:
 \itemize{
  \item{\code{init_options}}{: A list of the following elements:
  \itemize{
- \item{\code{mindelay}}{: The minimum delay, below which dates are considered incompatile with one another at the initialisation stage of the MCMC.}
- \item{\code{maxdelay}}{: The maximum delay, above which dates are considered incompatile with one another at the initialisation stage of the MCMC.  }
- \item{\code{record_every}}{: A number indicating, after the burnin, every how many iterations outputs should be recorded.}
+ \item{\code{mindelay}}{: The minimum delay, below which dates are
+  considered incompatile with one another at the initialisation stage of the
+   MCMC.}
+ \item{\code{maxdelay}}{: The maximum delay, above which dates are
+  considered incompatile with one another at the initialisation stage of the
+   MCMC.}
+ \item{\code{record_every}}{: A number indicating, after the burnin, every
+  how many iterations outputs should be recorded.}
  }
  }
 }
@@ -48,17 +71,22 @@ theta <- list()
 theta$mu <- list(5, c(10, 15)) # mean delays, for each group
 theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
 theta$prop_missing_data <- 0.25 # probability of data missing in observations
-theta$zeta <- 0.05 # probability that, when not missing, the date is recorded with error
+theta$zeta <- 0.05 # probability that, when not missing, the date is recorded
+ with error
 ### Number of individuals to simulate in each group ###
 n_per_group <- rep(10, n_groups)
-### Range of dates in which to draw the first set of dates for each group ###
-range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"), as.Date("01/01/2015", "\%d/\%m/\%Y")))
-### Which delays to use to simulate subsequent dates from the first, in each group? ###
+## Range of dates in which to draw the first set of dates for each group ##
+range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"),
+ as.Date("01/01/2015", "\%d/\%m/\%Y")))
+## Which delays to use to simulate subsequent dates from the first,
+ in each group? ##
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
 ### Perform the simulation ###
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-observed_D <- simul_obs_dat(D$true_dat, theta, range_dates, remove_allNA_indiv=TRUE)
+observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
+ remove_allNA_indiv=TRUE)
 ### Initialise augmented data ###
 MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
+aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates,
+ MCMC_settings)
 }

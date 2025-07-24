@@ -28,13 +28,6 @@ index_dates <- list(
   cbind(c(1, 2), c(2, 3), c(1, 4))
 )
 
-index_dates_order <- list(
-  matrix(c(1, 2), nrow = 2),
-  cbind(c(1, 2), c(1, 3)),
-  cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4)),
-  cbind(c(1, 2), c(2, 3), c(1, 3), c(1, 4))
-)
-
 # ----------------------------------------------------------------------------
 
 test_that("structure of simul_true_data output is correct", {
@@ -77,9 +70,12 @@ test_that("dimensions of true_dat, obs_dat and E are the same", {
   }
 })
 
+
+
+
 # ----------------------------------------------------------------------------
 
-test_that("obs_dat and E are NULL is simul_error is FALSE", {
+test_that("obs_dat and E are NULL if simul_error is FALSE", {
   
   true_dataset <- simul_true_data(
     theta,
@@ -92,6 +88,28 @@ test_that("obs_dat and E are NULL is simul_error is FALSE", {
   expect_null(true_dataset$obs_dat)
   expect_null(true_dataset$E)
   
+})
+
+# ----------------------------------------------------------------------------
+
+test_that("discr_gamma_sample works as expected", {
+
+  set.seed(10)
+  delay_sim <- discr_gamma_sample(100, mu = 5, cv = 0.5)
+  expect_equal(mean(delay_sim), 5, tolerance = 0.05)
+  
+  delay_sim <- discr_gamma_sample(100, mu = 7, cv = 0.5)
+  expect_equal(mean(delay_sim), 7, tolerance = 0.05)
+  
+  delay_sim <- discr_gamma_sample(100, mu = 10, cv = 0.5)
+  expect_equal(mean(delay_sim), 10, tolerance = 0.05)
+  
+  delay_sim <- discr_gamma_sample(100, mu = 12, cv = 0.5)
+  expect_equal(mean(delay_sim), 12, tolerance = 0.05)
+  
+  delay_sim <- discr_gamma_sample(100, mu = 15, cv = 0.5)
+  expect_equal(mean(delay_sim), 15, tolerance = 0.05)
+
 })
 
 # ----------------------------------------------------------------------------
@@ -126,8 +144,8 @@ test_that("mean delays in true_dat match theta$mu", {
       # target <- idx[2, 2]
       # origin <- idx[1, 3]
       # target <- idx[2, 3]
-
-      # Compute observed delays
+      
+      # Compute observed delays (target dates - origin dates)
       delay <- dat[, target] - dat[, origin]
 #browser()
       # Check mean delay approx theta$mu[[g]][j]
@@ -139,24 +157,6 @@ test_that("mean delays in true_dat match theta$mu", {
       )
     }
   }
-})
-
-# ----------------------------------------------------------------------------
-
-test_that("discr_gamma_sample works as expected", {
-
-  delay_sim <- discr_gamma_sample(100, mu = 5, cv = 0.5)
-  expect_equal(mean(delay_sim), 5, tolerance = 0.1)
-  
-  delay_sim <- discr_gamma_sample(100, mu = 7, cv = 0.5)
-  expect_equal(mean(delay_sim), 7, tolerance = 0.1)
-  
-  delay_sim <- discr_gamma_sample(100, mu = 10, cv = 0.5)
-  expect_equal(mean(delay_sim), 10, tolerance = 0.1)
-  
-  delay_sim <- discr_gamma_sample(100, mu = 12, cv = 0.5)
-  expect_equal(mean(delay_sim), 12, tolerance = 0.1)
-
 })
 
 # ----------------------------------------------------------------------------

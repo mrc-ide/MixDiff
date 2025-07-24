@@ -14,6 +14,7 @@
 #' @return Probability or log-probability mass at k.
 #' @export
 DiscrGamma <- function(k, mu, cv = NULL, sigma = mu * cv, log = TRUE) {
+  
   if (!is.null(cv)) {
     if (cv < 0) stop("cv must be >= 0.")
   }
@@ -63,12 +64,22 @@ DiscrGamma <- function(k, mu, cv = NULL, sigma = mu * cv, log = TRUE) {
 #' @return Integer vector of samples.
 #' @export
 discr_gamma_sample <- function(n, mu, cv) {
+  
+  # Convert mean and cv to gamma parameters
   shape <- (mu / (mu * cv))^2
   rate <- mu / (mu * cv)^2
+  
+  # 99.9th percentile of the continuous gamma distribution (max day)
   k_max <- ceiling(qgamma(0.999, shape = shape, rate = rate))
   ks <- 0:k_max
-  probs <- pmax(0, DiscrGamma(ks, mu, cv, log = FALSE))
+  
+  # Compute the discrete probability mass for each k
+  probs <- DiscrGamma(ks, mu, cv, log = FALSE)
+  
+  # Normalise to sum to 1
   probs <- probs / sum(probs)
+
+  # Sample from the discrete distribution
   sample(ks, size = n, replace = TRUE, prob = probs)
 }
 

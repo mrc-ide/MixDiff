@@ -127,7 +127,7 @@ simul_true_data <- function(
     D[[g]][, 1] <- sample(
       seq(range_dates[1], range_dates[2], 1), extra_rows, replace = TRUE
       )
-    
+
     # Generate all subsequent dates from delays (via gamma distribution)
     for (j in seq_len(ncol(index_dates[[g]]))) {
       mu <- theta$mu[[g]][j]
@@ -139,6 +139,7 @@ simul_true_data <- function(
       # Compute new date = origin date + delay
       D[[g]][, index_dates[[g]][2, j]] <-
         D[[g]][, index_dates[[g]][1, j]] + delay
+      
     }
   }
   
@@ -156,10 +157,19 @@ simul_true_data <- function(
     
   } else {
     
+    # Loop through each group
+    for (g in seq_along(theta$mu)) {
+      
+    # Remove excess simulated individuals so that nrow == n_per_group
+    # (this is done within simul_obs_dat otherwise)
+    if (nrow(D[[g]]) > n_per_group[g]) {
+      D[[g]] <- D[[g]][1:n_per_group[g], ]
+    }
+      }
+    
     return(list(true_dat = D, obs_dat = NULL, E = NULL))
     
   }
-  
 }
 
 #' Create dataset which introduces missingness and errors.
@@ -262,11 +272,33 @@ simul_obs_dat <- function(D,
       
       # Replace with random date if recorded with error (E = 1)
       # This will need updating if error model changes
-      obs_dat[[g]][E[[g]][, j] == 1, j]  <- sample(
-        seq(range_dates[1], range_dates[2], 1),
-        sum(E[[g]][, j] == 1),
-        replace = TRUE
-        )
+      
+      # obs_dat[[g]][E[[g]][, j] == 1, j]  <- sample(
+      #   seq(range_dates[1], range_dates[2], 1),
+      #   sum(E[[g]][, j] == 1),
+      #   replace = TRUE
+      #   )
+      
+      # Get the row indices where errors are to be added
+      err_idx <- which(E[[g]][, j] == 1)
+      true_vals <- D[[g]][err_idx, j]
+      range_pool <- seq(range_dates[1], range_dates[2], 1)
+      
+      err_vals <- integer(length(err_idx))
+      
+      # Check that the sampled date doesn't match true date
+      for (i in seq_along(err_idx)) {
+        repeat {
+          candidate <- sample(range_pool, 1)
+          if (candidate != true_vals[i]) {
+            err_vals[i] <- candidate
+            break
+          }
+        }
+      }
+      
+      obs_dat[[g]][err_idx, j] <- err_vals
+      
     }
     
     # Remove individuals with all missing dates

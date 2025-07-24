@@ -149,7 +149,7 @@ simul_true_data <- function(
                                 theta,
                                 range_dates,
                                 remove_allNA_indiv = TRUE,
-                                n_group = n_per_group)
+                                n_per_group)
     
     return(list(true_dat = observed_D$true_dat,
                 obs_dat = observed_D$obs_dat,
@@ -240,7 +240,7 @@ simul_obs_dat <- function(D,
                           theta,
                           range_dates,
                           remove_allNA_indiv = TRUE,
-                          n_group) {
+                          n_per_group) {
   
   # Initialise E to store error indicators (same structure as D)
   E <- D
@@ -313,10 +313,10 @@ simul_obs_dat <- function(D,
     }
     
     # Remove excess simulated individuals so that nrow == n_per_group
-    if (nrow(obs_dat[[g]]) > n_group[g]) {
-      obs_dat[[g]] <- obs_dat[[g]][1:n_group[g], ]
-      E[[g]] <- E[[g]][1:n_group[g], ]
-      D[[g]] <- D[[g]][1:n_group[g], ]
+    if (nrow(obs_dat[[g]]) > n_per_group[g]) {
+      obs_dat[[g]] <- obs_dat[[g]][1:n_per_group[g], ]
+      E[[g]] <- E[[g]][1:n_per_group[g], ]
+      D[[g]] <- D[[g]][1:n_per_group[g], ]
     }
   }
   

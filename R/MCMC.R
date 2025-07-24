@@ -174,6 +174,7 @@ RunMCMC <- function(obs_dat,
   print("... Burnin ...")
   
   for (k in seq_len(MCMC_settings$chain_properties$n_iter - 1)) {
+    
     output_stuff <- (k >= MCMC_settings$chain_properties$burnin) &
       (k %% MCMC_settings$chain_properties$record_every) == 0
     
@@ -182,10 +183,12 @@ RunMCMC <- function(obs_dat,
     }
     
     # move some of the D_i
-    #print("Move some D_i")
     if (MCMC_settings$moves_switch$D_on) {
+      
+      # Loop over each group
       for (g in seq_len(n_groups)) {
         
+        # Loop over each date column in that group
         for(j in seq_len(ncol(curr_aug_dat$D[[g]]))) {
           
           # propose moves for only a certain fraction of dates
@@ -230,11 +233,12 @@ RunMCMC <- function(obs_dat,
     }
     
     # move some of the E_i
-    #print("Move some E_i")
     if (MCMC_settings$moves_switch$E_on) {
       
+      # Loop over each group
       for (g in seq_len(n_groups)) {
 
+        # Loop over each date column in each group
         for(j in seq_len(ncol(curr_aug_dat$E[[g]]))) {
           
           # proposing moves for only a certain fraction of dates
@@ -245,7 +249,7 @@ RunMCMC <- function(obs_dat,
           
           n_groups_to_update <- length(to_update) 
           for (i in seq_len(n_groups_to_update)) {
-            tmp <- move_Ei (to_update[i],
+            tmp <- move_Ei(to_update[i],
                             g,
                             j,
                             curr_aug_dat,
@@ -273,8 +277,9 @@ RunMCMC <- function(obs_dat,
     }
     
     # swap the E_is that can be swapped (i.e. where exactly one is =1 and exactly one is =0)
-    #print("Swap some E_i")
     if (MCMC_settings$moves_switch$swapE_on) {
+      
+      # Loop over each group
       for (g in seq_len(n_groups)) {
 
         candidates_for_swap <- find_Eis_to_swap(g, curr_aug_dat)
@@ -322,7 +327,7 @@ RunMCMC <- function(obs_dat,
       
       for (g in seq_len(n_groups)) {
 
-        for (j in seq(2,ncol(curr_aug_dat$D[[g]]),1)) {
+        for (j in seq(2, ncol(curr_aug_dat$D[[g]]),1)) {
 
           tmp <- move_lognormal(what = "mu",
                                 g,

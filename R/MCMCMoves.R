@@ -95,11 +95,13 @@ move_Di <- function(i,
 
   # draw proposed value for D using one of the delays
 
-  # which delays is this particular date involved in?
+  # Identify where the date is in index_dates (returns row and col numbers)
   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
 
+  # Identify delay(s) that this particular date is involved in
   which_delay <- x[, 2]
 
+  # Take the date index for the second date in each delay
   from_idx <- sapply(
     seq_len(nrow(x)),
     function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]

@@ -74,7 +74,7 @@ discr_gamma_sample <- function(n, mu, cv) {
   ks <- 0:k_max
   
   # Compute the discrete probability mass for each k
-  probs <- DiscrGamma(ks, mu, cv, log = FALSE)
+  probs <- pmax(0, DiscrGamma(ks, mu, cv, log = FALSE))
   
   # Normalise to sum to 1
   probs <- probs / sum(probs)

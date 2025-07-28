@@ -110,6 +110,22 @@ simul_true_data <- function(
     simul_error = FALSE,
     remove_allNA_indiv = TRUE
 ) {
+
+  # Check input
+  if (simul_error) {
+    required_params <- c("prop_missing_data", "zeta", "mu", "CV")
+    missing_params <- setdiff(required_params, names(theta))
+    
+    if (length(missing_params) > 0) {
+      stop(
+        sprintf(
+          "When `simul_error = TRUE`, `theta` must include the following parameters: %s. Missing: %s.",
+          paste(required_params, collapse = ", "),
+          paste(missing_params, collapse = ", ")
+        )
+      )
+    }
+  }
   
   # Initialise output list for each group
   D <- list()

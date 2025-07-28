@@ -21,16 +21,13 @@ in the estimation, see details.}
 \value{
 A list of the following elements:
  \itemize{
- 
- theta_chain = theta_chain, aug_dat_chain = aug_dat_chain, logpost_chain =
-  logpost_chain, accept_prob = accept_prob
  \item{\code{theta_chain}}{: a list of parameters, at each recorded step of
   the MCMC chain}
  \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded
   step of the MCMC chain}
  \item{\code{logpost_chain}}{: a vector of values of the log posterior at
   each recorded step of the MCMC chain}
- \item{\code{accept_prob}}{: A list of the proababilities of acceptance for
+ \item{\code{accept_prob}}{: A list of the probabilities of acceptance for
   each parameter across all MCMC iterations}
 }
 }

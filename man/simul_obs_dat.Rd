@@ -4,7 +4,7 @@
 \alias{simul_obs_dat}
 \title{Create dataset which introduces missingness and errors.}
 \usage{
-simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE, n_group)
+simul_obs_dat(D, theta, range_dates, remove_allNA_indiv = TRUE, n_per_group)
 }
 \arguments{
 \item{D}{A list of true data (\code{true_dat}) matrices returned by

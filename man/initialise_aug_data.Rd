@@ -62,31 +62,36 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and
 }
 }
 \examples{
-### Number of groups of individuals to simulate ###
+# Number of groups of individuals to simulate
 n_groups <- 2
-### Number of dates to simulate for each group ###
+
+# Number of dates to simulate for each group
 n_dates <- c(2, 3)
-### Setting up the parameters for the simulation ###
+
+# Set up the parameters for the simulation
 theta <- list()
 theta$mu <- list(5, c(10, 15)) # mean delays, for each group
 theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
 theta$prop_missing_data <- 0.25 # probability of data missing in observations
 theta$zeta <- 0.05 # probability that, when not missing, the date is recorded
  with error
-### Number of individuals to simulate in each group ###
+ 
+# Number of individuals to simulate in each group
 n_per_group <- rep(10, n_groups)
-## Range of dates in which to draw the first set of dates for each group ##
+
+# Range of dates in which to draw the first set of dates for each group
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"),
- as.Date("01/01/2015", "\%d/\%m/\%Y")))
-## Which delays to use to simulate subsequent dates from the first,
- in each group? ##
+                             as.Date("01/01/2015", "\%d/\%m/\%Y")))
+ 
+# Delays to use to simulate subsequent dates from the first, in each group
 index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
-### Perform the simulation ###
+
+# Perform the simulation
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
  remove_allNA_indiv=TRUE)
-### Initialise augmented data ###
-MCMC_settings <- list(init_options=list(mindelay=0, maxdelay=100))
-aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates,
- MCMC_settings)
+ 
+# Initialise augmented data
+MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
+aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 }

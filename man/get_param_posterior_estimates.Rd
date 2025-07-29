@@ -10,7 +10,9 @@ get_param_posterior_estimates(
   CrI = 0.95,
   theta_true = NULL,
   plot = TRUE,
-  cex.axis = 1
+  cex.axis = 1,
+  group_labels = NULL,
+  date_labels = NULL
 )
 }
 \arguments{
@@ -25,14 +27,14 @@ intervals. For 95\% credible intervals, use CrI=0.95.}
 \item{theta_true}{A list of parameters to which the output chains should be
  compared. If not \code{NULL}, this should contain:
 \itemize{
- \item{\code{mu}}{: A list of length
+ \item{\code{mu}: A list of length
   \code{n_groups = length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of
    \code{mu} should be a scalar or vector giving the mean delay(s) in that
     group.}
- \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
+ \item{\code{CV}: A list of length \code{n_groups}. Each element of
   \code{CV} should be a scalar or vector giving the coefficient o variation
    of the delay(s) in that group.}
- \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a
+ \item{\code{zeta}: A scalar in [0;1] giving the probability that, if a
   data point is not missing, it is recorded with error.}
 }
 The posterior distributions of parameters are then plotted together with
@@ -48,21 +50,21 @@ should be magnified relative to the default.}
 A list containing two elements: the posterior estimates of
  parameters:
 \itemize{
- \item{\code{logpost}}{: A vector of three values giving the central
+ \item{\code{logpost}: A vector of three values giving the central
   log-posterior estimate (first value) and quantiles corresponding to CrI
    (second and third values).}
- \item{\code{theta}}{: A list giving posterior parameter estimates
+ \item{\code{theta}: A list giving posterior parameter estimates
  \itemize{
- \item{\code{mu}}{: A list of length
+ \item{\code{mu}: A list of length
   \code{n_groups = length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of
    \code{mu} should be a matrix with 3 rows giving the posterior mean
     delay(s) in that group (1st row = central posterior estimate, 2nd and
      3rd rows = credible interval).}
- \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
+ \item{\code{CV}: A list of length \code{n_groups}. Each element of
   \code{CV} should be a matrix with 3 rows giving the posterior CV of the
    delay(s) in that group (1st row = central posterior estimate, 2nd and 3rd
     rows = credible interval) .}
- \item{\code{zeta}}{: A vector of three values in [0;1] giving the posterior
+ \item{\code{zeta}: A vector of three values in [0;1] giving the posterior
   estimate of the probability that, if a data point is not missing, it is
    recorded with error (1st value = central posterior estimate, 2nd and 3rd
     values = credible interval).}
@@ -74,5 +76,86 @@ A list containing two elements: the posterior estimates of
 Computes posterior estimates of parameters from the MCMC chain
 }
 \examples{
-### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+# Simulate data to use
+n_groups <- 4
+index_dates <- list(
+  matrix(c(1, 2), nrow = 2),
+  cbind(c(1, 2), c(1, 3)),
+  cbind(c(1, 2), c(2, 3),c(1, 4)),
+  cbind(c(1, 2), c(2, 3), c(1, 4))
+)
+theta <- list(
+  mu = list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13)),
+  CV = list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5)),
+  prop_missing_data = 0.2,
+  zeta = 0.05
+ )
+
+n_per_group <- rep(10, n_groups)
+range_dates <- c(0, 30)
+
+simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
+                             simul_error = TRUE)
+obs_dat <- simul_dat$obs_dat
+
+# Set up hyperparameters
+hyperparameters <- list(
+    shape1_prob_error = 3,
+    shape2_prob_error = 12,
+    mean_mean_delay = 10,
+    mean_CV_delay = 10)
+
+# Set up MCMC
+MCMC_settings <- list(
+moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+                    mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+  moves_options = list(
+    fraction_Di_to_update = 1 / 10,
+    move_D_by_groups_of_size = 1,
+    fraction_Ei_to_update = 1 / 10,
+    sdlog_mu = list(
+      0.05,
+      c(0.15, 0.15),
+      c(0.15, 0.15, 0.15),
+      c(0.25, 0.25, 0.25)
+    ),
+    sdlog_CV = list(
+      0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))
+  ),
+  init_options = list(
+    mindelay = 0,
+    maxdelay = 20
+  ),
+  chain_properties = list(
+    n_iter = 500,
+    burnin = 50,
+    record_every = 10
+  )
+)
+
+# Run MCMC
+MCMC_result <- RunMCMC(obs_dat,
+                       MCMC_settings,
+                       hyperparameters,
+                       index_dates)
+
+# Get summary
+get_param_posterior_estimates(MCMCres = MCMC_result,
+                              central = "mean",
+                              CrI = 0.95,
+                              theta_true = NULL,
+                              plot = TRUE,
+                              cex.axis = 1,
+                              group_labels = c("Community-alive",
+                                               "Community-dead",
+                                               "Hospitalised-alive",
+                                               "Hospitalised-dead"),
+                              date_labels = list(
+                                c("Onset", "Report"),
+                                c("Onset", "Death", "Report"),
+                                c("Onset", "Hosp", "Disch", "Report"),
+                                c("Onset", "Hosp", "Death", "Report")
+                              ))
+
+
 }

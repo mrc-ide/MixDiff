@@ -109,16 +109,21 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and
 }
 \examples{
 # Simulate data to use
-n_groups <- 1
-index_dates <- list(matrix(c(1, 2), nrow = 2))  # delay from date 1 to 2
+n_groups <- 4
+index_dates <- list(
+  matrix(c(1, 2), nrow = 2),
+  cbind(c(1, 2), c(1, 3)),
+  cbind(c(1, 2), c(2, 3),c(1, 4)),
+  cbind(c(1, 2), c(2, 3), c(1, 4))
+)
 theta <- list(
-  mu = list(5),
-  CV = list(0.5),
+  mu = list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13)),
+  CV = list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5)),
   prop_missing_data = 0.2,
   zeta = 0.05
  )
 
-n_per_group <- 10
+n_per_group <- rep(10, n_groups)
 range_dates <- c(0, 30)
 
 simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
@@ -131,7 +136,7 @@ hyperparameters <- list(
     shape2_prob_error = 12,
     mean_mean_delay = 10,
     mean_CV_delay = 10)
-    
+
 # Set up MCMC
 MCMC_settings <- list(
 moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
@@ -140,8 +145,14 @@ moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
     fraction_Di_to_update = 1 / 10,
     move_D_by_groups_of_size = 1,
     fraction_Ei_to_update = 1 / 10,
-    sdlog_mu = list(0.15),
-    sdlog_CV = list(0.25)
+    sdlog_mu = list(
+      0.05,
+      c(0.15, 0.15),
+      c(0.15, 0.15, 0.15),
+      c(0.25, 0.25, 0.25)
+    ),
+    sdlog_CV = list(
+      0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))
   ),
   init_options = list(
     mindelay = 0,
@@ -155,6 +166,10 @@ moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
 )
 
 # Run MCMC
+MCMC_result <- RunMCMC(obs_dat,
+                       MCMC_settings,
+                       hyperparameters,
+                       index_dates)
 
 # Results
 MCMC_result$theta_chain

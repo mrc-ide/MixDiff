@@ -287,49 +287,30 @@ RunMCMC <- function(obs_dat,
     }
     
     # Move mu and CV using log-normal proposals -------------------------------
-    if (MCMC_settings$moves_switch$mu_on) {
-      
-      for (g in seq_len(n_groups)) {
-
-        for (j in seq(2, ncol(curr_aug_dat$D[[g]]), 1)) {
-
-          tmp <- move_lognormal(what = "mu",
-                                g,
-                                j - 1,
-                                MCMC_settings$moves_options$sdlog_mu[[g]][[j - 1]], 
-                                curr_aug_dat,
-                                curr_theta, 
-                                obs_dat, 
-                                hyperparameters,
-                                index_dates)
-          n_proposed_mu_moves[[g]][j - 1] <- n_proposed_mu_moves[[g]][j - 1] + 1
-          n_accepted_mu_moves[[g]][j - 1] <- n_accepted_mu_moves[[g]][j - 1] + tmp$accept
-          # if accepted move, update accordingly
-          if (tmp$accept == 1) curr_theta <- tmp$new_theta
-        }
-      }
-    }
-    
-    # move CV
-    if (MCMC_settings$moves_switch$CV_on) {
-      
-      for (g in seq_len(n_groups)) {
-
-        for(j in seq(2, ncol(curr_aug_dat$D[[g]]), 1)) {
-
-          tmp <- move_lognormal(what = "CV",
-                                g,
-                                j - 1,
-                                MCMC_settings$moves_options$sdlog_CV[[g]][[j - 1]], 
-                                curr_aug_dat,
-                                curr_theta, 
-                                obs_dat, 
-                                hyperparameters,
-                                index_dates)
-          n_proposed_CV_moves[[g]][j - 1] <- n_proposed_CV_moves[[g]][j - 1] + 1
-          n_accepted_CV_moves[[g]][j - 1] <- n_accepted_CV_moves[[g]][j - 1] + tmp$accept
-          # if accepted move, update accordingly
-          if (tmp$accept == 1) curr_theta <- tmp$new_theta
+    for (param in c("mu", "CV")) {
+      if (MCMC_settings$moves_switch[[paste0(param,"_on")]]) {
+        for (g in seq_len(n_groups)) {
+          for (j in seq(2, ncol(curr_aug_dat$D[[g]]))) {
+            tmp <- move_lognormal(
+              what = param,
+              g,
+              j - 1,
+              MCMC_settings$moves_options[[paste0("sdlog_", param)]][[g]][[j - 1]],
+              curr_aug_dat,
+              curr_theta,
+              obs_dat,
+              hyperparameters,
+              index_dates)
+            n_proposed <- get(paste0("n_proposed_", param, "_moves"))
+            n_accepted <- get(paste0("n_accepted_", param, "_moves"))
+            n_proposed[[g]][j - 1] <- n_proposed[[g]][j - 1] + 1
+            if (tmp$accept == 1) {
+              n_accepted[[g]][j - 1] <- n_accepted[[g]][j - 1] + 1
+              curr_theta <- tmp$new_theta
+            }
+            assign(paste0("n_proposed_", param, "_moves"), n_proposed)
+            assign(paste0("n_accepted_", param, "_moves"), n_accepted)
+          }
         }
       }
     }

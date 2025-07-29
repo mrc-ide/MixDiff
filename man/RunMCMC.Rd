@@ -7,13 +7,14 @@
 RunMCMC(obs_dat, MCMC_settings, hyperparameters, index_dates)
 }
 \arguments{
-\item{obs_dat}{A list of observed data, in the format of the first element
-(called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
+\item{obs_dat}{A list of observed data, containing dates `D` and error
+indicators `E` for each group.}
 
 \item{MCMC_settings}{A list of settings to be used for running the MCMC, see
 details.}
 
-\item{hyperparameters}{A list of hyperparameters: see details.}
+\item{hyperparameters}{A list of hyperparameters for zeta, mu and CV. See
+details.}
 
 \item{index_dates}{A list containing indications on which delays to consider
 in the estimation, see details.}
@@ -37,47 +38,47 @@ Runs the MCMC estimation procedure.
 \details{
 \code{MCMC_settings} should be a list containing:
 \itemize{
- \item{\code{moves_switch}}{: A list of booleans (D_on ,E_on, mu_on, CV_on,
+ \item{\code{moves_switch} : A list of booleans (D_on ,E_on, mu_on, CV_on,
   zeta_on) stating whether each parameter/augmented data should be moved in
    the procedure or not.}
- \item{\code{moves_options}}{: A list of the following elements:
+ \item{\code{moves_options}: A list of the following elements:
  \itemize{
- \item{\code{fraction_Di_to_update}}{: The fraction of augmented dates to be
+ \item{\code{fraction_Di_to_update}: The fraction of augmented dates to be
   updated at each iteration of the MCMC.}
- \item{\code{move_D_by_groups_of_size}}{: The number of augmented dates to be
+ \item{\code{move_D_by_groups_of_size}: The number of augmented dates to be
   updated simultaneously in each group.}
- \item{\code{fraction_Ei_to_update}}{: The fraction of indicators of whether
+ \item{\code{fraction_Ei_to_update}: The fraction of indicators of whether
   observed dates are erroneous to be updated at each iteration of the MCMC.}
- \item{\code{sdlog_mu}}{: The standard deviations to be used for proposing
+ \item{\code{sdlog_mu}: The standard deviations to be used for proposing
   moves of the mean delays. This should be a list of length
    \code{n_groups = length(obs_dat)}. Each element in the list should be a
     vector with length given by the numbers of delays to be considered in
      this group.}
- \item{\code{sdlog_CV}}{: The standard deviations to be used for proposing
+ \item{\code{sdlog_CV}: The standard deviations to be used for proposing
   moves of the CV of delays. This should be a list of length
    \code{n_groups = length(obs_dat)}. Each element in the list should be a
     vector with length given by the numbers of delays to be considered in
      this group.}
  }
  }
- \item{\code{init_options}}{: A list of the following elements:
+ \item{\code{init_options}: A list of the following elements:
  \itemize{
- \item{\code{mindelay}}{: The minimum delay, below which dates are considered
+ \item{\code{mindelay}: The minimum delay, below which dates are considered
   incompatile with one another at the initialisation stage of the MCMC.}
- \item{\code{maxdelay}}{: The maximum delay, above which dates are considered
+ \item{\code{maxdelay}: The maximum delay, above which dates are considered
   incompatile with one another at the initialisation stage of the MCMC.}
- \item{\code{record_every}}{: A number indicating, after the burnin, every
+ \item{\code{record_every}: A number indicating, after the burnin, every
   how many iterations outputs should be recorded.}
+  }
  }
- }
- \item{\code{chain_properties}}{: A list of the following elements:
+ \item{\code{chain_properties}: A list of the following elements:
  \itemize{
- \item{\code{n_iter}}{: The total number of iteration of MCMC to run.}
- \item{\code{burnin}}{: The number of initial iterations to consider as the
+ \item{\code{n_iter}: The total number of iteration of MCMC to run.}
+ \item{\code{burnin}: The number of initial iterations to consider as the
   burnin period - no output is recorded for these initial MCMC iterations.}
- \item{\code{record_every}}{: A number indicating, after the burnin, every
+ \item{\code{record_every}: A number indicating, after the burnin, every
   how many iterations outputs should be recorded.}
- }
+  }
  }
 }
 \code{hyperparameters} should be a list containing:

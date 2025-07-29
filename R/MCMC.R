@@ -315,10 +315,10 @@ RunMCMC <- function(obs_dat,
       }
     }
     
-    # recording value of parameters and corresponding posterior after all moves 
+    # Record parameter values and corresponding posterior after all moves -----
     if (output_stuff) {
       idx <- (k - MCMC_settings$chain_properties$burnin) /
-        MCMC_settings$chain_properties$record_every + 1
+              MCMC_settings$chain_properties$record_every + 1
       theta_chain[[idx]] <- curr_theta
       aug_dat_chain[[idx]] <- curr_aug_dat
       logpost_chain[idx] <- lposterior_total(curr_aug_dat,
@@ -326,13 +326,13 @@ RunMCMC <- function(obs_dat,
                                              obs_dat,
                                              hyperparameters,
                                              index_dates,
-                                             range_dates) #### CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
+                                             range_dates)
+      # Previous note: CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
     }
   }
   
-  ###############################################
-  ### Compute acceptance probabilities ###
-  ###############################################
+  #----------------------------------------------------------------------------
+  # Compute acceptance probabilities
   
   accept_prob <- list(
     D_moves = n_accepted_D_moves / n_proposed_D_moves,
@@ -347,9 +347,8 @@ RunMCMC <- function(obs_dat,
                         }),
     zeta_moves = 1)
   
-  ###############################################
-  ### Return list of outputs of interest ###
-  ###############################################
+  #----------------------------------------------------------------------------
+  # Return list of outputs of interest
   
   res <- list(theta_chain = theta_chain,
               aug_dat_chain = aug_dat_chain,

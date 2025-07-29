@@ -22,14 +22,14 @@ in the estimation, see details.}
 \value{
 A list of the following elements:
  \itemize{
- \item{\code{theta_chain}}{: a list of parameters, at each recorded step of
-  the MCMC chain}
- \item{\code{aug_dat_chain}}{: a list of augmented data, at each recorded
-  step of the MCMC chain}
- \item{\code{logpost_chain}}{: a vector of values of the log posterior at
+ \item{\code{theta_chain}: a list of parameters (mu, cv, zeta), at each
+  recorded step of the MCMC chain}
+ \item{\code{aug_dat_chain}: a list of augmented dates and error indicators,
+  at each recorded step of the MCMC chain}
+ \item{\code{logpost_chain}: a vector of values of the log posterior at
   each recorded step of the MCMC chain}
- \item{\code{accept_prob}}{: A list of the probabilities of acceptance for
-  each parameter across all MCMC iterations}
+ \item{\code{accept_prob}: a list of the probabilities of acceptance for
+  each move type across all MCMC iterations}
 }
 }
 \description{
@@ -108,5 +108,59 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and
     date 1 and date 3.
 }
 \examples{
-### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+# Simulate data to use
+n_groups <- 1
+index_dates <- list(matrix(c(1, 2), nrow = 2))  # delay from date 1 to 2
+theta <- list(
+  mu = list(5),
+  CV = list(0.5),
+  prop_missing_data = 0.2,
+  zeta = 0.05
+ )
+
+n_per_group <- 10
+range_dates <- c(0, 30)
+
+simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
+                             simul_error = TRUE)
+obs_dat <- simul_dat$obs_dat
+
+# Set up hyperparameters
+hyperparameters <- list(
+    shape1_prob_error = 3,
+    shape2_prob_error = 12,
+    mean_mean_delay = 10,
+    mean_CV_delay = 10)
+    
+# Set up MCMC
+MCMC_settings <- list(
+moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+                    mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+  moves_options = list(
+    fraction_Di_to_update = 1 / 10,
+    move_D_by_groups_of_size = 1,
+    fraction_Ei_to_update = 1 / 10,
+    sdlog_mu = list(0.15),
+    sdlog_CV = list(0.25)
+  ),
+  init_options = list(
+    mindelay = 0,
+    maxdelay = 20
+  ),
+  chain_properties = list(
+    n_iter = 500,
+    burnin = 50,
+    record_every = 10
+  )
+)
+
+# Run MCMC
+
+# Results
+MCMC_result$theta_chain
+MCMC_result$aug_dat_chain
+MCMC_result$logpost_chain
+plot(MCMC_result$logpost_chain, type = "l",
+     ylab = "Log Posterior", xlab = "Iteration")
+MCMC_result$accept_prob
 }

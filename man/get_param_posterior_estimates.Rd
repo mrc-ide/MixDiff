@@ -10,29 +10,28 @@ get_param_posterior_estimates(
   CrI = 0.95,
   theta_true = NULL,
   plot = TRUE,
-  cex.axis = 1,
   group_labels = NULL,
   date_labels = NULL
 )
 }
 \arguments{
-\item{MCMCres}{The output of function \code{\link{RunMCMC}}.}
+\item{MCMCres}{Output from \code{\link{RunMCMC}}.}
 
-\item{central}{A character specifying what the central estimate should be
-(median or mean posterior)}
+\item{central}{A character string specifying what the central estimate
+should be (either \code{"median"} or \code{"mean"} posterior)}
 
 \item{CrI}{A scalar in [0;1] used to compute the posterior credible
 intervals. For 95\% credible intervals, use CrI=0.95.}
 
-\item{theta_true}{A list of parameters to which the output chains should be
- compared. If not \code{NULL}, this should contain:
+\item{theta_true}{Optional list of true parameter values to compare the
+ output to. If not \code{NULL}, this should contain:
 \itemize{
  \item{\code{mu}: A list of length
   \code{n_groups = length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of
    \code{mu} should be a scalar or vector giving the mean delay(s) in that
     group.}
  \item{\code{CV}: A list of length \code{n_groups}. Each element of
-  \code{CV} should be a scalar or vector giving the coefficient o variation
+  \code{CV} should be a scalar or vector giving the coefficient of variation
    of the delay(s) in that group.}
  \item{\code{zeta}: A scalar in [0;1] giving the probability that, if a
   data point is not missing, it is recorded with error.}
@@ -40,37 +39,39 @@ intervals. For 95\% credible intervals, use CrI=0.95.}
 The posterior distributions of parameters are then plotted together with
  \code{theta_true}.}
 
-\item{plot}{A boolean specifying whether to plot boxplots of the posterior
-estimates or not}
+\item{plot}{A boolean specifying whether to generate boxplots of the
+posterior estimates.}
 
-\item{cex.axis}{A numerical value giving the amount by which x axis labels
-should be magnified relative to the default.}
+\item{group_labels}{A character vector of length equal to the number of
+groups. Each element gives the label corresponding to a group index e.g.
+ \code{c("Community-alive", "Hospitalised-dead")}.}
+
+\item{date_labels}{A list of character vectors giving the names of each date
+column per group. This is used to automatically generate delay labels.}
 }
 \value{
-A list containing two elements: the posterior estimates of
- parameters:
+A list with posterior estimates and optional plots:
 \itemize{
- \item{\code{logpost}: A vector of three values giving the central
-  log-posterior estimate (first value) and quantiles corresponding to CrI
-   (second and third values).}
- \item{\code{theta}: A list giving posterior parameter estimates
+ \item{\code{logpost}: A vector of three values, containing the central
+  log-posterior estimate (mean or median), lower bound of the credible
+   interval and upper bound of the credible interval.}
+ \item{\code{theta}: A named list giving posterior parameter estimates for:
  \itemize{
- \item{\code{mu}: A list of length
-  \code{n_groups = length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of
-   \code{mu} should be a matrix with 3 rows giving the posterior mean
+ \item{\code{mu}: A list of length equal to the number of groups. Each
+  element is a matrix with 3 rows giving the posterior mean/median of the
     delay(s) in that group (1st row = central posterior estimate, 2nd and
-     3rd rows = credible interval).}
- \item{\code{CV}: A list of length \code{n_groups}. Each element of
-  \code{CV} should be a matrix with 3 rows giving the posterior CV of the
-   delay(s) in that group (1st row = central posterior estimate, 2nd and 3rd
-    rows = credible interval) .}
+     3rd rows = lower and upper credible interval bounds).}
+ \item{\code{CV}: Same structure as \code{mu}, giving posterior estimates
+  of the coefficient of variation for each delay.}
  \item{\code{zeta}: A vector of three values in [0;1] giving the posterior
   estimate of the probability that, if a data point is not missing, it is
    recorded with error (1st value = central posterior estimate, 2nd and 3rd
-    values = credible interval).}
- }
- }
+    values = lower and upper credible interval bounds).}
+ }}
 }
+If \code{plot = TRUE}, a summary plot of the posterior distributions is also
+ displayed. This includes boxplots for the log-posterior, zeta, and the mu
+  and cv of delays for each group.
 }
 \description{
 Computes posterior estimates of parameters from the MCMC chain
@@ -145,7 +146,6 @@ get_param_posterior_estimates(MCMCres = MCMC_result,
                               CrI = 0.95,
                               theta_true = NULL,
                               plot = TRUE,
-                              cex.axis = 1,
                               group_labels = c("Community-alive",
                                                "Community-dead",
                                                "Hospitalised-alive",
@@ -158,4 +158,7 @@ get_param_posterior_estimates(MCMCres = MCMC_result,
                               ))
 
 
+}
+\seealso{
+\code{\link{RunMCMC}}
 }

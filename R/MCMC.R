@@ -431,92 +431,315 @@ RunMCMC <- function(obs_dat,
   return(res)
 }
 
-#' Compute correlation between the MCMC chains of mean and CV of each delay
+#' Compute correlation between the MCMC chains of mean and CV for each delay
+#' 
+#' @description
+#' This function computes Pearson correlation coefficients between the posterior
+#'  samples of mu and CV for each delay distribution. Optionally, it produces
+#'   scatter plots to visually inspect correlations.
+#' 
 #' 
 #' @param MCMCres The output of function \code{\link{RunMCMC}}. 
-#' @param plot A boolean indicating whether to plot the correlations or not
-#' @return A list of results of correlation test (obtained from the function \code{\link{cor.test}}) between the posterior mean and the posterior CV for each delay. 
+#' @param plot A boolean indicating whether to plot the correlations.
+#' @param group_labels Optional character vector of group names for more
+#'  informative plots. If \code{NULL}, group index will be used.
+#' @param date_labels Optional list of character vectors giving the names of
+#'  each date column per group. This is used to automatically generate delay
+#'   labels. If \code{NULL}, delay index will be used.
+#' 
+#' @return A list of correlation test results (obtained using
+#'  \code{\link{cor.test}}), one per group and delay, assessing correlations
+#'   between the posterior mean and posterior CV for each delay.
 #' @import graphics
 #' @import stats
+#' @import ggplot2
+#' @import dplyr
 #' @export
 #' @examples
-#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_correlations_mu_CV <- function(MCMCres, plot = TRUE) {
+#' # Simulate data to use
+#' n_groups <- 4
+#' index_dates <- list(
+#'   matrix(c(1, 2), nrow = 2),
+#'   cbind(c(1, 2), c(1, 3)),
+#'   cbind(c(1, 2), c(2, 3),c(1, 4)),
+#'   cbind(c(1, 2), c(2, 3), c(1, 4))
+#' )
+#' theta <- list(
+#'   mu = list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13)),
+#'   CV = list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5)),
+#'   prop_missing_data = 0.2,
+#'   zeta = 0.05
+#'  )
+#' 
+#' n_per_group <- rep(10, n_groups)
+#' range_dates <- c(0, 30)
+#' 
+#' simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
+#'                              simul_error = TRUE)
+#' obs_dat <- simul_dat$obs_dat
+#' 
+#' # Set up hyperparameters
+#' hyperparameters <- list(
+#'     shape1_prob_error = 3,
+#'     shape2_prob_error = 12,
+#'     mean_mean_delay = 10,
+#'     mean_CV_delay = 10)
+#' 
+#' # Set up MCMC
+#' MCMC_settings <- list(
+#' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+#'                     mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+#'   moves_options = list(
+#'     fraction_Di_to_update = 1 / 10,
+#'     move_D_by_groups_of_size = 1,
+#'     fraction_Ei_to_update = 1 / 10,
+#'     sdlog_mu = list(
+#'       0.05,
+#'       c(0.15, 0.15),
+#'       c(0.15, 0.15, 0.15),
+#'       c(0.25, 0.25, 0.25)
+#'     ),
+#'     sdlog_CV = list(
+#'       0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))
+#'   ),
+#'   init_options = list(
+#'     mindelay = 0,
+#'     maxdelay = 20
+#'   ),
+#'   chain_properties = list(
+#'     n_iter = 500,
+#'     burnin = 50,
+#'     record_every = 10
+#'   )
+#' )
+#' 
+#' # Run MCMC
+#' MCMC_result <- RunMCMC(obs_dat,
+#'                        MCMC_settings,
+#'                        hyperparameters,
+#'                        index_dates)
+#'                        
+#' compute_correlations_mu_CV(MCMCres = MCMC_result,
+#'                            plot = TRUE,
+#'                            group_labels = c("Community-alive",
+#'                                             "Community-dead",
+#'                                             "Hospitalised-alive",
+#'                                             "Hospitalised-dead"),
+#'                           date_labels = list(
+#'                               c("Onset", "Report"),
+#'                               c("Onset", "Death", "Report"),
+#'                               c("Onset", "Hosp", "Disch", "Report"),
+#'                               c("Onset", "Hosp", "Death", "Report")
+#'                             ))  
+compute_correlations_mu_CV <- function(MCMCres,
+                                       plot = TRUE,
+                                       group_labels = NULL,
+                                       date_labels = NULL) {
+  
+  iterations <- seq_along(MCMCres$theta_chain)
+  n_groups <- length(MCMCres$theta_chain[[1]]$mu)
+  n_delays <- sapply(MCMCres$theta_chain[[1]]$mu, length)
+  
+  # default group labels
+  if (is.null(group_labels)) group_labels <- paste("Group", seq_len(n_groups))
+  
+  # create delay labels
+  if (!is.null(date_labels)) {
+    delay_labels <- lapply(seq_along(MCMCres$index_dates), function(g) {
+      idx_mat <- MCMCres$index_dates[[g]]
+      labels <- date_labels[[g]]
+      apply(idx_mat, 2, function(col) paste0(labels[col[1]], " to ", labels[col[2]]))
+    })
+  } else {
+    # default delay labels
+    delay_labels <- lapply(n_delays, function(n) paste("Delay", seq_len(n)))
+  }
   
   cor_mu_CV <- list()
+  df_list <- list()
   
-  if (plot) par(mfrow = c(2, 5), mar = c(5, 6, 1, 1))
-  
-  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol)
-  n_groups <- length(n_dates)
-  
-  iterations <- seq_len(length(MCMCres$theta_chain))
-  
-  group_idx <- 1
-  mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]])
-  CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]])
-  if (plot) plot(mu, CV, type = "l")
-  cor_mu_CV[[group_idx]] <- cor.test(mu, CV)
-  
-  for (group_idx in seq(2, n_groups, 1)) {
-    cor_mu_CV[[group_idx]] <- list()
-    for (j in seq_len(n_dates[[group_idx]] - 1)) {
-      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-      if (plot) plot(mu, CV, type = "l", col = j)
-      cor_mu_CV[[group_idx]][[j]] <- cor.test(mu, CV)
+  for (g in seq_len(n_groups)) {
+    cor_mu_CV[[g]] <- list()
+    for (d in seq_len(n_delays[g])) {
+      mu_vals <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[g]][d])
+      CV_vals <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[g]][d])
+      
+      cor_mu_CV[[g]][[d]] <- cor.test(mu_vals, CV_vals)
+      
+      df_list[[length(df_list) + 1]] <- data.frame(
+        mu = mu_vals,
+        CV = CV_vals,
+        group = group_labels[g],
+        delay = delay_labels[[g]][d]
+      )
     }
+  }
+  
+  # plot
+  if (plot) {
+    
+    full_df <- bind_rows(df_list) %>%
+      mutate(panel_label = paste0(group, ": ", delay))
+    
+    cor_plot <- ggplot(full_df, aes(x = mu, y = CV)) +
+      geom_point(alpha = 0.5, size = 1.2) +
+      facet_wrap(~ panel_label) +
+      theme_minimal(base_size = 12) +
+      labs(x = "Mu", y = "CV") +
+      theme(
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(color = "grey", fill = NA),
+        plot.title = element_text(hjust = 0.5)
+        )
+    print(cor_plot)
   }
   
   return(cor_mu_CV)
 }
 
-#' Compute autocorrelation for each parameter of the MCMC chains 
+
+
+#' Compute autocorrelation for each parameter in the MCMC chains 
 #' 
-#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
-#' @return A list of results of autocorrelation results (obtained from the function \code{\link{acf}}). 
+#' @param MCMCres The output of function \code{\link{RunMCMC}}.
+#' @param group_labels Optional character vector of group names for more
+#'  informative plots. If \code{NULL}, group index will be used.
+#' @param date_labels A list of character vectors giving the names of each date
+#'  column per group. This is used to automatically generate delay labels. If
+#'   \code{NULL}, delay index will be used.
+#' @return A list of autocorrelation results and plots for each parameter: mu,
+#'  CV and zeta (obtained using the function \code{\link{acf}}).
 #' @import graphics
 #' @import stats
 #' @export
 #' @examples
-#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
-compute_autocorr <- function(MCMCres) {
-  autocorr <- list()
-  autocorr$mu <- list()
-  autocorr$CV <- list()
+#' # Simulate data to use
+#' n_groups <- 4
+#' index_dates <- list(
+#'   matrix(c(1, 2), nrow = 2),
+#'   cbind(c(1, 2), c(1, 3)),
+#'   cbind(c(1, 2), c(2, 3),c(1, 4)),
+#'   cbind(c(1, 2), c(2, 3), c(1, 4))
+#' )
+#' theta <- list(
+#'   mu = list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13)),
+#'   CV = list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5)),
+#'   prop_missing_data = 0.2,
+#'   zeta = 0.05
+#'  )
+#' 
+#' n_per_group <- rep(10, n_groups)
+#' range_dates <- c(0, 30)
+#' 
+#' simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
+#'                              simul_error = TRUE)
+#' obs_dat <- simul_dat$obs_dat
+#' 
+#' # Set up hyperparameters
+#' hyperparameters <- list(
+#'     shape1_prob_error = 3,
+#'     shape2_prob_error = 12,
+#'     mean_mean_delay = 10,
+#'     mean_CV_delay = 10)
+#' 
+#' # Set up MCMC
+#' MCMC_settings <- list(
+#' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+#'                     mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+#'   moves_options = list(
+#'     fraction_Di_to_update = 1 / 10,
+#'     move_D_by_groups_of_size = 1,
+#'     fraction_Ei_to_update = 1 / 10,
+#'     sdlog_mu = list(
+#'       0.05,
+#'       c(0.15, 0.15),
+#'       c(0.15, 0.15, 0.15),
+#'       c(0.25, 0.25, 0.25)
+#'     ),
+#'     sdlog_CV = list(
+#'       0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))
+#'   ),
+#'   init_options = list(
+#'     mindelay = 0,
+#'     maxdelay = 20
+#'   ),
+#'   chain_properties = list(
+#'     n_iter = 500,
+#'     burnin = 50,
+#'     record_every = 10
+#'   )
+#' )
+#' 
+#' # Run MCMC
+#' MCMC_result <- RunMCMC(obs_dat,
+#'                        MCMC_settings,
+#'                        hyperparameters,
+#'                        index_dates)
+#'                        
+#' compute_autocorr(MCMCres = MCMC_result,
+#'                  group_labels = c("Community-alive",
+#'                                   "Community-dead",
+#'                                   "Hospitalised-alive",
+#'                                   "Hospitalised-dead"),
+#'                  date_labels = list(
+#'                    c("Onset", "Report"),
+#'                    c("Onset", "Death", "Report"),
+#'                    c("Onset", "Hosp", "Disch", "Report"),
+#'                    c("Onset", "Hosp", "Death", "Report")
+#'                  ))  
+compute_autocorr <- function(MCMCres,
+                             group_labels = NULL,
+                             date_labels = NULL) {
   
-  par(mfrow = c(4, 5), mar = c(4, 4, 4, 0.5))
+  autocorr <- list(mu = list(), CV = list())
   
-  n_dates <- sapply(MCMCres$aug_dat_chain[[1]]$D, ncol)
-  n_groups <- length(n_dates)
-  
+  n_groups <- length(MCMCres$index_dates)
+  n_delays <- sapply(MCMCres$index_dates, ncol)
   iterations <- seq_len(length(MCMCres$theta_chain))
   
-  for (group_idx in seq(1, n_groups, 1)) {
-    autocorr$mu[[group_idx]] <- list()
-    autocorr$CV[[group_idx]] <- list()
-    for (j in seq_len(n_dates[[group_idx]] - 1)) {
-      mu <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-      CV <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-      autocorr$mu[[group_idx]][[j]] <- acf(mu,
-                                           main = sprintf(
-                                             "Mu, group %d, delay %d",
-                                             group_idx,
-                                             j))
-      autocorr$CV[[group_idx]][[j]] <- acf(CV,
-                                           main = sprintf(
-                                             "CV, group %d, delay %d",
-                                             group_idx,
-                                             j))
+  # Create delay labels if date_labels are provided
+  if (!is.null(date_labels)) {
+    delay_labels <- lapply(seq_along(MCMCres$index_dates), function(g) {
+      idx_mat <- MCMCres$index_dates[[g]]
+      labels <- date_labels[[g]]
+      apply(idx_mat, 2, function(col) paste0(labels[col[1]], " to ", labels[col[2]]))
+    })
+  } else {
+    delay_labels <- lapply(n_delays, function(n) paste0("Delay ", seq_len(n)))
+  }
+  
+  if (is.null(group_labels)) {
+    group_labels <- paste("Group", seq_len(n_groups))
+  }
+  
+  # Estimate plot layout
+  total_plots <- sum(n_delays) * 2 + 1  # mu + CV + zeta
+  n_cols <- ceiling(sqrt(total_plots))
+  n_rows <- ceiling(total_plots / n_cols)
+  par(mfrow = c(n_rows, n_cols), mar = c(4, 4, 3, 1))
+  
+  for (g in seq_len(n_groups)) {
+    autocorr$mu[[g]] <- list()
+    autocorr$CV[[g]] <- list()
+    
+    for (d in seq_len(n_delays[g])) {
+      mu_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[g]][d])
+      CV_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[g]][d])
+      
+      mu_label <- sprintf("Mu: %s, %s", group_labels[g], delay_labels[[g]][d])
+      CV_label <- sprintf("CV: %s, %s", group_labels[g], delay_labels[[g]][d])
+      
+      autocorr$mu[[g]][[d]] <- acf(mu_chain, main = mu_label)
+      autocorr$CV[[g]][[d]] <- acf(CV_chain, main = CV_label)
     }
   }
   
-  zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
-  autocorr$zeta <- acf(zeta, main = "zeta")
+  # zeta
+  zeta_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
+  autocorr$zeta <- acf(zeta_chain, main = "Zeta")
   
   return(autocorr)
 }
-
 
 #' Computes posterior estimates of parameters from the MCMC chain
 #' 

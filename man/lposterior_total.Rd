@@ -2,8 +2,8 @@
 % Please edit documentation in R/LikelihoodPrior.R
 \name{lposterior_total}
 \alias{lposterior_total}
-\title{Compute the log joint posterior distribution of augmented data and
- parameters given observed data}
+\title{Compute the log joint posterior distribution (likelihood + prior) of
+ augmented data and parameters given observed data}
 \usage{
 lposterior_total(
   aug_dat,
@@ -15,16 +15,14 @@ lposterior_total(
 )
 }
 \arguments{
-\item{aug_dat}{A list of augmented data, in the format of the first element
-(called \code{true_dat}) in the list returned by
- \code{\link{simul_true_data}}.}
+\item{aug_dat}{A list of augmented data with dates `D` and error indicators
+`E` for each group.}
 
-\item{theta}{List of parameters; see details.}
+\item{theta}{Parameter list containing: mu, CV, zeta.}
 
-\item{obs_dat}{A list of observed data, in the format of the first element
-(called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
+\item{obs_dat}{A list of observed data in the same format as \code{aug_dat}.}
 
-\item{hyperparameters}{A list of hyperparameters: see details.}
+\item{hyperparameters}{List of priors for mu, CV, zeta.}
 
 \item{index_dates}{A list containing indications on which delays to consider
 in the estimation, see details.}
@@ -36,31 +34,30 @@ If NULL, will be computed automatically.}
 A scalar giving the value of the log posterior.
 }
 \description{
-Compute the log joint posterior distribution of augmented data and
- parameters given observed data
+Compute the log joint posterior distribution (likelihood + prior) of
+ augmented data and parameters given observed data
 }
 \details{
 \code{theta} should be a list containing:
 \itemize{
- \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups
-  to be simulated data). Each element of \code{mu} should be a scalar of
-   vector giving the mean delay(s) to use for simulation of dates in that
-    group.}
- \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
-  \code{CV} should be a scalar of vector giving the coefficient o variation
-   of the delay(s) to use for simulation of dates in that group.}
- \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a
-  data point is not missing, it is recorded with error.}
+ \item{\code{mu}: A list of length \code{n_groups}. Each element of \code{mu}
+  should be a scalar or vector giving the mean delay(s) to use for the
+   simulation of dates in that group.}
+ \item{\code{CV}: A list of length \code{n_groups}. Each element of
+  \code{CV} should be a scalar or vector giving the coefficient of variation
+   of the delay(s) to use to simulate dates in that group.}
+ \item{\code{zeta}: A scalar in [0;1] giving the probability that, if a
+  date is not missing, it is recorded with error.}
 }
 \code{hyperparameters} should be a list containing:
 \itemize{
- \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter
+ \item{\code{shape1_prob_error}: A scalar giving the first shape parameter
   for the beta prior used for parameter \code{theta$zeta}}
- \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter
+ \item{\code{shape2_prob_error}: A scalar giving the second shape parameter
   for the beta prior used for parameter \code{theta$zeta}}
- \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential
+ \item{\code{mean_mean_delay}: A scalar giving the mean of the exponential
   prior used for parameter \code{theta$mu}}
- \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential
+ \item{\code{mean_CV_delay}: A scalar giving the mean of the exponential
   prior used for parameter \code{theta$CV}}
 }
 \code{index_dates} should be a list of length
@@ -79,51 +76,49 @@ If index_dates[[k]] has two columns containing respectively c(1, 2) and
     date 1 and date 3.
 }
 \examples{
-### Number of groups of individuals to simulate ###
+# Number of groups of individuals to simulate
 n_groups <- 2
 
-### Number of dates to simulate for each group ###
+# Number of dates to simulate for each group
 n_dates <- c(2, 3)
 
-### Setting up the parameters for the simulation ###
+# Setting up the parameters for the simulation
 theta <- list()
 theta$mu <- list(5, c(10, 15)) # mean delays, for each group
 theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of delays
 theta$prop_missing_data <- 0.25 # probability data missing in observations
-theta$zeta <- 0.05 # probability that, when not missing, the date is
-# recorded with error
+theta$zeta <- 0.05 # probability that non-missing date is recorded with error
 
-### Number of individuals to simulate in each group ###
+# Number of individuals to simulate in each group
 n_per_group <- rep(10, n_groups)
 
-### Range of dates in which to draw the first set of dates for each group ###
+# Range of dates in which to draw the first set of dates for each group
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"),
- as.Date("01/01/2015", "\%d/\%m/\%Y")))
+                             as.Date("01/01/2015", "\%d/\%m/\%Y")))
 
-### Which delays to use to simulate subsequent dates from the first, in each
- group? ###
+# Delays used to simulate subsequent dates from the first, in each group
 index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
 
-### Simulate data ###
+# Simulate data
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
- remove_allNA_indiv=TRUE)
+                            remove_allNA_indiv = TRUE)
 obs_dat <- observed_D$obs_dat
 true_aug_dat <- list(D = D$true_dat, E = observed_D$E)
 
-### Define hyperparameters ###
+# Define hyperparameters
 hyperparameters <- list(shape1_prob_error = 3, shape2_prob_error = 12, 
                      mean_mean_delay = 100, mean_CV_delay = 100)
                      
-### Compute log posterior distribution for that data
+# Compute log posterior distribution for that data
 lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates,
- range_dates = NULL)
+                 range_dates = NULL)
 
-### Now use initialised augmented data 
-### and check that posterior value for this is lower than for true data:
+# Now use initialised augmented data and check that posterior value for this
+# is lower than for true data:
 MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
 aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates,
- MCMC_settings)
+                               MCMC_settings)
 lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates,
- range_dates = NULL)
+                 range_dates = NULL)
 }

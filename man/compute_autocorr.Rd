@@ -2,19 +2,100 @@
 % Please edit documentation in R/MCMC.R
 \name{compute_autocorr}
 \alias{compute_autocorr}
-\title{Compute autocorrelation for each parameter of the MCMC chains}
+\title{Compute autocorrelation for each parameter in the MCMC chains}
 \usage{
-compute_autocorr(MCMCres)
+compute_autocorr(MCMCres, group_labels = NULL, date_labels = NULL)
 }
 \arguments{
 \item{MCMCres}{The output of function \code{\link{RunMCMC}}.}
+
+\item{group_labels}{Optional character vector of group names for more
+informative plots. If \code{NULL}, group index will be used.}
+
+\item{date_labels}{A list of character vectors giving the names of each date
+column per group. This is used to automatically generate delay labels. If
+ \code{NULL}, delay index will be used.}
 }
 \value{
-A list of results of autocorrelation results (obtained from the function \code{\link{acf}}).
+A list of autocorrelation results and plots for each parameter: mu,
+ CV and zeta (obtained using the function \code{\link{acf}}).
 }
 \description{
-Compute autocorrelation for each parameter of the MCMC chains
+Compute autocorrelation for each parameter in the MCMC chains
 }
 \examples{
-### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+# Simulate data to use
+n_groups <- 4
+index_dates <- list(
+  matrix(c(1, 2), nrow = 2),
+  cbind(c(1, 2), c(1, 3)),
+  cbind(c(1, 2), c(2, 3),c(1, 4)),
+  cbind(c(1, 2), c(2, 3), c(1, 4))
+)
+theta <- list(
+  mu = list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13)),
+  CV = list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5)),
+  prop_missing_data = 0.2,
+  zeta = 0.05
+ )
+
+n_per_group <- rep(10, n_groups)
+range_dates <- c(0, 30)
+
+simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
+                             simul_error = TRUE)
+obs_dat <- simul_dat$obs_dat
+
+# Set up hyperparameters
+hyperparameters <- list(
+    shape1_prob_error = 3,
+    shape2_prob_error = 12,
+    mean_mean_delay = 10,
+    mean_CV_delay = 10)
+
+# Set up MCMC
+MCMC_settings <- list(
+moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+                    mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
+  moves_options = list(
+    fraction_Di_to_update = 1 / 10,
+    move_D_by_groups_of_size = 1,
+    fraction_Ei_to_update = 1 / 10,
+    sdlog_mu = list(
+      0.05,
+      c(0.15, 0.15),
+      c(0.15, 0.15, 0.15),
+      c(0.25, 0.25, 0.25)
+    ),
+    sdlog_CV = list(
+      0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))
+  ),
+  init_options = list(
+    mindelay = 0,
+    maxdelay = 20
+  ),
+  chain_properties = list(
+    n_iter = 500,
+    burnin = 50,
+    record_every = 10
+  )
+)
+
+# Run MCMC
+MCMC_result <- RunMCMC(obs_dat,
+                       MCMC_settings,
+                       hyperparameters,
+                       index_dates)
+                       
+compute_autocorr(MCMCres = MCMC_result,
+                 group_labels = c("Community-alive",
+                                  "Community-dead",
+                                  "Hospitalised-alive",
+                                  "Hospitalised-dead"),
+                 date_labels = list(
+                   c("Onset", "Report"),
+                   c("Onset", "Death", "Report"),
+                   c("Onset", "Hosp", "Disch", "Report"),
+                   c("Onset", "Hosp", "Death", "Report")
+                 ))  
 }

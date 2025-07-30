@@ -520,56 +520,65 @@ compute_autocorr <- function(MCMCres) {
 
 #' Computes posterior estimates of parameters from the MCMC chain
 #' 
-#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
-#' @param central A character specifying what the central estimate should be
-#'  (median or mean posterior)
+#' @param MCMCres Output from \code{\link{RunMCMC}}. 
+#' @param central A character string specifying what the central estimate
+#'  should be (either \code{"median"} or \code{"mean"} posterior)
 #' @param CrI A scalar in [0;1] used to compute the posterior credible
 #'  intervals. For 95\% credible intervals, use CrI=0.95.
-#' @param theta_true A list of parameters to which the output chains should be
-#'  compared. If not \code{NULL}, this should contain:
+#' @param theta_true Optional list of true parameter values to compare the
+#'  output to. If not \code{NULL}, this should contain:
 #' \itemize{
 #'  \item{\code{mu}: A list of length
 #'   \code{n_groups = length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of
 #'    \code{mu} should be a scalar or vector giving the mean delay(s) in that
 #'     group.}
 #'  \item{\code{CV}: A list of length \code{n_groups}. Each element of
-#'   \code{CV} should be a scalar or vector giving the coefficient o variation
+#'   \code{CV} should be a scalar or vector giving the coefficient of variation
 #'    of the delay(s) in that group.}
 #'  \item{\code{zeta}: A scalar in [0;1] giving the probability that, if a
 #'   data point is not missing, it is recorded with error.}
 #' }
 #' The posterior distributions of parameters are then plotted together with
 #'  \code{theta_true}. 
-#' @param plot A boolean specifying whether to plot boxplots of the posterior
-#'  estimates or not
-#' @param cex.axis A numerical value giving the amount by which x axis labels
-#'  should be magnified relative to the default.
-#' @return A list containing two elements: the posterior estimates of
-#'  parameters:
+#' @param plot A boolean specifying whether to generate boxplots of the
+#'  posterior estimates.
+#' @param group_labels A character vector of length equal to the number of
+#'  groups. Each element gives the label corresponding to a group index e.g.
+#'   \code{c("Community-alive", "Hospitalised-dead")}.
+#' @param date_labels A list of character vectors giving the names of each date
+#'  column per group. This is used to automatically generate delay labels.
+#'  
+#' @return A list with posterior estimates and optional plots:
 #' \itemize{
-#'  \item{\code{logpost}: A vector of three values giving the central
-#'   log-posterior estimate (first value) and quantiles corresponding to CrI
-#'    (second and third values).}
-#'  \item{\code{theta}: A list giving posterior parameter estimates
+#'  \item{\code{logpost}: A vector of three values, containing the central
+#'   log-posterior estimate (mean or median), lower bound of the credible
+#'    interval and upper bound of the credible interval.}
+#'  \item{\code{theta}: A named list giving posterior parameter estimates for:
 #'  \itemize{
-#'  \item{\code{mu}: A list of length
-#'   \code{n_groups = length(MCMCres$aug_dat_chain[[1]]$D)}. Each element of
-#'    \code{mu} should be a matrix with 3 rows giving the posterior mean
+#'  \item{\code{mu}: A list of length equal to the number of groups. Each
+#'   element is a matrix with 3 rows giving the posterior mean/median of the
 #'     delay(s) in that group (1st row = central posterior estimate, 2nd and
-#'      3rd rows = credible interval).}
-#'  \item{\code{CV}: A list of length \code{n_groups}. Each element of
-#'   \code{CV} should be a matrix with 3 rows giving the posterior CV of the
-#'    delay(s) in that group (1st row = central posterior estimate, 2nd and 3rd
-#'     rows = credible interval) .}
+#'      3rd rows = lower and upper credible interval bounds).}
+#'  \item{\code{CV}: Same structure as \code{mu}, giving posterior estimates
+#'   of the coefficient of variation for each delay.}
 #'  \item{\code{zeta}: A vector of three values in [0;1] giving the posterior
 #'   estimate of the probability that, if a data point is not missing, it is
 #'    recorded with error (1st value = central posterior estimate, 2nd and 3rd
-#'     values = credible interval).}
-#'  }
-#'  }
+#'     values = lower and upper credible interval bounds).}
+#'  }}
 #' }
+#' If \code{plot = TRUE}, a summary plot of the posterior distributions is also
+#'  displayed. This includes boxplots for the log-posterior, zeta, and the mu
+#'   and cv of delays for each group.
+#' 
 #' @import graphics
+#' @import ggplot2
+#' @import patchwork
+#' @importFrom colorspace scale_fill_discrete_qualitative
 #' @export
+#' 
+#' @seealso \code{\link{RunMCMC}}
+#' 
 #' @examples
 #' # Simulate data to use
 #' n_groups <- 4
@@ -640,7 +649,6 @@ compute_autocorr <- function(MCMCres) {
 #'                               CrI = 0.95,
 #'                               theta_true = NULL,
 #'                               plot = TRUE,
-#'                               cex.axis = 1,
 #'                               group_labels = c("Community-alive",
 #'                                                "Community-dead",
 #'                                                "Hospitalised-alive",
@@ -658,7 +666,6 @@ get_param_posterior_estimates <- function(MCMCres,
                                           CrI = 0.95,
                                           theta_true = NULL,
                                           plot = TRUE,
-                                          cex.axis = 1,
                                           group_labels = NULL,
                                           date_labels = NULL) {
   
@@ -683,8 +690,6 @@ get_param_posterior_estimates <- function(MCMCres,
   index_dates <- MCMCres$index_dates
   delay_labels <- generate_delay_labels(index_dates, date_labels)
   
-  par(mfrow = c(2, 5), mar = c(3, 5, 0.5, 0.5))
-  
   iterations <- seq_len(length(MCMCres$theta_chain))
   output <- list()
   
@@ -694,24 +699,12 @@ get_param_posterior_estimates <- function(MCMCres,
     quantile(MCMCres$logpost_chain, c((1 - CrI) / 2, CrI + (1 - CrI) / 2))
   )
   
-  if (plot) {
-    boxplot(MCMCres$logpost_chain,
-            ylab = "Log Posterior",
-            border = "black",
-            axes = FALSE)
-    axis(side = 1,
-         at = 1,
-         labels = "Log Posterior",
-         tick = FALSE,
-         cex.axis = cex.axis)
-    axis(side = 2)
-  }
-  
+  # Get parameter estimates --------------------------------------------------
   output$theta <- list(mu = list(), CV = list())
+  if (plot) plot_data <- list()
   
   for (group_idx in seq_along(group_labels)) {
     for (param in c("mu", "CV")) {
-      
       values <- lapply(seq_len(ncol(index_dates[[group_idx]])), function(j) {
         sapply(iterations, function(e) MCMCres$theta_chain[[e]][[param]][[group_idx]][j])
       })
@@ -724,316 +717,113 @@ get_param_posterior_estimates <- function(MCMCres,
       output$theta[[param]][[group_idx]] <- est_matrix
       
       if (plot) {
-        boxplot(values,
-                ylab = paste0(param, " delays\n(", group_labels[group_idx], ")"),
-                main = "", border = seq_along(values), axes = FALSE)
-        axis(1,
-             at = seq_along(values),
-             labels = delay_labels[[group_idx]],
-             tick = FALSE, cex.axis = cex.axis)
-        axis(2)
-        
-        if (!is.null(theta_true)) {
-          points(seq_along(values),
-                 theta_true[[param]][[group_idx]],
-                 pch = 8, lwd = 2, cex = 2,
-                 col = seq_along(values))
-        }
+        plot_data[[length(plot_data) + 1]] <- do.call(
+          rbind, lapply(seq_along(values), function(j) {
+          data.frame(
+            value = values[[j]],
+            delay = delay_labels[[group_idx]][j],
+            group = group_labels[group_idx],
+            param = param
+          )
+        })
+        )
       }
     }
   }
-  
+
   # zeta (scalar, not per group) ---------------------------------------------
   zeta_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
   output$theta$zeta <- c(get(central)(zeta_chain),
                          quantile(zeta_chain, c((1 - CrI) / 2, 1 - (1 - CrI) / 2)))
-  
+
   if (plot) {
-    boxplot(zeta_chain, axes = FALSE, ylab = "zeta")
-    axis(1, at = 1, labels = "zeta", tick = FALSE, cex.axis = cex.axis)
-    axis(2)
-    if (!is.null(theta_true)) {
-      points(1, theta_true$zeta, pch = 8, lwd = 2, cex = 2)
-    }
+    central_label <- central
+    ylab_central <- ifelse(central_label == "median",
+                           "Posterior Median",
+                           "Posterior Mean")
+
+    # plot log posterior -----------------------------------------------------
+    df_logpost <- data.frame(
+      value = MCMCres$logpost_chain,
+      param = "Log Posterior"
+    )
+
+    p1 <- ggplot(df_logpost, aes(x = param, y = value)) +
+      geom_boxplot(width = 0.5, fill = "gray90") +
+      labs(x = NULL, y = ylab_central) +
+      facet_wrap(~ param) +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_rect(fill = "grey90", colour = "grey"),
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "grey", fill = NA),
+        axis.title.y = element_text(margin = margin(r = 10))
+      )
+
+    # plot zeta --------------------------------------------------------------
+    df_zeta <- data.frame(value = zeta_chain, param = "zeta")
+
+    p2 <- ggplot(df_zeta, aes(x = param, y = value)) +
+      geom_boxplot(width = 0.5, fill = "gray90") +
+      labs(x = NULL, y = ylab_central) +
+      facet_wrap(~ param) +
+      theme_minimal(base_size = 12) +
+      theme(
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_rect(fill = "grey90", colour = "grey"),
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "grey", fill = NA),
+        axis.title.y = element_text(margin = margin(r = 10))
+      )
+
+    # plot mu delays ---------------------------------------------------------
+    df_all <- do.call(rbind, plot_data)
+    df_params <- df_all[df_all$param %in% c("mu", "CV"), ]
+
+    df_mu <- subset(df_params, param == "mu")
+
+    p3 <- ggplot(df_mu, aes(x = delay, y = value, fill = delay)) +
+      geom_boxplot(width = 0.5, colour = "black") +
+      facet_wrap(~ group, scales = "free_x", nrow = 1) +
+      labs(x = NULL, y = paste(ylab_central, "of Mu delays")) +
+      scale_fill_discrete_qualitative(palette = "Dynamic") +
+      theme_minimal(base_size = 12) +
+      theme(
+        strip.background = element_rect(fill = "grey90", colour = "grey"),
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "grey", fill = NA),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        legend.position = "none"
+      )
+
+    # plot cv delays ---------------------------------------------------------
+    df_cv <- subset(df_params, param == "CV")
+
+    p4 <- ggplot(df_cv, aes(x = delay, y = value, fill = delay)) +
+      geom_boxplot(width = 0.5, colour = "black") +
+      facet_wrap(~ group, scales = "free_x", nrow = 1) +
+      labs(x = NULL, y = paste(ylab_central, "of CV delays")) +
+      scale_fill_discrete_qualitative(palette = "Dynamic") +
+      scale_y_continuous(expand = expansion(mult = c(0.005, 0.05))) +
+      theme_minimal(base_size = 12) +
+      theme(
+        strip.background = element_rect(fill = "grey90", colour = "grey"),
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "grey", fill = NA),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        legend.position = "none"
+      )
+
+    # plot together ----------------------------------------------------------
+    left_column <- p1 / p2
+    right_column <- p3 / p4
+    combined_plot <- (left_column | plot_spacer() | right_column) +
+      plot_layout(widths = c(2, 0.2, 8))
+
+    print(combined_plot)
   }
-  
   return(output)
 }
-
-# TODO: Make this ggplot2
- 
-  
-#   # looking at mean delay 
-#   group_idx <- 1 ##########################
-#   mu <- lapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-#     }
-#   )
-#   output$theta$mu[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(mu[[j]]),
-#         quantile(mu[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     }
-#   )
-#   if (plot) {
-#     boxplot(mu,
-#             ylab = "mean delays\n(non hospitalised-alive group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1, at = seq_len(n_dates[group_idx] - 1),
-#          labels = "Onset-Report", tick = FALSE, cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$mu[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2, col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   group_idx <- 2 ##########################
-#   mu <- lapply(
-#     seq_len(n_dates[group_idx] - 1), function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-#     }
-#   )
-#   output$theta$mu[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(mu[[j]]),
-#         quantile(mu[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     }
-#   )
-#   if (plot) {
-#     boxplot(mu,
-#             ylab = "mean delays\n(non hospitalised-dead group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1, at = seq_len(n_dates[group_idx]-1),
-#          labels = c("Onset-Death", "Onset-Report"),
-#          tick = FALSE, cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$mu[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2, col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   group_idx <- 3 ##########################
-#   mu <- lapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-#     }
-#   )
-#   output$theta$mu[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(mu[[j]]),
-#         quantile(mu[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     }
-#   )
-#   if (plot) {
-#     boxplot(mu,
-#             ylab = "mean delays\n(hospitalised-alive group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1,
-#          at = seq_len(n_dates[group_idx] - 1),
-#          labels = c("Onset-Hosp", "Hosp-Disch", "Onset-Report"),
-#          tick = FALSE, cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$mu[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2,
-#              col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   group_idx <- 4 ##########################
-#   mu <- lapply(
-#     seq_len(n_dates[group_idx]-1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$mu[[group_idx]][j])
-#     })
-#   output$theta$mu[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(mu[[j]]),
-#         quantile(mu[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     })
-#   if (plot) {
-#     boxplot(mu,
-#             ylab = "mean delays\n(hospitalised-dead group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1,
-#          at = seq_len(n_dates[group_idx] - 1),
-#          labels = c("Onset-Hosp", "Hosp-Death", "Onset-Report"),
-#          tick = FALSE,
-#          cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$mu[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2,
-#              col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   # looking at zeta
-#   zeta <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
-#   if (plot) {
-#     boxplot(zeta, axes = FALSE, ylab = "zeta")
-#     axis(side = 1, at = 1, labels = "zeta", tick = FALSE, cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) points(theta_true$zeta, pch = 8, lwd = 2, cex = 2)
-#   }
-#   
-#   # looking at CV delay 
-#   group_idx <- 1 ##########################
-#   CV <- lapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-#     })
-#   output$theta$CV[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(CV[[j]]),
-#         quantile(CV[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     })
-#   if (plot) {
-#     boxplot(CV,
-#             ylab = "CV delays\n(non hospitalised-alive group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1,
-#          at = seq_len(n_dates[group_idx] - 1),
-#          labels = "Onset-Report",
-#          tick = FALSE,
-#          cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$CV[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2, col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   group_idx <- 2 ##########################
-#   CV <- lapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-#     })
-#   output$theta$CV[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(CV[[j]]),
-#         quantile(CV[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     })
-#   if (plot) {
-#     boxplot(CV,
-#             ylab = "CV delays\n(non hospitalised-dead group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1,
-#          at = seq_len(n_dates[group_idx] - 1),
-#          labels = c("Onset-Death", "Onset-Report"),
-#          tick = FALSE,
-#          cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$CV[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2,
-#              col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   group_idx <- 3 ##########################
-#   CV <- lapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-#     })
-#   output$theta$CV[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(CV[[j]]),
-#         quantile(CV[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     })
-#   if (plot) {
-#     boxplot(CV,
-#             ylab = "CV delays\n(hospitalised-alive group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1,
-#          at = seq_len(n_dates[group_idx] - 1),
-#          labels = c("Onset-Hosp", "Hosp-Disch", "Onset-Report"),
-#          tick = FALSE,
-#          cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$CV[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2,
-#              col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   group_idx <- 4 ##########################
-#   CV <- lapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       sapply(iterations,
-#              function(e) MCMCres$theta_chain[[e]]$CV[[group_idx]][j])
-#     })
-#   output$theta$CV[[group_idx]] <- sapply(
-#     seq_len(n_dates[group_idx] - 1),
-#     function(j) {
-#       c(get(central)(CV[[j]]),
-#         quantile(CV[[j]], c((1 - CrI) / 2, CrI + (1 - CrI) / 2)))
-#     })
-#   if (plot) {
-#     boxplot(CV,
-#             ylab = "CV delays\n(hospitalised-dead group)",
-#             main = "",
-#             border = seq_len(n_dates[group_idx] - 1),
-#             axes = FALSE)
-#     axis(side = 1,
-#          at = seq_len(n_dates[group_idx] - 1),
-#          labels = c("Onset-Hosp", "Hosp-Death", "Onset-Report"),
-#          tick = FALSE,
-#          cex.axis = cex.axis)
-#     axis(side = 2)
-#     if (!is.null(theta_true)) {
-#       points(seq_len(n_dates[group_idx] - 1),
-#              theta_true$CV[[group_idx]],
-#              pch = 8, lwd = 2, cex = 2,
-#              col = seq_len(n_dates[group_idx] - 1))
-#     }
-#   }
-#   
-#   return(output)
-#   
-# }

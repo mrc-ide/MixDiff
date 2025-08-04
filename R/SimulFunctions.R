@@ -119,7 +119,7 @@ simul_true_data <- function(
     if (length(missing_params) > 0) {
       stop(
         sprintf(
-          "When `simul_error = TRUE`, `theta` must include the following parameters: %s. Missing: %s.",
+          "When `simul_error = TRUE`, `theta` must include: %s. Missing: %s.",
           paste(required_params, collapse = ", "),
           paste(missing_params, collapse = ", ")
         )

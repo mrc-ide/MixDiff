@@ -454,6 +454,28 @@ propose_move_from_E0_to_E1 <- function(i,
   return(proposed_aug_dat_value)
 }
 
+#' Computes acceptance probability for a move from E = 0 (date observed
+#'  correctly) to E = 1 (date observed incorrectly).
+#'
+#' @param i Index of individual(s) for whom augmented data should be moved.
+#' @param group_idx Index of the group for whom augmented data should be moved.
+#' @param date_idx Index of the date which should be moved.
+#' @param curr_aug_dat The current augmented data.
+#' @param proposed_aug_dat Proposed augmented data.
+#' @param theta List of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element
+#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
+#' @param hyperparameters A list of hyperparameters: see details.
+#' @param index_dates A list containing indications on which delays to consider
+#'  in the estimation, see details.
+#' @param range_dates A vector containing the range of dates in \code{obs_dat}.
+#'  If NULL, will be computed automatically.
+#'  
+#'  @return Vector of length 2. The first element is the difference in log
+#'   posterior between the proposed and current augmented data. The second
+#'    is the log proposal correction factor needed to adjust for asymmetry in
+#'     the proposal distribution.
+#'
 compute_p_accept_move_from_E0_to_E1 <- function(i,
                                                 group_idx,
                                                 date_idx,
@@ -467,11 +489,12 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
 
   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
 
-  # calculates probability of acceptance
-
-  # these are the delays that are affected by the change in date date_idx
+  # Delays that are affected by the change in date date_idx
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
 
+  # Compute log posterior difference (proposed - current) ---------------------
+  
+  # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
@@ -480,12 +503,14 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
     group_idx, date_idx, i, range_dates = range_dates
     )
 
+  # Difference in error likelihood
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i
   ) - LL_error_term_by_group_delay_and_indiv(
     curr_aug_dat, theta, obs_dat, group_idx, date_idx, i
   )
 
+  # For each affected delay, difference in delay likelihood
   for (d in delay_idx) {
     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
@@ -494,6 +519,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
     )
   }
 
+  # Combine all log likelihood differences
   ratio_post <- sum(ratio_post)
 
   ### note that ratio_post should be the same as:
@@ -501,17 +527,26 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
 
-  # this move is NOT symetrical --> correction needed
+  # Correct asymmetry ---------------------------------------------------------
+  
+  # Index for the date within index_dates
   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
+  
+  # Index for the delay
   which_delay <- x[, 2]
+  
+  # Index for the other date involved in each delay
   from_idx <- sapply(
     seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]
   )
+  
+  # Extract value of the other date for each delay
   from_value <- sapply(
     seq_len(nrow(x)),
     function(k) curr_aug_dat$D[[group_idx]][i, index_dates[[group_idx]][-x[k, 1], x[k, 2]]]
   )
 
+  # Proposal correction factor for each delay
   find_correction_factor <- function(e) {
     if (date_idx < from_idx[e]) {
       delay <- from_value[e] - proposed_aug_dat_value
@@ -520,54 +555,85 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
       delay <- proposed_aug_dat_value - from_value[e]
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
     }
-
-    # param_delay <- find_params_gamma(
-    #   theta$mu[[group_idx]][which_delay[e]],
-    #   CV = theta$CV[[group_idx]][which_delay][e]
-    # )
-
-    # # Prob mass for delay adjusting for invalid delays
-    # K <- diff(pgamma(delay + c(-0.5, 0.5),
-    #                  shape = param_delay[1],
-    #                  scale = param_delay[2])) /
-    #   (1 - diff(pgamma(forbidden_delay + c(-0.5, 0.5),
-    #                    shape = param_delay[1],
-    #                    scale = param_delay[2])))
     
+    # Mean and CV of delays
     mu <- theta$mu[[group_idx]][which_delay[e]]
     cv <- theta$CV[[group_idx]][which_delay][e]
     
+    # Probability mass for delay after adjusting for invalid delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
     
     K
   }
 
+  # Average correction factors over all delays involving this date
   K <- mean(sapply(seq_along(which_delay), find_correction_factor))
 
-  #log_p_move_from_old_to_new <- log(1) + log(K)
-  #log_p_move_from_new_to_old <- log(1)
-  logcorrection <- - log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
+  # Log proposal correction factor
+  logcorrection <- -log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
 
   return(c(ratio_post, logcorrection))
 }
 
+
+#' Propose the observed date when transitioning the error indicator from 1
+#'  (observed with error) to 0 (observed with no error). This move assumes the
+#'  true date was correctly recorded and simply sets D to the observed date.
+#'
+#' @param i Index of individual(s) for whom augmented data should be moved.
+#' @param group_idx Index of the group for whom augmented data should be moved.
+#' @param date_idx Index of the date which should be moved.
+#' @param curr_aug_dat The current augmented data; a list of observed data, in
+#'  the format returned by \code{\link{simul_true_data}}.
+#' @param theta List of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element
+#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
+#' @param hyperparameters A list of hyperparameters: see details.
+#' @param index_dates A list containing indications on which delays to consider
+#'  in the estimation, see details.
+#' @param range_dates A vector containing the range of dates in \code{obs_dat}.
+#'  If NULL, will be computed automatically.
+#'  
+#' @return Proposed true date, which is the same as the observed date.
+
 propose_move_from_E1_to_E0 <- function(i,
                                        group_idx,
                                        date_idx,
-                                       curr_aug_dat,
-                                       theta,
+                                       curr_aug_dat, # remove
+                                       theta, # remove
                                        obs_dat,
-                                       hyperparameters,
-                                       index_dates,
-                                       range_dates) {
-
-  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-
+                                       hyperparameters, # remove
+                                       index_dates, # remove
+                                       range_dates) { # remove
+  
   proposed_aug_dat_value <- obs_dat[[group_idx]][i, date_idx]
 
   proposed_aug_dat_value
 }
+
+
+#' Calculates the log acceptance probability for an MCMC move that changes the
+#'  error indicator from E = 1 (observed with error) to E = 0 (observed without
+#'   error) and sets the true date to the observed date.
+#'
+#' @param i Index of individual(s) for whom augmented data should be moved.
+#' @param group_idx Index of the group for whom augmented data should be moved.
+#' @param date_idx Index of the date which should be moved.
+#' @param curr_aug_dat The current augmented data.
+#' @param proposed_aug_dat The proposed augmented data.
+#' @param theta List of parameters; see details.
+#' @param obs_dat A list of observed data, in the format of the first element
+#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
+#' @param hyperparameters A list of hyperparameters: see details.
+#' @param index_dates A list containing indications on which delays to consider
+#'  in the estimation, see details.
+#' @param range_dates A vector containing the range of dates in \code{obs_dat}.
+#'  If NULL, will be computed automatically.
+#'  
+#'  @return A vector of length 2. The first element is the log posterior
+#'   difference (proposed - current), and the second element is the proposal
+#'    asymmetry correction.
 
 compute_p_accept_move_from_E1_to_E0 <- function(i,
                                                 group_idx,
@@ -580,13 +646,15 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
                                                 index_dates,
                                                 range_dates) {
 
+  # Current date before the move
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
 
-  # calculates probability of acceptance
-
-  # these are the delays that are affected by the change in date date_idx
+  # Delays that are affected by the change in date date_idx
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
 
+  # Compute log posterior difference (proposed - current) ---------------------
+  
+  # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
@@ -595,12 +663,14 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
     group_idx, date_idx, i, range_dates = range_dates
   )
 
+  # Difference in error likelihood
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i
   ) - LL_error_term_by_group_delay_and_indiv(
     curr_aug_dat, theta, obs_dat, group_idx, date_idx, i
   )
 
+  # For each affected delay, difference in delay likelihood
   for (d in delay_idx)
   ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
@@ -608,6 +678,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
     curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
     )
 
+  # Combine all log-likelihood differences
   ratio_post <- sum(ratio_post)
 
   ### note that ratio_post should be the same as:
@@ -615,19 +686,26 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
 
-  # this move is NOT symetrical --> correction needed
-  x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
+  # Correct asymmetry ---------------------------------------------------------
 
+  # Index for the date within index_dates
+  x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
+  
+  # Index for the delay
   which_delay <- x[, 2]
+  
+  # Index for the other date involved in each delay
   from_idx <- sapply(
     seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]
   )
 
+  # Extract value of the other date for each delay
   from_value <- sapply(
     seq_len(nrow(x)),
     function(k) curr_aug_dat$D[[group_idx]][i, index_dates[[group_idx]][-x[k, 1], x[k, 2]]]
   )
 
+  # Proposal correction factor for each delay
   find_correction_factor_2 <- function(e) {
     if (date_idx < from_idx[e]) {
       delay <- from_value[e] - curr_aug_dat_value
@@ -637,36 +715,29 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
     }
 
-    # param_delay <- find_params_gamma(
-    #   theta$mu[[group_idx]][which_delay[e]],
-    #   CV = theta$CV[[group_idx]][which_delay][e]
-    # )
-    # 
-    # # Prob mass for delay adjusting for invalid delays
-    # K <- diff(pgamma(delay + c(-0.5, 0.5),
-    #                  shape = param_delay[1],
-    #                  scale = param_delay[2])) /
-    #   (1 - diff(pgamma(forbidden_delay + c(-0.5, 0.5),
-    #                    shape = param_delay[1],
-    #                    scale = param_delay[2])))
-    
+    # Mean and CV of delays
     mu <- theta$mu[[group_idx]][which_delay[e]]
     cv <- theta$CV[[group_idx]][which_delay][e]
     
+    # Probability mass for delay adjusting for invalid delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
     
     K
   }
 
+  # Average correction factors over all delays involving this date
   K <- mean(sapply(seq_along(which_delay), find_correction_factor_2))
 
-  #log_p_move_from_old_to_new <- log(1)
-  #log_p_move_from_new_to_old <- log(1) + log(K)
-  logcorrection <- + log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
+  # Log proposal correction factor
+  logcorrection <- +log(K)
 
   return(c(ratio_post, logcorrection))
 }
+
+# ----------------------------------------------------------------------------
+# Move E
+# ----------------------------------------------------------------------------
 
 #' Performs one iteration of an MCMC move for the augmented data representing
 #'  the indicator of error in observations
@@ -730,7 +801,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 #' If E=1, we propose a move to E=0 and hence D=the observed data.
 #' If E=0, we propose a move to E=1. D is then moved as follows: a new value is
 #'  drawn from the marginal posterior of one of the delays this date is
-#'   involved in, repeatdely until D falls on a different day than the observed
+#'   involved in, repeatedly until D falls on a different day than the observed
 #'    date to be consistent with E=1.
 #' If the date is involved in several delays, one of the delays is randomly
 #'  selected.

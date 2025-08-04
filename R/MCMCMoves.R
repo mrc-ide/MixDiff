@@ -913,20 +913,10 @@ move_Ei <- function(i,
   return(res)
 }
 
-##############################################################################
-## Swap Es - when only 2 Es, related by a delay, are recorded, one with error
-## and one without error, propose to swap the two
-##############################################################################
-
-# # Can't find this function being used elsewhere - dead code?
-# # Identify rows in E where one E is 1 and one is 0 - candidates for swap
-# find_2Eis_to_swap <- function(group_idx, curr_aug_dat) {
-#   Es <- curr_aug_dat$E[[group_idx]]
-#   which(apply(Es, 1, function(row) {
-#     # returns TRUE if row contains one 1 and one 0
-#     sum(row == 1) == 1 && sum(row == 0) == 1
-#   }))
-# }
+# ----------------------------------------------------------------------------
+# Swap Es - when only 2 Es, related by a delay, are recorded, one with error
+# and one without error, propose to swap the two
+# ----------------------------------------------------------------------------
 
 # Identify rows where (other than -1s) errors are not all the same
 # i.e. mixed errors and non-errors
@@ -1186,9 +1176,9 @@ swap_Ei <- function(i,
 
 }
 
-###############################################
-### Move mean or CV of delay ###
-###############################################
+# ----------------------------------------------------------------------------
+# Move mean or CV of delay
+# ----------------------------------------------------------------------------
 
 #' Performs one iteration of an MCMC move for either the parameter mu or the
 #'  parameter CV (mean or CV of the various delays to be estimated)
@@ -1257,9 +1247,9 @@ swap_Ei <- function(i,
 #'    the move.
 #' @return A list of two elements:
 #'  \itemize{
-#'  \item{\code{new_theta}}{: Same as \code{curr_theta} but where
+#'  \item{\code{new_theta}: Same as \code{curr_theta} but where
 #'   \code{curr_theta$zeta} has been updated}
-#'  \item{\code{accept}}{: A scalar with value 1 if the move was accepted and 0
+#'  \item{\code{accept}: A scalar with value 1 if the move was accepted and 0
 #'   otherwise}
 #' }
 #' @export
@@ -1288,20 +1278,14 @@ move_lognormal <- function(what = c("mu", "CV"),
 
   # calculates probability of acceptance
   if (what == "mu") {
-    ratio_post <- lprior_params_delay(
-      what, proposed_theta, hyperparameters
-    ) - lprior_params_delay(
-        what, curr_theta, hyperparameters
-      )
+    ratio_post <- lprior_params_delay(what, proposed_theta, hyperparameters) -
+      lprior_params_delay(what, curr_theta, hyperparameters)
   } else if (what == "CV") {
-    ratio_post <- lprior_params_delay(
-      what, proposed_theta, hyperparameters
-    ) - lprior_params_delay(
-        what, curr_theta, hyperparameters
-      )
+    ratio_post <- lprior_params_delay(what, proposed_theta, hyperparameters) -
+      lprior_params_delay(what, curr_theta, hyperparameters)
   }
 
-  Delta <- compute_delta_group_delay_and_indiv(
+  delta <- compute_delta_group_delay_and_indiv(
     aug_dat$D, group_idx, seq_len(nrow(obs_dat[[group_idx]])),
     delay_idx, index_dates
   ) # same for proposed and current par values so no need to recompute twice
@@ -1309,12 +1293,12 @@ move_lognormal <- function(what = c("mu", "CV"),
   ratio_post <- ratio_post + sum(
     LL_delays_term_by_group_delay_and_indiv(
       aug_dat, proposed_theta, obs_dat, group_idx, delay_idx,
-      seq_len(nrow(obs_dat[[group_idx]])), index_dates, Delta
+      seq_len(nrow(obs_dat[[group_idx]])), index_dates, delta
      )
     ) - sum(
       LL_delays_term_by_group_delay_and_indiv(
         aug_dat, curr_theta, obs_dat, group_idx, delay_idx,
-        seq_len(nrow(obs_dat[[group_idx]])), index_dates, Delta
+        seq_len(nrow(obs_dat[[group_idx]])), index_dates, delta
      )
       )
 
@@ -1339,9 +1323,6 @@ move_lognormal <- function(what = c("mu", "CV"),
     accept <- 0
   }
 
-  # return a list of size 2 where
-  #		the first value is the new parameter set in the chain
-  #		the second value is 1 if the proposed value was accepted, 0 otherwise
   return(list(new_theta = new_theta, accept = accept))
 
 }
@@ -1350,9 +1331,10 @@ move_lognormal <- function(what = c("mu", "CV"),
 # test_move_mu$new_theta$mu[[1]][1] # new value
 # theta$mu[[1]][1] # old value
 
-###############################################
-### Move zeta (probability of erroneous recording of dates) ###
-###############################################
+
+# ----------------------------------------------------------------------------
+# Move zeta (probability of erroneous recording of dates)
+# ----------------------------------------------------------------------------
 
 #' Performs one iteration of an MCMC move for the parameter zeta (probability
 #'  of a data being recorded erroneously, given it is recorded)
@@ -1402,9 +1384,9 @@ move_lognormal <- function(what = c("mu", "CV"),
 #' }
 #' @return A list of two elements:
 #'  \itemize{
-#'  \item{\code{new_theta}}{: Same as \code{curr_theta} but where
+#'  \item{\code{new_theta}: Same as \code{curr_theta} but where
 #'   \code{curr_theta$zeta} has been updated}
-#'  \item{\code{accept}}{: A scalar with value 1 (as we are using a Gibbs
+#'  \item{\code{accept}: A scalar with value 1 (as we are using a Gibbs
 #'   sampler the move is always accepted)}
 #' }
 #' @export
@@ -1432,9 +1414,6 @@ move_zeta_gibbs <- function(aug_dat,
   new_theta$zeta <- new_zeta
   accept <- 1
 
-  # return a list of size 2 where
-  #		the first value is the new parameter set in the chain
-  #		the second value is 1 if the proposed value was accepted, 0 otherwise
   list(new_theta = new_theta, accept = accept)
 
 }

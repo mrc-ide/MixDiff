@@ -1,6 +1,8 @@
 # LL_observation_term_by_group_delay_and_indiv() ------------------------------
 
 test_that("LL_observation_term_by_group_delay_and_indiv handles E = 0", {
+  
+  # create aug_dat with all correct dates
   aug_dat <- list(
     D = list(matrix(c(1, 2, 3), nrow = 3, ncol = 1)),
     E = list(matrix(0, nrow = 3, ncol = 1))
@@ -14,10 +16,12 @@ test_that("LL_observation_term_by_group_delay_and_indiv handles E = 0", {
     range_dates = c(1, 10)
   )
   
-  expect_true(all(ll == 0))
+  expect_true(all(ll == 0)) # correct obs gives 0 log-likelihood
 })
 
 test_that("LL_observation_term_by_group_delay_and_indiv handles E = 1", {
+  
+  # create aug_dat with all incorrect dates
   aug_dat <- list(
     D = list(matrix(c(5, 5, 5), nrow = 3, ncol = 1)),
     E = list(matrix(1, nrow = 3, ncol = 1))
@@ -63,7 +67,9 @@ test_that("LL_error_term returns expected log-prob with known errors", {
   
   result <- LL_error_term(aug_dat, theta, obs_dat)
   
-  expected <- log(0.25) * 2 + log(0.75) * 1  # 2 errors, 1 correct, 1 missing
+  # 2 errors, 1 correct, 1 missing -> 3 recorded values in total
+  # 2 recorded with error = log(0.25) * 2, and 1 recorded correctly = log(0.75) * 1
+  expected <- log(0.25) * 2 + log(0.75) * 1
   expect_equal(result, expected)
 })
 
@@ -88,6 +94,30 @@ test_that("LL_delays_term_by_group_delay_and_indiv returns valid log-density", {
   expect_true(is.finite(log_ll))
 })
 
+
+test_that("LL_delays_term_by_group_delay_and_indiv handles >2 delays", {
+  theta <- list(mu = list(c(5, 10, 15)), CV = list(c(0.5, 0.5, 0.5)))
+  aug_dat <- list(
+    # dates: 1) onset, 2) hosp, 3) disch, 4) report
+    D = list(matrix(c(1, 6, 16, 21), nrow = 1))
+  )
+  obs_dat <- list(matrix(NA, nrow = 1, ncol = 4))
+  index_dates <- list(
+    cbind(c(1, 2), c(2, 3), c(1, 4))  # three delays
+  )
+  
+  # Check all delay likelihoods are finite
+  lls <- purrr::map_dbl(1:3, function(d) {
+    LL_delays_term_by_group_delay_and_indiv(
+      aug_dat, theta, obs_dat, group_idx = 1,
+      delay_idx = d, indiv_idx = 1,
+      index_dates = index_dates
+    )
+  })
+  
+  expect_true(all(is.finite(lls)))
+})
+
 # LL_total() ------------------------------------------------------------------
 
 test_that("LL_total returns finite value for simple valid input", {
@@ -105,6 +135,30 @@ test_that("LL_total returns finite value for simple valid input", {
   expect_type(result, "double")
   expect_true(is.finite(result))
 })
+
+
+test_that("LL_total works for group with >2 delays", {
+  theta <- list(
+    mu = list(c(5, 10, 15)),
+    CV = list(c(0.5, 0.5, 0.5)),
+    zeta = 0.1
+  )
+  index_dates <- list(
+    cbind(c(1, 2), c(2, 3), c(1, 4))  # three delays
+  )
+  
+  D <- matrix(c(1, 6, 16, 21), nrow = 1)
+  E <- matrix(0, nrow = 1, ncol = 4)
+  
+  aug_dat <- list(D = list(D), E = list(E))
+  obs_dat <- list(D) # assume perfectly observed
+  
+  result <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates = c(1, 30))
+  
+  expect_type(result, "double")
+  expect_true(is.finite(result))
+})
+
 
 # lprior_prob_error() ---------------------------------------------------------
 

@@ -8,7 +8,6 @@
 #' @param d an object of class mnist containing a database of handwritten digits (see \code{rmnist::load_mnist}).
 #' @return NULL
 #' @import rmnist
-#' @export
 #' @examples
 #' plot_handwritten_date(Sys.Date()) # print today's date
 plot_handwritten_date <- function(date=as.Date("01/01/2017", format="%d/%m/%Y"), d=load_mnist(download_if_missing = TRUE)) # date has to be a date

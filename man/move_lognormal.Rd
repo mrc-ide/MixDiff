@@ -44,9 +44,9 @@ in the estimation, see details.}
 \value{
 A list of two elements:
  \itemize{
- \item{\code{new_theta}}{: Same as \code{curr_theta} but where
+ \item{\code{new_theta}: Same as \code{curr_theta} but where
   \code{curr_theta$zeta} has been updated}
- \item{\code{accept}}{: A scalar with value 1 if the move was accepted and 0
+ \item{\code{accept}: A scalar with value 1 if the move was accepted and 0
   otherwise}
 }
 }

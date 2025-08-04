@@ -21,9 +21,9 @@ returned by \code{\link{simul_true_data}}.}
 \value{
 A list of two elements:
  \itemize{
- \item{\code{new_theta}}{: Same as \code{curr_theta} but where
+ \item{\code{new_theta}: Same as \code{curr_theta} but where
   \code{curr_theta$zeta} has been updated}
- \item{\code{accept}}{: A scalar with value 1 (as we are using a Gibbs
+ \item{\code{accept}: A scalar with value 1 (as we are using a Gibbs
   sampler the move is always accepted)}
 }
 }

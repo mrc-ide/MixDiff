@@ -100,7 +100,7 @@ If E=-1 nothing happens.
 If E=1, we propose a move to E=0 and hence D=the observed data.
 If E=0, we propose a move to E=1. D is then moved as follows: a new value is
  drawn from the marginal posterior of one of the delays this date is
-  involved in, repeatdely until D falls on a different day than the observed
+  involved in, repeatedly until D falls on a different day than the observed
    date to be consistent with E=1.
 If the date is involved in several delays, one of the delays is randomly
  selected.

@@ -332,9 +332,6 @@ move_Di <- function(i,
     accept <- 0
   }
 
-  # return a list of size 2 where
-  #		- the first element is the new augmented data set in the chain
-  #		- the second element is 1 if the proposed value was accepted, 0 otherwise
   return(list(new_aug_dat = new_aug_dat, accept = accept))
 
 }
@@ -343,9 +340,28 @@ move_Di <- function(i,
 # test_move_Di$new_aug_dat$D[[1]][1,1] # new value
 # aug_dat$D[[1]][1,1] # old value
 
-###############################################
-### Move augmented indicator for whether date is correctly recorded E
-###############################################
+
+# -----------------------------------------------------------------------------
+# Move augmented indicator for whether date is correctly recorded E
+# -----------------------------------------------------------------------------
+
+#' Propose a new value for the true date when transitioning the error indicator
+#'  from 0 (no error) to 1 (observed with error), ensuring the new date is
+#'   different from the observed date.
+#'
+#' @param i Index of individual(s) for whom augmented data should be moved.
+#' @param group_idx Index of the group for whom augmented data should be moved.
+#' @param date_idx Index of the date which should be moved.
+#' @param curr_aug_dat The current augmented data.
+#' @param theta List of parameters, including mu, CV and zeta.
+#' @param obs_dat A list of observed data, in the format of the first element
+#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
+#' @param hyperparameters A list of hyperparameters.
+#' @param index_dates A list containing the delays defined for each group.
+#' @param range_dates A vector containing the range of dates in \code{obs_dat}.
+#'  If NULL, will be computed automatically.
+#'  
+#' @return A vector of proposed true dates that differ from the observed dates.
 
 propose_move_from_E0_to_E1 <- function(i,
                                        group_idx,
@@ -357,8 +373,7 @@ propose_move_from_E0_to_E1 <- function(i,
                                        index_dates,
                                        range_dates = NULL) {
 
-  # which delays is this particular date involved in?
-
+  # 
   x <- lapply(seq_along(date_idx), function(e) {
     which(index_dates[[group_idx]] == date_idx[e], arr.ind = TRUE)
   })

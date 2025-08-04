@@ -57,51 +57,138 @@ hyperparameters <- list(
   mean_CV_delay = 100
 )
 
-### Move_Di
-
-i <- 1
-group_idx <- 1
-date_idx <- 1
-curr_aug_dat <- initialise_aug_data(sim_data$obs_dat,
-                                    compute_index_dates_order(index_dates),
-                                    MCMC_settings = mcmc_settings)
-theta <- params$theta
-obs_dat <- sim_data$obs_dat
-hyperparameters <- hyperparameters
-index_dates <- params$index_dates
-range_dates <- find_range(obs_dat)
-
-
-test <- move_Di(i,
-                group_idx,
-                date_idx,
-                curr_aug_dat,
-                theta,
-                obs_dat,
-                hyperparameters,
-                index_dates,
-                range_dates = NULL)
-
-
-if (test$accept == 0) {
-  expect_equal(test$new_aug_dat$D[[1]][1,1], curr_aug_dat$D[[1]][1,1])
-} else {
-  expect_failure(expect_equal(test$new_aug_dat$D[[1]][1,1], curr_aug_dat$D[[1]][1,1]))
-}
- # new value: test$new_aug_dat$D[[1]][1,1]
- # old value: curr_aug_dat$D[[1]][1,1]
-
-
 #------------------------------------------------------------------------------
 
-test_that("xyz", {
+test_that("move_Di works as expected", {
+  set.seed(1)
+  curr_aug_dat <- initialise_aug_data(obs_dat = sim_data$obs_dat,
+                                      index_dates = params$index_dates,
+                                      MCMC_settings = mcmc_settings)
   
+  # Find where incorrect
+  i <- 3
+  group_idx <- 1
+  date_idx <- 1
+  
+  theta <- params$theta
+  obs_dat <- sim_data$obs_dat
+  hyperparameters <- hyperparameters
+  index_dates <- params$index_dates
+  range_dates <- find_range(obs_dat)
+  
+  result <- move_Di(i,
+                    group_idx,
+                    date_idx,
+                    curr_aug_dat,
+                    theta,
+                    obs_dat,
+                    hyperparameters,
+                    index_dates,
+                    range_dates = range_dates)
+  
+  
+  current_date <- curr_aug_dat$D[[group_idx]][i, date_idx]
+  proposed_date <- result$new_aug_dat$D[[group_idx]][i, date_idx]
+  
+  curr_aug_dat$E[[group_idx]][i, date_idx]
+  result$new_aug_dat$E[[group_idx]][i, date_idx]
+  
+  # If move is accepted except proposed and current dates to differ
+  if (result$accept == 1) {
+    expect_false(identical(proposed_date, current_date))
+  } else {
+    expect_equal(proposed_date, current_date)
+  }
 })
 
 #------------------------------------------------------------------------------
 
 test_that("ratio_post is the same as ratio_post_long in move_Di", {
   
+  set.seed(1)
+  
+  curr_aug_dat <- initialise_aug_data(
+    sim_data$obs_dat,
+    compute_index_dates_order(params$index_dates),
+    MCMC_settings = mcmc_settings
+    )
+  
+  i <- 1
+  group_idx <- 1
+  date_idx <- 1
+  
+  test <- move_Di(i,
+                  group_idx,
+                  date_idx,
+                  curr_aug_dat,
+                  params$theta,
+                  sim_data$obs_dat,
+                  hyperparameters,
+                  params$index_dates,
+                  range_dates = params$range_dates)
+  
+  # Compute posterior difference directly
+  logpost_proposed <- lposterior_total(proposed_aug_dat, theta, obs_dat, hyperpriors, index_dates) - 
+    lposterior_total(curr_aug_dat, theta, obs_dat, hyperpriors, index_dates)
+  
+  
+  logpost_proposed <- lposterior_total(test$new_aug_dat,
+                                       params$theta,
+                                       sim_data$obs_dat,
+                                       hyperparameters,
+                                       params$index_dates,
+                                       range_dates = params$range_dates)
+  logpost_current <- lposterior_total(curr_aug_dat,
+                                      params$theta,
+                                      sim_data$obs_dat,
+                                      hyperparameters,
+                                      params$index_dates,
+                                      range_dates = params$range_dates)
+  
+  ratio_post_long <- logpost_proposed - logpost_current
+
+  if (is.na(ratio_post_long)) ratio_post_long <- 0
+  
+  ratio_post <- {
+    delay_idx <- which(
+      params$index_dates[[group_idx]] == date_idx, arr.ind = TRUE
+      )[, 2]
+    
+    rp <- LL_observation_term_by_group_delay_and_indiv(
+      test$new_aug_dat, params$theta, sim_data$obs_dat,
+      group_idx, date_idx, i, range_dates = params$range_dates
+    ) -
+      LL_observation_term_by_group_delay_and_indiv(
+        curr_aug_dat, params$theta, sim_data$obs_dat,
+        group_idx, date_idx, i, range_dates = params$range_dates
+      )
+    
+    # Error term diff if E changes
+    if (!identical(test$new_aug_dat$E[[group_idx]][i, date_idx],
+                   curr_aug_dat$E[[group_idx]][i, date_idx])) {
+      rp <- rp +
+        LL_error_term_by_group_delay_and_indiv(
+          test$new_aug_dat, params$theta, sim_data$obs_dat,
+          group_idx, date_idx, i) -
+        LL_error_term_by_group_delay_and_indiv(
+          curr_aug_dat, params$theta, sim_data$obs_dat,
+          group_idx, date_idx, i)
+    }
+    
+    for (d in delay_idx) {
+      rp <- rp +
+        LL_delays_term_by_group_delay_and_indiv(
+          test$new_aug_dat, params$theta, sim_data$obs_dat,
+          group_idx, d, i, params$index_dates) -
+        LL_delays_term_by_group_delay_and_indiv(
+          curr_aug_dat, params$theta, sim_data$obs_dat,
+          group_idx, d, i, params$index_dates)
+    }
+    
+    sum(rp)
+  }
+  
+  expect_equal(ratio_post, ratio_post_long)
 })
 
 #------------------------------------------------------------------------------

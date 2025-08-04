@@ -28,8 +28,8 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat,
   indicator_no_error <- aug_dat$E[[group_idx]][indiv_idx, date_idx] == 0
   no_error <- which(indicator_no_error, arr.ind = TRUE)
   
-  # Where there is not an error the date in aug_dat should match the observed date
-  # if match: log(1) = 0, if mismatch: log(0) = -Inf
+  # Where there is not an error the date in aug_dat should match the observed
+  # date. If match: log(1) = 0, if mismatch: log(0) = -Inf
   LL[no_error] <- log(aug_dat$D[[group_idx]][indiv_idx, date_idx][no_error] ==
                         obs_dat[[group_idx]][indiv_idx, date_idx][no_error])
 
@@ -253,11 +253,9 @@ lprior_total <- function(theta, hyperparameters) {
 #'  augmented data and parameters given observed data
 #' 
 #' @param aug_dat A list of augmented data with dates `D` and error indicators
-#'  `E` in the format of the first element (\code{true_dat}) in the list
-#'   returned by \code{\link{simul_true_data}}.
+#'  `E` for each group.
 #' @param theta Parameter list containing: mu, CV, zeta.
-#' @param obs_dat A list of observed data, in the format of the first element
-#'  (\code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
+#' @param obs_dat A list of observed data in the same format as \code{aug_dat}. 
 #' @param hyperparameters List of priors for mu, CV, zeta.
 #' @param index_dates A list containing indications on which delays to consider
 #'  in the estimation, see details.
@@ -267,25 +265,24 @@ lprior_total <- function(theta, hyperparameters) {
 #' @details
 #' \code{theta} should be a list containing:
 #' \itemize{
-#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups
-#'   to be simulated data). Each element of \code{mu} should be a scalar of
-#'    vector giving the mean delay(s) to use for simulation of dates in that
-#'     group.}
-#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
-#'   \code{CV} should be a scalar of vector giving the coefficient o variation
-#'    of the delay(s) to use for simulation of dates in that group.}
-#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a
-#'   data point is not missing, it is recorded with error.}
+#'  \item{\code{mu}: A list of length \code{n_groups}. Each element of \code{mu}
+#'   should be a scalar or vector giving the mean delay(s) to use for the
+#'    simulation of dates in that group.}
+#'  \item{\code{CV}: A list of length \code{n_groups}. Each element of
+#'   \code{CV} should be a scalar or vector giving the coefficient of variation
+#'    of the delay(s) to use to simulate dates in that group.}
+#'  \item{\code{zeta}: A scalar in [0;1] giving the probability that, if a
+#'   date is not missing, it is recorded with error.}
 #' }
 #' \code{hyperparameters} should be a list containing:
 #' \itemize{
-#'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter
+#'  \item{\code{shape1_prob_error}: A scalar giving the first shape parameter
 #'   for the beta prior used for parameter \code{theta$zeta}}
-#'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter
+#'  \item{\code{shape2_prob_error}: A scalar giving the second shape parameter
 #'   for the beta prior used for parameter \code{theta$zeta}}
-#'  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential
+#'  \item{\code{mean_mean_delay}: A scalar giving the mean of the exponential
 #'   prior used for parameter \code{theta$mu}}
-#'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential
+#'  \item{\code{mean_CV_delay}: A scalar giving the mean of the exponential
 #'   prior used for parameter \code{theta$CV}}
 #' }
 #' \code{index_dates} should be a list of length

@@ -1,12 +1,10 @@
 ###############################################
-###############################################
-### move functions ###
-###############################################
+# Move functions
 ###############################################
 
-###############################################
-### Move augmented dates D ###
-###############################################
+# ----------------------------------------------------------------------------
+# Move augmented dates D
+# ----------------------------------------------------------------------------
 
 #' Performs one iteration of an MCMC move for the augmented data
 #'
@@ -23,27 +21,28 @@
 #'  in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
+#'  
 #' @details \code{theta} should be a list containing:
 #' \itemize{
-#'  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups
+#'  \item{\code{mu}: A list of length \code{n_groups} (the number of groups
 #'   to be simulated data). Each element of \code{mu} should be a scalar of
 #'   vector giving the mean delay(s) to use for simulation of dates in that
 #'   group.}
-#'  \item{\code{CV}}{: A list of length \code{n_groups}. Each element of
+#'  \item{\code{CV}: A list of length \code{n_groups}. Each element of
 #'  \code{CV} should be a scalar of vector giving the coefficient o variation
 #'   of the delay(s) to use for simulation of dates in that group.}
-#'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a
+#'  \item{\code{zeta}: A scalar in [0;1] giving the probability that, if a
 #'   data point is not missing, it is recorded with error.}
 #' }
 #' \code{hyperparameters} should be a list containing:
 #' \itemize{
-#'  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter
+#'  \item{\code{shape1_prob_error}: A scalar giving the first shape parameter
 #'   for the beta prior used for parameter \code{theta$zeta}}
-#'  \item{\code{shape2_prob_error}}{: A scalar giving the second shape parameter
+#'  \item{\code{shape2_prob_error}: A scalar giving the second shape parameter
 #'   for the beta prior used for parameter \code{theta$zeta}}
-#'  \item{\code{mean_mean_delay}}{: A scalar giving the mean of the exponential
+#'  \item{\code{mean_mean_delay}: A scalar giving the mean of the exponential
 #'   prior used for parameter \code{theta$mu}}
-#'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential
+#'  \item{\code{mean_CV_delay}: A scalar giving the mean of the exponential
 #'   prior used for parameter \code{theta$CV}}
 #' }
 #' \code{index_dates} should be a list of length
@@ -71,16 +70,115 @@
 #' value of D.
 #' The new augmented data is then accepted with probability given by the ratio
 #' of the posterior values at the new augmented data and the old augmented data.
+#' 
 #' @return A list of two elements:
 #'  \itemize{
-#'  \item{\code{new_aug_dat}}{: Same as \code{curr_aug_dat} but where the
+#'  \item{\code{new_aug_dat}: Same as \code{curr_aug_dat} but where the
 #'  relevant dates have been updated}
-#'  \item{\code{accept}}{: A scalar with value 1 if the move was accepted and
+#'  \item{\code{accept}: A scalar with value 1 if the move was accepted and
 #'  0 otherwise}
 #' }
+#' 
 #' @export
+#' 
 #' @examples
-#' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
+#' 
+#' # DONT THINK THESE ARE WORKING CORRECTLY
+#' #Parameters
+#' n_groups <- 4
+#' n_per_group <- rep(100, n_groups)
+#' n_dates <- c(2, 3, 4, 4)
+#' 
+#' mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
+#' cv <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5))
+#' 
+#' theta <- list(
+#'   prop_missing_data = 0.2,
+#'   zeta = 0.05,
+#'   mu = mu,
+#'   CV = cv
+#' )
+#' 
+#' hyperparameters <- list(
+#'   # scalars giving the 1st and 2nd shape parameters for the beta prior for zeta
+#'   shape1_prob_error = 3,
+#'   shape2_prob_error = 12,
+#'   # scalars giving the mean of the exponential prior used for mu and CV
+#'   mean_mean_delay = 100,
+#'   mean_CV_delay = 100
+#' )
+#' 
+#' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
+#'                              as.Date("01/01/2015", "%d/%m/%Y")))
+#' 
+#' index_dates <- list(
+#'   matrix(c(1, 2), nrow = 2),
+#'   cbind(c(1, 2), c(1, 3)),
+#'   cbind(c(1, 2), c(2, 3),c(1, 4)),
+#'   cbind(c(1, 2), c(2, 3), c(1, 4))
+#' )
+#' 
+#' # Simulate data
+#' set.seed(1)
+#' sim_data <- simul_true_data(theta,
+#'                             n_per_group,
+#'                             range_dates,
+#'                             index_dates,
+#'                             simul_error = TRUE,
+#'                             remove_allNA_indiv = TRUE)
+#' 
+#' obs_dat <- sim_data$obs_dat
+#' curr_aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings = mcmc_settings)
+#' theta <- initialise_theta_from_aug_dat(curr_aug_dat, index_dates)
+#' 
+#' # Example where date missing (E = -1)
+#' group_idx <- 1
+#' i <- 8
+#' date_idx <- 2
+#' 
+#' curr_aug_dat$D[[group_idx]][i, date_idx]
+#' curr_aug_dat$E[[group_idx]][i, date_idx]
+#' 
+#' # Move a date for individual 8, group 1, date index 1
+#' set.seed(1)
+#' result1 <- move_Di(i, group_idx, date_idx,
+#'                   curr_aug_dat = curr_aug_dat,
+#'                   theta = theta,
+#'                   obs_dat = obs_dat,
+#'                   hyperparameters = hyperparameters,
+#'                   index_dates = index_dates)
+#' 
+#' # Check result
+#' result1$accept                                  # 1 = accepted, 0 = rejected
+#' result1$new_aug_dat$D[[group_idx]][i, date_idx] # New proposed date value
+#' curr_aug_dat$D[[group_idx]][i, date_idx]       # Old proposed date value
+#' obs_dat[[group_idx]][i, date_idx]              # Original observed date missing
+#' 
+#' # Example where date observed with error (E = 1)
+#' obs_dat <- sim_data$obs_dat
+#' curr_aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings = mcmc_settings)
+#' theta <- initialise_theta_from_aug_dat(curr_aug_dat, index_dates)
+#' group_idx <- 1
+#' i <- 20
+#' date_idx <- 1
+#' 
+#' curr_aug_dat$E[[group_idx]][i, date_idx]
+#' 
+#' # Move a date for individual 20, group 1, date index 1
+#' set.seed(1)
+#' result2 <- move_Di(i, group_idx, date_idx,
+#'                   curr_aug_dat = curr_aug_dat,
+#'                   theta = theta,
+#'                   obs_dat = obs_dat,
+#'                   hyperparameters = hyperparameters,
+#'                   index_dates = index_dates)
+#' 
+#' # Check result
+#' result2$accept                                  # 1 = accepted, 0 = rejected
+#' result2$new_aug_dat$D[[group_idx]][i, date_idx] # New proposed date value
+#' curr_aug_dat$D[[group_idx]][i, date_idx]       # Old proposed date value
+#' obs_dat[[group_idx]][i, date_idx]              # Original observed date
+#'
 move_Di <- function(i,
                     group_idx,
                     date_idx,
@@ -117,15 +215,6 @@ move_Di <- function(i,
     from_value <- if (length(i) > 1) from_value[, tmp] else from_value[tmp]
   }
 
-  # param_delay <- find_params_gamma(
-  #   theta$mu[[group_idx]][which_delay],
-  #   CV = theta$CV[[group_idx]][which_delay]
-  # )
-  
-  # sample_delay <- round(
-  #   rgamma(length(i), shape = param_delay[1], scale = param_delay[2])
-  # )
-  
   # Sample a new delay using the discretised Gamma distribution ---------------
   sample_delay <- discr_gamma_sample(length(i),
                                      mu = theta$mu[[group_idx]][which_delay],

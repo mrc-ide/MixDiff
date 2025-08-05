@@ -995,12 +995,15 @@ move_Ei <- function(i,
 
 # Identify rows where (other than -1s) errors are not all the same
 # i.e. mixed errors and non-errors
+## ANNE: TODO for Rebecca to add documentation for this function
+## ANNE: this function finds individuals that have among all their dates one that is E = 0 and one that is E = 1 which hence could be swapped
 find_Eis_to_swap <- function(group_idx, curr_aug_dat) {
   Es <- curr_aug_dat$E[[group_idx]]
   # check for more than one unique non_missing entry
   which(sapply(seq_len(nrow(Es)), function(i) {
     non_missing <- Es[i, Es[i, ] != -1]
-    length(unique(non_missing)) > 1
+    unique_values_of_E_i <- unique(non_missing)
+    length(unique_values_of_E_i) > 1 # this only has length >1 if it contains both a zero and a one.
   }))
 }
 

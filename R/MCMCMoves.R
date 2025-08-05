@@ -581,15 +581,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
 
-  # ANNE: the above does not work
-  # LL_total(proposed_aug_dat, theta, obs_dat, index_dates, range_dates) -
-  # LL_total(curr_aug_dat, theta, obs_dat, index_dates, range_dates)
-
-  # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) +
-  # LL_error_term(proposed_aug_dat, theta, obs_dat) +
-  # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) ## THIS IT THE PROBLEM
-
-  # LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, delay_idx, i , index_dates)
+  # ANNE: the above now seems to work but maybe worth checking a bit more thoroughly in tests
 
   # Correct asymmetry ---------------------------------------------------------
 
@@ -614,7 +606,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   find_correction_factor <- function(e) {
     if (date_idx < from_idx[e]) {
       delay <- from_value[e] - proposed_aug_dat_value
-      forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx]
+      forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx] # ANNE: this is the delay corresponding to the observed date, hence would keep E = 0 and not allow a move to E = 1
     } else {
       delay <- proposed_aug_dat_value - from_value[e]
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
@@ -625,16 +617,24 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
     cv <- theta$CV[[group_idx]][which_delay][e]
 
     # Probability mass for delay after adjusting for invalid delay
-    K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
-      (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
+    K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) / # ANNE: calculating the probability of randomly drawing the proposed delay
+      (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE)) # ANNE: renormalising because we do not allow this specific delay
 
-    K
+    K # probability of drawing the proposed delay if this specific delay index is chosen
   }
 
   # Average correction factors over all delays involving this date
+  # ANNE: this accounts for the fact that the proposal distribution is a mixture distribution
+  # where the index of the delay used for sampling is drawn at random.
+  # hence the correction factor, which should be the probability of drawing the proposed delay irrespective of which delay index was chosen
+  # hence it's P(proposed delay | delay index 1) * P(delay index 1) + P(proposed delay | delay index 2) * P(delay index 2) + ...
+  # which simplifies to just the mean of P(proposed delay | delay index i) because all the P(delay index i) are the same
   K <- mean(sapply(seq_along(which_delay), find_correction_factor))
 
   # Log proposal correction factor
+  # ANNE: this should be calculated as logP(proposing current delay) - logP(proposing new delay)
+  # but this: logP(proposing current delay) is zero because P(proposing current delay) = 1 because there is only 1 way of moving to the observed date i.e. to generate E = 0
+  # hence logcorrection <- 0 - logP(proposing new delay)
   logcorrection <- -log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
 
   return(c(ratio_post, logcorrection))

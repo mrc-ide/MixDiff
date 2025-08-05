@@ -82,7 +82,7 @@
 #' @export
 #'
 #' @examples
-#'
+#' #'
 #' # DONT THINK THESE ARE WORKING CORRECTLY
 #' #Parameters
 #' n_groups <- 4
@@ -128,6 +128,47 @@
 #'                             remove_allNA_indiv = TRUE)
 #'
 #' obs_dat <- sim_data$obs_dat
+#' mcmc_settings <- list(
+#'   # moves_switch: booleans stating whether each parameter/augmented data
+#'   # should be moved in the procedure or not.
+#'   moves_switch = list(
+#'     D_on = TRUE, # augmented dates (latent true dates)
+#'     E_on = TRUE, # error indicators (-1, 0, 1)
+#'     swapE_on = TRUE, # swaps error indicators - explore alternative errors
+#'     mu_on = TRUE, # mean of each delay distribution
+#'     CV_on = TRUE, # cv of each delay
+#'     zeta_on = TRUE # probability of error
+#'   ),
+#'   # moves_options:
+#'   moves_options = list(
+#'     # Fraction of augmented dates to be updated at each iteration of the MCMC.
+#'     fraction_Di_to_update = 1 / 10,
+#'     # Number of augmented dates to be updated simultaneously in each group.
+#'     move_D_by_groups_of_size = 1,
+#'     # Fraction of indicators of whether observed dates are erroneous to be
+#'     # updated at each iteration of the MCMC.
+#'     fraction_Ei_to_update = 1 / 10,
+#'     # List of SDs used for proposing moves of the mean delays of length n_groups.
+#'     # Each element in the list should be a vector with length given by the
+#'     # numbers of delays to be considered in this group.
+#'     sdlog_mu = list(
+#'       0.05,
+#'       c(0.15, 0.15),
+#'       c(0.15, 0.15, 0.15),
+#'       c(0.25, 0.25, 0.25)
+#'     ),
+#'     # Same as above but for proposing moves of the CV of delays.
+#'     sdlog_CV = list(
+#'       0.25, c(0.25, 0.25), c(0.25, 0.25, 0.25), c(0.25, 0.25, 0.25))
+#'   ),
+#'   # minimum and maximum delays, below/above which dates are considered
+#'   # incompatible with one another at the initialisation stage of the MCMC.
+#'   init_options = list(mindelay = 0, maxdelay = 100),
+#'   # total number of iterations, initial burnin and then after burnin how many
+#'   # iterations should be recorded (thinning). (500 - 50) / 10 = 45 samples from
+#'   # the posterior for each dataset.
+#'   chain_properties = list(n_iter = 500, burnin = 50, record_every = 10)
+#' )
 #' curr_aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings = mcmc_settings)
 #' theta <- initialise_theta_from_aug_dat(curr_aug_dat, index_dates)
 #'
@@ -165,7 +206,7 @@
 #' curr_aug_dat$E[[group_idx]][i, date_idx]
 #'
 #' # Move a date for individual 20, group 1, date index 1
-#' set.seed(1)
+#' set.seed(10)
 #' result2 <- move_Di(i, group_idx, date_idx,
 #'                   curr_aug_dat = curr_aug_dat,
 #'                   theta = theta,
@@ -178,7 +219,7 @@
 #' result2$new_aug_dat$D[[group_idx]][i, date_idx] # New proposed date value
 #' curr_aug_dat$D[[group_idx]][i, date_idx]       # Old proposed date value
 #' obs_dat[[group_idx]][i, date_idx]              # Original observed date
-#'
+#' #'
 move_Di <- function(i,
                     group_idx,
                     date_idx,
@@ -230,6 +271,10 @@ move_Di <- function(i,
     proposed_aug_dat_value <- from_value + sample_delay
     curr_delay <- curr_aug_dat_value - from_value
   }
+
+  ## ANNE: need to select one option:
+  # option 1 is keep doing this meaning we can propose the same value as before and this can be accepted / rejected and it's all the same
+  # option 2 use a while loop to make sure the new value is different, but then we may need to do sth more clever for the acceptance probability
 
   # Create a copy of augmented data and insert the proposed value
   proposed_aug_dat <- curr_aug_dat

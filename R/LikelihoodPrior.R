@@ -188,7 +188,7 @@ LL_delays_term <- function(aug_dat, theta, obs_dat, index_dates, Delta = NULL) {
   LL <- sum(sapply(
     seq_along(obs_dat), function(g) { # ANNE: this loops over the groups
       sum(sapply(
-        ##ERROR##seq(2, ncol(aug_dat$D[[g]])), # ANNE: this loops over the dates for this group- question: why does it start at 2??
+        ##ERROR##seq(2, ncol(aug_dat$D[[g]])), # ANNE: this loops over the dates for this group- question: why does it start at 2??
         seq(1, ncol(index_dates[[g]])),
         function(j) {
           sum(

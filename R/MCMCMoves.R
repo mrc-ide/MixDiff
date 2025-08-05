@@ -710,6 +710,14 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
                                                 index_dates,
                                                 range_dates) {
 
+  ### ANNE: this is the exact opposite move from compute_p_accept_move_from_E0_to_E1
+  ## hence most of the code is the same
+  ## the ratio of the posteriors is just as usual Post(new proposed value) - Post (old value)
+  ## and the probability of accepting a move is calculated exactly in the opposite way compared to compute_p_accept_move_from_E0_to_E1
+  ## i.e. there is only 1 way of moving from E1 to E0 (because there is only one date that is equal to the observed date), so P(proposing the new value) = 1 and hence the log is zero
+  ## and the Probability of moving from E0 to this specific E1 and D combination is calculated according to the delay distribution, i.e. DircGamma, but discounting the one value we cannot choose
+  ## because it corresponds to E = 0 not E = 1.
+
   # Current date before the move
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
 
@@ -746,6 +754,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
   ratio_post <- sum(ratio_post)
 
   ### note that ratio_post should be the same as:
+  ## ANNE: TODO check this works
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
@@ -771,6 +780,8 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 
   # Proposal correction factor for each delay
   find_correction_factor_2 <- function(e) {
+    ## ANNE: TODO check if this is any different from the find_correction_factor function,
+    ## if so perhaps move out of these move functions so you can merge into one single function
     if (date_idx < from_idx[e]) {
       delay <- from_value[e] - curr_aug_dat_value
       forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx]

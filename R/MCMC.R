@@ -165,6 +165,7 @@
 #' plot(MCMC_result$logpost_chain, type = "l",
 #'      ylab = "Log Posterior", xlab = "Iteration")
 #' MCMC_result$accept_prob
+#' 
 RunMCMC <- function(obs_dat, 
                     MCMC_settings,
                     hyperparameters,
@@ -999,6 +1000,12 @@ get_param_posterior_estimates <- function(MCMCres,
         panel.border = element_rect(colour = "grey", fill = NA),
         axis.title.y = element_text(margin = margin(r = 10))
       )
+    
+    # Add reference line for true zeta if supplied
+    if (!is.null(theta_true) && !is.null(theta_true$zeta)) {
+      p2 <- p2 + geom_hline(yintercept = theta_true$zeta,
+                            linetype = "dashed", color = "black")
+    }
 
     # plot mu delays ---------------------------------------------------------
     df_all <- do.call(rbind, plot_data)
@@ -1020,6 +1027,22 @@ get_param_posterior_estimates <- function(MCMCres,
         axis.title.y = element_text(margin = margin(r = 10)),
         legend.position = "none"
       )
+    
+    # Add reference lines for true mu values if supplied
+    if (!is.null(theta_true) && !is.null(theta_true$mu)) {
+      df_mu_true <- do.call(rbind, lapply(seq_along(theta_true$mu), function(g) {
+        data.frame(
+          delay = delay_labels[[g]],
+          group = group_labels[g],
+          true_value = theta_true$mu[[g]]
+        )
+      }))
+      p3 <- p3 + geom_hline(
+        data = df_mu_true,
+        aes(yintercept = true_value, group = delay, colour = delay),
+        linetype = "dashed"
+      )
+    }
 
     # plot cv delays ---------------------------------------------------------
     df_cv <- subset(df_params, param == "CV")
@@ -1039,7 +1062,23 @@ get_param_posterior_estimates <- function(MCMCres,
         axis.title.y = element_text(margin = margin(r = 10)),
         legend.position = "none"
       )
-
+    
+    # Add reference lines for true CV values if supplied
+    if (!is.null(theta_true) && !is.null(theta_true$CV)) {
+      df_cv_true <- do.call(rbind, lapply(seq_along(theta_true$CV), function(g) {
+        data.frame(
+          delay = delay_labels[[g]],
+          group = group_labels[g],
+          true_value = theta_true$CV[[g]]
+        )
+      }))
+      p4 <- p4 + geom_hline(
+        data = df_cv_true,
+        aes(yintercept = true_value, group = delay, colour = delay),
+        linetype = "dashed"
+      )
+    }
+    
     # plot together ----------------------------------------------------------
     left_column <- p1 / p2
     right_column <- p3 / p4

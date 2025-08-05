@@ -21,7 +21,7 @@
 #'  in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
-#'  
+#'
 #' @details \code{theta} should be a list containing:
 #' \itemize{
 #'  \item{\code{mu}: A list of length \code{n_groups} (the number of groups
@@ -70,7 +70,7 @@
 #' value of D.
 #' The new augmented data is then accepted with probability given by the ratio
 #' of the posterior values at the new augmented data and the old augmented data.
-#' 
+#'
 #' @return A list of two elements:
 #'  \itemize{
 #'  \item{\code{new_aug_dat}: Same as \code{curr_aug_dat} but where the
@@ -78,27 +78,27 @@
 #'  \item{\code{accept}: A scalar with value 1 if the move was accepted and
 #'  0 otherwise}
 #' }
-#' 
+#'
 #' @export
-#' 
+#'
 #' @examples
-#' 
+#'
 #' # DONT THINK THESE ARE WORKING CORRECTLY
 #' #Parameters
 #' n_groups <- 4
 #' n_per_group <- rep(100, n_groups)
 #' n_dates <- c(2, 3, 4, 4)
-#' 
+#'
 #' mu <- list(5, c(6, 7), c(8, 9, 10), c(11, 12, 13))
 #' cv <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5), c(0.5, 0.5, 0.5))
-#' 
+#'
 #' theta <- list(
 #'   prop_missing_data = 0.2,
 #'   zeta = 0.05,
 #'   mu = mu,
 #'   CV = cv
 #' )
-#' 
+#'
 #' hyperparameters <- list(
 #'   # scalars giving the 1st and 2nd shape parameters for the beta prior for zeta
 #'   shape1_prob_error = 3,
@@ -107,17 +107,17 @@
 #'   mean_mean_delay = 100,
 #'   mean_CV_delay = 100
 #' )
-#' 
+#'
 #' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
 #'                              as.Date("01/01/2015", "%d/%m/%Y")))
-#' 
+#'
 #' index_dates <- list(
 #'   matrix(c(1, 2), nrow = 2),
 #'   cbind(c(1, 2), c(1, 3)),
 #'   cbind(c(1, 2), c(2, 3),c(1, 4)),
 #'   cbind(c(1, 2), c(2, 3), c(1, 4))
 #' )
-#' 
+#'
 #' # Simulate data
 #' set.seed(1)
 #' sim_data <- simul_true_data(theta,
@@ -126,19 +126,19 @@
 #'                             index_dates,
 #'                             simul_error = TRUE,
 #'                             remove_allNA_indiv = TRUE)
-#' 
+#'
 #' obs_dat <- sim_data$obs_dat
 #' curr_aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings = mcmc_settings)
 #' theta <- initialise_theta_from_aug_dat(curr_aug_dat, index_dates)
-#' 
+#'
 #' # Example where date missing (E = -1)
 #' group_idx <- 1
 #' i <- 8
 #' date_idx <- 2
-#' 
+#'
 #' curr_aug_dat$D[[group_idx]][i, date_idx]
 #' curr_aug_dat$E[[group_idx]][i, date_idx]
-#' 
+#'
 #' # Move a date for individual 8, group 1, date index 1
 #' set.seed(1)
 #' result1 <- move_Di(i, group_idx, date_idx,
@@ -147,13 +147,13 @@
 #'                   obs_dat = obs_dat,
 #'                   hyperparameters = hyperparameters,
 #'                   index_dates = index_dates)
-#' 
+#'
 #' # Check result
 #' result1$accept                                  # 1 = accepted, 0 = rejected
 #' result1$new_aug_dat$D[[group_idx]][i, date_idx] # New proposed date value
 #' curr_aug_dat$D[[group_idx]][i, date_idx]       # Old proposed date value
 #' obs_dat[[group_idx]][i, date_idx]              # Original observed date missing
-#' 
+#'
 #' # Example where date observed with error (E = 1)
 #' obs_dat <- sim_data$obs_dat
 #' curr_aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings = mcmc_settings)
@@ -161,9 +161,9 @@
 #' group_idx <- 1
 #' i <- 20
 #' date_idx <- 1
-#' 
+#'
 #' curr_aug_dat$E[[group_idx]][i, date_idx]
-#' 
+#'
 #' # Move a date for individual 20, group 1, date index 1
 #' set.seed(1)
 #' result2 <- move_Di(i, group_idx, date_idx,
@@ -172,7 +172,7 @@
 #'                   obs_dat = obs_dat,
 #'                   hyperparameters = hyperparameters,
 #'                   index_dates = index_dates)
-#' 
+#'
 #' # Check result
 #' result2$accept                                  # 1 = accepted, 0 = rejected
 #' result2$new_aug_dat$D[[group_idx]][i, date_idx] # New proposed date value
@@ -221,7 +221,7 @@ move_Di <- function(i,
                                      cv = theta$CV[[group_idx]][which_delay])
 
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-  
+
   # Depending on whether this date is before of after its pair, add or subtract
   if (date_idx < from_idx) {
     proposed_aug_dat_value <- from_value - sample_delay
@@ -282,7 +282,7 @@ move_Di <- function(i,
       LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat,
                                              group_idx, date_idx, i)
   }
-  
+
   # Add delay likelihood differences for each affected delay
   for (d in delay_idx) {
     ratio_post <- ratio_post +
@@ -300,25 +300,25 @@ move_Di <- function(i,
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
 
   # Proposal correction factor ------------------------------------------------
-  
+
   # Correction factor needed as this move is not symmetrical
   # where Q = proposal distribution, theta_old = curr_delay and theta_new = sample_delay:
   # corr = Q(theta_old | theta_new) / Q(theta_new | theta_old)
   # log_corr = log(Q(theta_old | theta_new)) - log(Q(theta_new | theta_old))
-  
+
   prob_proposing_curr_value <- DiscrGamma(curr_delay,
                                      mu = theta$mu[[group_idx]][which_delay],
                                      cv = theta$CV[[group_idx]][which_delay],
                                      log = TRUE)
-  
+
   prob_proposing_new_value <- DiscrGamma(sample_delay,
                                      mu = theta$mu[[group_idx]][which_delay],
                                      cv = theta$CV[[group_idx]][which_delay],
                                      log = TRUE)
-  
+
   ratio_prop <- prob_proposing_curr_value - prob_proposing_new_value
-  
-  
+
+
   # Acceptance probability ----------------------------------------------------
   p_accept <- ratio_post + ratio_prop
   if (p_accept > 0) p_accept <- 0
@@ -360,9 +360,10 @@ move_Di <- function(i,
 #' @param index_dates A list containing the delays defined for each group.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
-#'  
+#'
 #' @return A vector of proposed true dates that differ from the observed dates.
 
+## ANNE: TODO: clarify in comments that this actually doesn't move E just the corresponding D.
 propose_move_from_E0_to_E1 <- function(i,
                                        group_idx,
                                        date_idx,
@@ -373,13 +374,15 @@ propose_move_from_E0_to_E1 <- function(i,
                                        index_dates,
                                        range_dates = NULL) {
 
-  # 
+  # ANNE: which delays is this date / are these dates involved in
   x <- lapply(seq_along(date_idx), function(e) {
     which(index_dates[[group_idx]] == date_idx[e], arr.ind = TRUE)
   })
 
   which_delay <- lapply(seq_along(date_idx), function(e) x[[e]][, 2])
 
+  # ANNE: what are the paired dates involved in those delays
+  # ANNE: what are their index
   from_idx <- lapply(seq_along(date_idx), function(e) {
     x_e <- x[[e]]
     sapply(seq_len(nrow(x_e)), function(k) {
@@ -387,6 +390,7 @@ propose_move_from_E0_to_E1 <- function(i,
     })
   })
 
+  # ANNE: what are the actual dates
   # use from_idx to extract corresponding D
   from_value <- lapply(seq_along(date_idx), function(e) {
     x_e <- x[[e]]
@@ -412,6 +416,7 @@ propose_move_from_E0_to_E1 <- function(i,
     from_value[[e]][tmp[[e]]]
   })
 
+  # ANNE: retrieve the corresponding delay parameters
   param_delay <- lapply(seq_along(date_idx), function(e) {
     find_params_gamma(
       theta$mu[[group_idx]][which_delay[[e]]],
@@ -419,12 +424,16 @@ propose_move_from_E0_to_E1 <- function(i,
     )
   })
 
+  # ANNE: store the current corresponding augmented dates
+  # ANNE: TODO: remove this line, not needed in this function
   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
 
+  # ANNE: this function just samples from the selected delay to obtain a new
+  # proposed augmented date D
   get_one_proposed_aug_value <- function(e) {
     mu <- theta$mu[[group_idx]][which_delay[[e]]]
     cv <- theta$CV[[group_idx]][which_delay[[e]]]
-    
+
     sample_delay <- discr_gamma_sample(1, mu = mu, cv = cv)
 
     if (date_idx[e] < from_idx[e]) {
@@ -436,7 +445,7 @@ propose_move_from_E0_to_E1 <- function(i,
     # while we haven't moved to a situation where E = 1, try again
     while (proposed_aug_dat_value == obs_dat[[group_idx]][i, date_idx[e]]) {
       sample_delay <- discr_gamma_sample(1, mu = mu, cv = cv)
-      
+
       if (date_idx[e] < from_idx[e]) {
         proposed_aug_dat_value <- from_value[e] - sample_delay
       } else {
@@ -470,7 +479,7 @@ propose_move_from_E0_to_E1 <- function(i,
 #'  in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
-#'  
+#'
 #'  @return Vector of length 2. The first element is the difference in log
 #'   posterior between the proposed and current augmented data. The second
 #'    is the log proposal correction factor needed to adjust for asymmetry in
@@ -493,7 +502,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
 
   # Compute log posterior difference (proposed - current) ---------------------
-  
+
   # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat,
@@ -527,19 +536,29 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
 
+  # ANNE: the above does not work
+  # LL_total(proposed_aug_dat, theta, obs_dat, index_dates, range_dates) -
+  # LL_total(curr_aug_dat, theta, obs_dat, index_dates, range_dates)
+
+  # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) +
+  # LL_error_term(proposed_aug_dat, theta, obs_dat) +
+  # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) ## THIS IT THE PROBLEM
+
+  # LL_delays_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat, group_idx, delay_idx, i , index_dates)
+
   # Correct asymmetry ---------------------------------------------------------
-  
+
   # Index for the date within index_dates
   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
-  
+
   # Index for the delay
   which_delay <- x[, 2]
-  
+
   # Index for the other date involved in each delay
   from_idx <- sapply(
     seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]
   )
-  
+
   # Extract value of the other date for each delay
   from_value <- sapply(
     seq_len(nrow(x)),
@@ -555,15 +574,15 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
       delay <- proposed_aug_dat_value - from_value[e]
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
     }
-    
+
     # Mean and CV of delays
     mu <- theta$mu[[group_idx]][which_delay[e]]
     cv <- theta$CV[[group_idx]][which_delay][e]
-    
+
     # Probability mass for delay after adjusting for invalid delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
-    
+
     K
   }
 
@@ -594,7 +613,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
 #'  in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
-#'  
+#'
 #' @return Proposed true date, which is the same as the observed date.
 
 propose_move_from_E1_to_E0 <- function(i,
@@ -606,7 +625,7 @@ propose_move_from_E1_to_E0 <- function(i,
                                        hyperparameters, # remove
                                        index_dates, # remove
                                        range_dates) { # remove
-  
+
   proposed_aug_dat_value <- obs_dat[[group_idx]][i, date_idx]
 
   proposed_aug_dat_value
@@ -630,7 +649,7 @@ propose_move_from_E1_to_E0 <- function(i,
 #'  in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
-#'  
+#'
 #'  @return A vector of length 2. The first element is the log posterior
 #'   difference (proposed - current), and the second element is the proposal
 #'    asymmetry correction.
@@ -653,7 +672,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
 
   # Compute log posterior difference (proposed - current) ---------------------
-  
+
   # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
     proposed_aug_dat, theta, obs_dat,
@@ -690,10 +709,10 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 
   # Index for the date within index_dates
   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
-  
+
   # Index for the delay
   which_delay <- x[, 2]
-  
+
   # Index for the other date involved in each delay
   from_idx <- sapply(
     seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]
@@ -718,11 +737,11 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
     # Mean and CV of delays
     mu <- theta$mu[[group_idx]][which_delay[e]]
     cv <- theta$CV[[group_idx]][which_delay][e]
-    
+
     # Probability mass for delay adjusting for invalid delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
-    
+
     K
   }
 
@@ -780,7 +799,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 #'  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential
 #'   prior used for parameter \code{theta$CV}}
 #' }
-#' \code{index_dates} should be a list of length 
+#' \code{index_dates} should be a list of length
 #'  \code{n_groups = length(obs_dat)}. Each element of \code{index_dates}
 #'   should be a matrix with 2 rows and a number of columns corresponding to
 #'    the delays of interest for that group. For each column (i.e. each delay),

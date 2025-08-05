@@ -904,15 +904,37 @@ get_param_posterior_estimates <- function(MCMCres,
   
   # create delay labels using index_dates and date_labels --------------------
   generate_delay_labels <- function(index_dates, date_labels) {
-    lapply(seq_along(index_dates), function(g) {
+    delay_labels <- list()
+    delay_orders <- list()
+    
+    for (g in seq_along(index_dates)) {
       idx_mat <- index_dates[[g]]
       labels <- date_labels[[g]]
-      apply(idx_mat, 2, function(col) paste0(labels[col[1]], " to ", labels[col[2]]))
-    })
+      
+      delays <- apply(idx_mat, 2, function(col) paste0(labels[col[1]], " to ", labels[col[2]]))
+      
+      # Ordering by end date (col[2]) then start date (col[1])
+      ordering <- order(idx_mat[2, ], idx_mat[1, ])
+      
+      delay_labels[[g]] <- delays[ordering]
+      delay_orders[[g]] <- ordering
+    }
+    
+    list(labels = delay_labels, order = delay_orders)
   }
   
   index_dates <- MCMCres$index_dates
-  delay_labels <- generate_delay_labels(index_dates, date_labels)
+  delay_info <- generate_delay_labels(index_dates, date_labels)
+  delay_labels <- delay_info$labels
+  delay_order <- delay_info$order
+  
+  delay_levels_df <- do.call(rbind, lapply(seq_along(group_labels), function(g) {
+    data.frame(
+      group = group_labels[g],
+      delay = delay_labels[[g]],
+      delay_order = delay_order[[g]]
+    )
+  }))
   
   iterations <- seq_len(length(MCMCres$theta_chain))
   output <- list()
@@ -1006,18 +1028,29 @@ get_param_posterior_estimates <- function(MCMCres,
       p2 <- p2 + geom_hline(yintercept = theta_true$zeta,
                             linetype = "dashed", color = "black")
     }
-
+    
     # plot mu delays ---------------------------------------------------------
     df_all <- do.call(rbind, plot_data)
     df_params <- df_all[df_all$param %in% c("mu", "CV"), ]
 
-    df_mu <- subset(df_params, param == "mu")
+    df_mu <- subset(df_params, param == "mu") 
+    
+    df_mu <- df_mu %>%
+      left_join(delay_levels_df, by = c("group", "delay")) %>%
+      mutate(delay = factor(delay, levels = unique(delay[order(delay_order)]))) %>%
+      select(-delay_order)
+    
+    # Consistent colours
+    all_delays <- sort(unique(df_mu$delay))
+    delay_colours <- qualitative_hcl(length(all_delays), palette = "Dynamic")
+    names(delay_colours) <- all_delays
 
     p3 <- ggplot(df_mu, aes(x = delay, y = value, fill = delay)) +
-      geom_boxplot(width = 0.5, colour = "black") +
+      geom_boxplot(width = 0.5, colour = "black", alpha = 0.8) +
       facet_wrap(~ group, scales = "free_x", nrow = 1) +
       labs(x = NULL, y = paste(ylab_central, "of Mu delays")) +
-      scale_fill_discrete_qualitative(palette = "Dynamic") +
+      scale_fill_manual(values = delay_colours) +
+      scale_colour_manual(values = delay_colours) +
       theme_minimal(base_size = 12) +
       theme(
         strip.background = element_rect(fill = "grey90", colour = "grey"),
@@ -1046,12 +1079,18 @@ get_param_posterior_estimates <- function(MCMCres,
 
     # plot cv delays ---------------------------------------------------------
     df_cv <- subset(df_params, param == "CV")
+    
+    df_cv <- df_cv %>%
+      left_join(delay_levels_df, by = c("group", "delay")) %>%
+      mutate(delay = factor(delay, levels = unique(delay[order(delay_order)]))) %>%
+      select(-delay_order)
 
     p4 <- ggplot(df_cv, aes(x = delay, y = value, fill = delay)) +
-      geom_boxplot(width = 0.5, colour = "black") +
+      geom_boxplot(width = 0.5, colour = "black", alpha = 0.8) +
       facet_wrap(~ group, scales = "free_x", nrow = 1) +
       labs(x = NULL, y = paste(ylab_central, "of CV delays")) +
-      scale_fill_discrete_qualitative(palette = "Dynamic") +
+      scale_fill_manual(values = delay_colours) +
+      scale_colour_manual(values = delay_colours) +
       scale_y_continuous(expand = expansion(mult = c(0.005, 0.05))) +
       theme_minimal(base_size = 12) +
       theme(

@@ -1100,12 +1100,13 @@ swap_Ei <- function(i,
   if (is.null(range_dates)) range_dates <- find_range(obs_dat)
 
   all_E_values <- curr_aug_dat$E[[group_idx]][i, ]
-  date_idx <- which(all_E_values %in% c(0, 1))
+  date_idx <- which(all_E_values %in% c(0, 1)) # ANNE: This selects all dates that are not missing
   curr_E_values <- all_E_values[date_idx]
 
   date_idx_E0_to_E1 <- date_idx[curr_E_values == 0]
   date_idx_E1_to_E0 <- date_idx[curr_E_values == 1]
 
+  ## ANNE: first step is moving the E = 1 date(s) to E = 0
   proposed_aug_dat_intermediate <- curr_aug_dat
   proposed_aug_dat_intermediate$E[[group_idx]][i, date_idx_E1_to_E0] <- 0
   proposed_aug_dat_intermediate$D[[group_idx]][i, date_idx_E1_to_E0] <-
@@ -1113,6 +1114,8 @@ swap_Ei <- function(i,
                                curr_aug_dat, theta, obs_dat, hyperparameters,
                                index_dates, range_dates)
 
+  ## ANNE: the second step is then to move the other dates (now moving from E = 0 to E = 1) to
+  ## dates that are plausible given the delay parameters
   proposed_aug_dat <- proposed_aug_dat_intermediate
   proposed_aug_dat$E[[group_idx]][i, date_idx_E0_to_E1] <- 1
   proposed_aug_dat$D[[group_idx]][i, date_idx_E0_to_E1] <-
@@ -1189,6 +1192,7 @@ swap_Ei <- function(i,
   ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
 
   ### should be the same as:
+  ## ANNE: this may need to be checked more thoroughly but does work on one example
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat,
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)

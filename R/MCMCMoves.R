@@ -232,71 +232,19 @@ move_Di <- function(i,
 
   if (is.null(range_dates)) range_dates <- find_range(obs_dat)
 
-  # Identify delays this date is involved in ----------------------------------
+  tmp <- propose_new_delay(i,
+                           group_idx,
+                           date_idx,
+                           curr_aug_dat,
+                           theta,
+                           obs_dat,
+                           hyperparameters,
+                           index_dates,
+                           range_dates)
 
-  # Identify where the date is in index_dates (returns row and col numbers)
-  x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
-
-  # Identify delay(s) that this particular date is involved in
-  which_delay <- x[, 2]
-
-  # For each relevant delay, find the other date it's paired with
-  from_idx <- sapply(seq_len(nrow(x)),
-                     function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]])
-
-  # Extract the values of those paired dates for individual i
-  from_value <- sapply(seq_len(nrow(x)),
-    function(k) curr_aug_dat$D[[group_idx]][i, from_idx[k]])
-
-  # If several delays involve this date, choose one at random
-  if (length(from_idx) > 1) {
-    tmp <- sample(seq_len(length(from_idx)), 1)
-    which_delay <- which_delay[tmp]
-    from_idx <- from_idx[tmp]
-    from_value <- if (length(i) > 1) from_value[, tmp] else from_value[tmp]
-  }
-
-  # Sample a new delay using the discretised Gamma distribution ---------------
-  sample_delay <- discr_gamma_sample(length(i),
-                                     mu = theta$mu[[group_idx]][which_delay],
-                                     cv = theta$CV[[group_idx]][which_delay])
-
-  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-
-  # Depending on whether this date is before of after its pair, add or subtract
-  if (date_idx < from_idx) {
-    proposed_aug_dat_value <- from_value - sample_delay
-    curr_delay <- from_value - curr_aug_dat_value
-  } else {
-    proposed_aug_dat_value <- from_value + sample_delay
-    curr_delay <- curr_aug_dat_value - from_value
-  }
-
-  ## ANNE: need to select one option:
-  # option 1 is keep doing this meaning we can propose the same value as before and this can be accepted / rejected and it's all the same
-  # option 2 use a while loop to make sure the new value is different, but then we may need to do sth more clever for the acceptance probability
-
-  # Create a copy of augmented data and insert the proposed value
-  proposed_aug_dat <- curr_aug_dat
-  proposed_aug_dat$D[[group_idx]][i, date_idx] <- proposed_aug_dat_value
-
-  # Update error indicators accordingly ---------------------------------------
-  # i.e. if D_i moves to y_i then E_i moves to 0, else E_i moves to 1.
-
-  # Identify missing (if y_i missing then E_i = -1)
-  missing <- which(is.na(obs_dat[[group_idx]][i, date_idx]))
-  proposed_aug_dat$E[[group_idx]][i, date_idx][missing] <- -1
-
-  # Identify non-erroneous (y_i observed without error then E_i = 0)
-  non_erroneous <- which(proposed_aug_dat$D[[group_idx]][i, date_idx] ==
-      obs_dat[[group_idx]][i, date_idx])
-  proposed_aug_dat$E[[group_idx]][i, date_idx][non_erroneous] <- 0
-
-  # Identify erroneous observations (y_i observed with error then E_i = 1)
-  erroneous <- which(!is.na(obs_dat[[group_idx]][i, date_idx]) &
-                       proposed_aug_dat$D[[group_idx]][i, date_idx] !=
-                       obs_dat[[group_idx]][i, date_idx])
-  proposed_aug_dat$E[[group_idx]][i, date_idx][erroneous] <- 1
+  proposed_aug_dat <- tmp$proposed_aug_dat
+  curr_delay <- tmp$curr_delay
+  sample_delay <- tmp$sample_delay
 
   # Calculate posterior ratio -------------------------------------------------
   # probability of acceptance = log P(new) - log P(old)
@@ -318,7 +266,7 @@ move_Di <- function(i,
 
   # Add error term difference only if E changed
   different_E <- proposed_aug_dat$E[[group_idx]][i, date_idx] !=
-                 curr_aug_dat$E[[group_idx]][i, date_idx]
+    curr_aug_dat$E[[group_idx]][i, date_idx]
 
   if (any(different_E)) {
     ratio_post <- ratio_post +
@@ -341,8 +289,8 @@ move_Di <- function(i,
 
   ### note that ratio_post should be the same as:
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat,
-  # hyperparameters, index_dates) -
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
+  # hyperparameters, index_dates, range_dates) -
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates)
 
   # Proposal correction factor ------------------------------------------------
 
@@ -351,18 +299,7 @@ move_Di <- function(i,
   # corr = Q(theta_old | theta_new) / Q(theta_new | theta_old)
   # log_corr = log(Q(theta_old | theta_new)) - log(Q(theta_new | theta_old))
 
-  prob_proposing_curr_value <- DiscrGamma(curr_delay,
-                                     mu = theta$mu[[group_idx]][which_delay],
-                                     cv = theta$CV[[group_idx]][which_delay],
-                                     log = TRUE)
-
-  prob_proposing_new_value <- DiscrGamma(sample_delay,
-                                     mu = theta$mu[[group_idx]][which_delay],
-                                     cv = theta$CV[[group_idx]][which_delay],
-                                     log = TRUE)
-
-  ratio_prop <- prob_proposing_curr_value - prob_proposing_new_value
-
+  ratio_prop <- get_correct_factor_new_delay(curr_delay, sample_delay, theta, group_idx, tmp$which_delay)
 
   # Acceptance probability ----------------------------------------------------
   p_accept <- ratio_post + ratio_prop
@@ -555,7 +492,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   ) - LL_observation_term_by_group_delay_and_indiv(
     curr_aug_dat, theta, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
-    )
+  )
 
   # Difference in error likelihood
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
@@ -567,7 +504,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
   # For each affected delay, difference in delay likelihood
   for (d in delay_idx) {
     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
+      proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
     ) - LL_delays_term_by_group_delay_and_indiv(
       curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
     )
@@ -744,10 +681,10 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 
   # For each affected delay, difference in delay likelihood
   for (d in delay_idx)
-  ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-  ) - LL_delays_term_by_group_delay_and_indiv(
-    curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
+    ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
+      proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
+    ) - LL_delays_term_by_group_delay_and_indiv(
+      curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
     )
 
   # Combine all log-likelihood differences
@@ -1100,13 +1037,12 @@ swap_Ei <- function(i,
   if (is.null(range_dates)) range_dates <- find_range(obs_dat)
 
   all_E_values <- curr_aug_dat$E[[group_idx]][i, ]
-  date_idx <- which(all_E_values %in% c(0, 1)) # ANNE: This selects all dates that are not missing
-  curr_E_values <- all_E_values[date_idx]
+  date_idx <- seq_len(ncol(curr_aug_dat$E[[group_idx]]))
 
-  date_idx_E0_to_E1 <- date_idx[curr_E_values == 0]
-  date_idx_E1_to_E0 <- date_idx[curr_E_values == 1]
+  date_idx_E0_to_E1 <- date_idx[all_E_values %in% 0]
+  date_idx_E1_to_E0 <- date_idx[all_E_values %in% 1]
   ## ANNE: added this:
-  date_idx_resample <- date_idx[curr_E_values == -1]
+  date_idx_resample <- date_idx[all_E_values %in% -1]
 
   ## ANNE: first step is moving the E = 1 date(s) to E = 0
   proposed_aug_dat_intermediate <- curr_aug_dat
@@ -1126,9 +1062,18 @@ swap_Ei <- function(i,
       theta, obs_dat, hyperparameters, index_dates, range_dates
     )
 
-  ## ANNE: need to add another step which then resamples the NA dates here so
+  ## ANNE: the third then resamples the NA dates so
   ## that they are compatible with the new proposed dates.
-  ## note I need to think about the relevant correction factor for this
+  correct_factor_new_delay <- 0
+  if(length(date_idx_resample) > 0) { ## If there are any missing dates for this individual
+    for(k in date_idx_resample) { ## for each missing date
+      tmp_delay <- propose_new_delay(i, group_idx, k, proposed_aug_dat,
+                                     theta, obs_dat, hyperparameters, index_dates, range_dates)
+      proposed_aug_dat <- tmp_delay$proposed_aug_dat## propose a new date compatible with newly drawn dates
+      correct_factor_new_delay <- correct_factor_new_delay +
+        get_correct_factor_new_delay(tmp_delay$curr_delay, tmp_delay$sample_delay, theta, group_idx, tmp_delay$which_delay)
+    }
+  }
 
   delay_idx <- which(
     colSums(matrix(index_dates[[group_idx]] %in% date_idx_E1_to_E0,
@@ -1141,23 +1086,42 @@ swap_Ei <- function(i,
   )
   )
 
-  delay_idx <- sort(unique(delay_idx))
+  if(length(date_idx_resample) > 0) {
+    delay_idx <- c(delay_idx, which(
+      colSums(matrix(index_dates[[group_idx]] %in% date_idx_resample,
+                     nrow = nrow(index_dates[[group_idx]]))) > 0
+    )
+    )
+  }
+
+  delay_idx <- sort(unique(delay_idx)) ## ANNE: TODO: I think by definition this will be all the delays!
 
   ratio_post_obs <- sum(
     LL_observation_term_by_group_delay_and_indiv(
       proposed_aug_dat, theta, obs_dat, group_idx,
       date_idx_E1_to_E0, i, range_dates = range_dates
     ) - LL_observation_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, obs_dat, group_idx,
-        date_idx_E1_to_E0, i, range_dates = range_dates)
+      curr_aug_dat, theta, obs_dat, group_idx,
+      date_idx_E1_to_E0, i, range_dates = range_dates)
   ) + sum(
     LL_observation_term_by_group_delay_and_indiv(
-        proposed_aug_dat, theta, obs_dat, group_idx,
-        date_idx_E0_to_E1, i, range_dates = range_dates
-      ) - LL_observation_term_by_group_delay_and_indiv(
-          curr_aug_dat, theta, obs_dat, group_idx,
-          date_idx_E0_to_E1, i, range_dates = range_dates)
+      proposed_aug_dat, theta, obs_dat, group_idx,
+      date_idx_E0_to_E1, i, range_dates = range_dates
+    ) - LL_observation_term_by_group_delay_and_indiv(
+      curr_aug_dat, theta, obs_dat, group_idx,
+      date_idx_E0_to_E1, i, range_dates = range_dates)
   )
+
+  if(length(date_idx_resample) > 0) {
+    ratio_post_obs <- ratio_post_obs + sum(
+      LL_observation_term_by_group_delay_and_indiv(
+        proposed_aug_dat, theta, obs_dat, group_idx,
+        date_idx_resample, i, range_dates = range_dates
+      ) - LL_observation_term_by_group_delay_and_indiv(
+        curr_aug_dat, theta, obs_dat, group_idx,
+        date_idx_resample, i, range_dates = range_dates)
+    )
+  }
   ## should be the same as:
   # LL_observation_term(proposed_aug_dat, theta, obs_dat, range_dates) -
   # LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
@@ -1166,15 +1130,24 @@ swap_Ei <- function(i,
     LL_error_term_by_group_delay_and_indiv(
       proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
     ) - LL_error_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
-        )
-    ) + sum(
+      curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
+    )
+  ) + sum(
+    LL_error_term_by_group_delay_and_indiv(
+      proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
+    ) - LL_error_term_by_group_delay_and_indiv(
+      curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
+    )
+  )
+  if(length(date_idx_resample) > 0) {
+    ratio_post_error <- ratio_post_error + sum(
       LL_error_term_by_group_delay_and_indiv(
-        proposed_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
-        ) - LL_error_term_by_group_delay_and_indiv(
-          curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
-          )
+        proposed_aug_dat, theta, obs_dat, group_idx, date_idx_resample, i
+      ) - LL_error_term_by_group_delay_and_indiv(
+        curr_aug_dat, theta, obs_dat, group_idx, date_idx_resample, i
       )
+    )
+  }
   ## should be the same as:
   # LL_error_term(proposed_aug_dat, theta, obs_dat) -
   # LL_error_term(curr_aug_dat, theta, obs_dat)
@@ -1186,10 +1159,10 @@ swap_Ei <- function(i,
     ratio_post_delay <- ratio_post_delay + sum(
       LL_delays_term_by_group_delay_and_indiv(
         proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-        ) - LL_delays_term_by_group_delay_and_indiv(
-          curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-          )
+      ) - LL_delays_term_by_group_delay_and_indiv(
+        curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
       )
+    )
   }
   ## should be the same as:
   # LL_delays_term(proposed_aug_dat, theta, obs_dat, index_dates) -
@@ -1200,8 +1173,8 @@ swap_Ei <- function(i,
   ### should be the same as:
   ## ANNE: this may need to be checked more thoroughly but does work on one example
   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat,
-  # hyperparameters, index_dates) -
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
+  # hyperparameters, index_dates, range_dates) -
+  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates)
 
   # This is not a symmetric move so need a correction factor
 
@@ -1218,9 +1191,9 @@ swap_Ei <- function(i,
         hyperparameters,
         index_dates,
         range_dates
-        )[2]
-      })
-    )
+      )[2]
+    })
+  )
 
   logcorrection_move_from_E0_to_E1 <- sum(
     sapply(seq_along(date_idx_E0_to_E1), function(e) {
@@ -1236,12 +1209,13 @@ swap_Ei <- function(i,
         index_dates = index_dates,
         range_dates = range_dates
       )[2]
-      })
-    )
+    })
+  )
 
   p_accept <- ratio_post +
     logcorrection_move_from_E1_to_E0 +
-    logcorrection_move_from_E0_to_E1
+    logcorrection_move_from_E0_to_E1 +
+    correct_factor_new_delay
 
   if (p_accept > 0) p_accept <- 0
 
@@ -1382,13 +1356,13 @@ move_lognormal <- function(what = c("mu", "CV"),
     LL_delays_term_by_group_delay_and_indiv(
       aug_dat, proposed_theta, obs_dat, group_idx, delay_idx,
       seq_len(nrow(obs_dat[[group_idx]])), index_dates, delta
-     )
-    ) - sum(
-      LL_delays_term_by_group_delay_and_indiv(
-        aug_dat, curr_theta, obs_dat, group_idx, delay_idx,
-        seq_len(nrow(obs_dat[[group_idx]])), index_dates, delta
-     )
-      )
+    )
+  ) - sum(
+    LL_delays_term_by_group_delay_and_indiv(
+      aug_dat, curr_theta, obs_dat, group_idx, delay_idx,
+      seq_len(nrow(obs_dat[[group_idx]])), index_dates, delta
+    )
+  )
 
   ### note that ratio_post should be the same as:
   # ratio_post_long <- lposterior_total(aug_dat, proposed_theta, obs_dat,

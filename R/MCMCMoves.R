@@ -1105,6 +1105,8 @@ swap_Ei <- function(i,
 
   date_idx_E0_to_E1 <- date_idx[curr_E_values == 0]
   date_idx_E1_to_E0 <- date_idx[curr_E_values == 1]
+  ## ANNE: added this:
+  date_idx_resample <- date_idx[curr_E_values == -1]
 
   ## ANNE: first step is moving the E = 1 date(s) to E = 0
   proposed_aug_dat_intermediate <- curr_aug_dat
@@ -1123,6 +1125,10 @@ swap_Ei <- function(i,
       i, group_idx, date_idx_E0_to_E1, proposed_aug_dat_intermediate,
       theta, obs_dat, hyperparameters, index_dates, range_dates
     )
+
+  ## ANNE: need to add another step which then resamples the NA dates here so
+  ## that they are compatible with the new proposed dates.
+  ## note I need to think about the relevant correction factor for this
 
   delay_idx <- which(
     colSums(matrix(index_dates[[group_idx]] %in% date_idx_E1_to_E0,

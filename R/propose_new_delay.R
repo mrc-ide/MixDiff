@@ -1,4 +1,4 @@
-propose_new_delay <- function(i,
+choose_delay <- function(i,
                               group_idx,
                               date_idx,
                               curr_aug_dat,
@@ -32,21 +32,46 @@ propose_new_delay <- function(i,
     from_value <- if (length(i) > 1) from_value[, tmp] else from_value[tmp]
   }
 
+  if (date_idx < from_idx) {
+    curr_delay <- from_value - curr_aug_dat$D[[group_idx]][i, date_idx]
+  } else {
+    curr_delay <- curr_aug_dat$D[[group_idx]][i, date_idx] - from_value
+  }
+
+  return(list(which_delay = which_delay, from_idx = from_idx, from_value = from_value, curr_delay = curr_delay))
+
+}
+
+propose_new_delay <- function(i,
+                              group_idx,
+                              date_idx,
+                              curr_aug_dat,
+                              theta,
+                              obs_dat,
+                              hyperparameters,
+                              index_dates,
+                              range_dates = NULL) {
+
+  # Identify delays this date is involved in ----------------------------------
+
+  tmp <- choose_delay(i, group_idx, date_idx, curr_aug_dat, theta, obs_dat,
+                           hyperparameters, index_dates, range_dates)
+  which_delay <- tmp$which_delay
+  from_idx <- tmp$from_idx
+  from_value <- tmp$from_value
+  curr_delay <- tmp$curr_delay
+
   # Sample a new delay using the discretised Gamma distribution ---------------
   sample_delay <- discr_gamma_sample(length(i),
                                      mu = theta$mu[[group_idx]][which_delay],
                                      cv = theta$CV[[group_idx]][which_delay])
 
-  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-
   # Depending on whether this date is before of after its pair, add or subtract
   ## ANNE: I think we do this multiple times across the code so would be good to wrap in single function
   if (date_idx < from_idx) {
     proposed_aug_dat_value <- from_value - sample_delay
-    curr_delay <- from_value - curr_aug_dat_value
   } else {
     proposed_aug_dat_value <- from_value + sample_delay
-    curr_delay <- curr_aug_dat_value - from_value
   }
 
   ## ANNE: need to select one option:
@@ -82,7 +107,8 @@ propose_new_delay <- function(i,
 }
 
 
-get_correct_factor_new_delay <- function(curr_delay, sample_delay, theta, group_idx, which_delay)
+
+get_correct_factor_new_delay <- function(curr_delay, new_delay, theta, group_idx, which_delay)
 {
 
   prob_proposing_curr_value <- DiscrGamma(curr_delay,
@@ -90,10 +116,11 @@ get_correct_factor_new_delay <- function(curr_delay, sample_delay, theta, group_
                                           cv = theta$CV[[group_idx]][which_delay],
                                           log = TRUE)
 
-  prob_proposing_new_value <- DiscrGamma(sample_delay,
+  prob_proposing_new_value <- DiscrGamma(new_delay,
                                          mu = theta$mu[[group_idx]][which_delay],
                                          cv = theta$CV[[group_idx]][which_delay],
                                          log = TRUE)
 
-  return(prob_proposing_curr_value - prob_proposing_new_value)
+  return(c(prob_proposing_curr_value = prob_proposing_curr_value,
+           prob_proposing_new_value = prob_proposing_new_value))
 }

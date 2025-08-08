@@ -1,5 +1,5 @@
 #' Runs the MCMC estimation procedure.
-#' 
+#'
 #' @param obs_dat A list of observed data, containing dates `D` and error
 #'  indicators `E` for each group.
 #' @param MCMC_settings A list of settings to be used for running the MCMC, see
@@ -70,16 +70,16 @@
 #'   be a matrix with 2 rows and a number of columns corresponding to the delays
 #'    of interest for that group. For each column (i.e. each delay), the first
 #'     row gives the index of the origin date, and the second row gives the
-#'      index of the destination date. 
+#'      index of the destination date.
 #' The number of columns of index_dates[[k]] should match the length of
-#'  theta$mu[[k]] and theta$CV[[k]] 
-#' 
+#'  theta$mu[[k]] and theta$CV[[k]]
+#'
 #' If index_dates[[k]] has two columns containing respectively c(1, 2) and
 #'  c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are
 #'   respectively the mean and coefficient of variation of two delays: the
 #'    first delay being between date 1 and date 2, and the second being between
-#'     date 1 and date 3. 
-#' 
+#'     date 1 and date 3.
+#'
 #' @return A list of the following elements:
 #'  \itemize{
 #'  \item{\code{theta_chain}: a list of parameters (mu, cv, zeta), at each
@@ -91,9 +91,9 @@
 #'  \item{\code{accept_prob}: a list of the probabilities of acceptance for
 #'   each move type across all MCMC iterations}
 #' }
-#' 
+#'
 #' @export
-#' 
+#'
 #' @examples
 #' # Simulate data to use
 #' n_groups <- 4
@@ -109,21 +109,21 @@
 #'   prop_missing_data = 0.2,
 #'   zeta = 0.05
 #'  )
-#' 
+#'
 #' n_per_group <- rep(10, n_groups)
 #' range_dates <- c(0, 30)
-#' 
+#'
 #' simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
 #'                              simul_error = TRUE)
 #' obs_dat <- simul_dat$obs_dat
-#' 
+#'
 #' # Set up hyperparameters
 #' hyperparameters <- list(
 #'     shape1_prob_error = 3,
 #'     shape2_prob_error = 12,
 #'     mean_mean_delay = 10,
 #'     mean_CV_delay = 10)
-#' 
+#'
 #' # Set up MCMC
 #' MCMC_settings <- list(
 #' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
@@ -151,13 +151,13 @@
 #'     record_every = 10
 #'   )
 #' )
-#' 
+#'
 #' # Run MCMC
 #' MCMC_result <- RunMCMC(obs_dat,
 #'                        MCMC_settings,
 #'                        hyperparameters,
 #'                        index_dates)
-#' 
+#'
 #' # Results
 #' MCMC_result$theta_chain
 #' MCMC_result$aug_dat_chain
@@ -165,145 +165,145 @@
 #' plot(MCMC_result$logpost_chain, type = "l",
 #'      ylab = "Log Posterior", xlab = "Iteration")
 #' MCMC_result$accept_prob
-#' 
-RunMCMC <- function(obs_dat, 
+#'
+RunMCMC <- function(obs_dat,
                     MCMC_settings,
                     hyperparameters,
                     index_dates) {
-  
+
   # Initialise dimensions and check inputs
   n_dates <- sapply(obs_dat, ncol)
   n_groups <- length(n_dates)
-  
+
   ## Note: need to add checks for obs_dat input e.g. check for all NA obs_dat rows.
   ## Make sure error messages are informative.
-  
+
   check_MCMC_settings(MCMC_settings, index_dates)
-  
+
   #----------------------------------------------------------------------------
   # Initialise augmented data and parameters
-  
+
   aug_dat <- initialise_aug_data(obs_dat,
                                  compute_index_dates_order(index_dates),
                                  MCMC_settings)
   theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
   range_dates <- find_range(obs_dat)
-  
+
   #----------------------------------------------------------------------------
   # Initialise storage of MCMC chains
-  
+
   curr_theta <- theta
   theta_chain <- list()
   theta_chain[[1]] <- curr_theta
-  
+
   curr_aug_dat <- aug_dat
   aug_dat_chain <- list()
   aug_dat_chain[[1]] <- curr_aug_dat
-  
+
   logpost_chain <- rep(NA, (MCMC_settings$chain_properties$n_iter -
                             MCMC_settings$chain_properties$burnin) /
                             MCMC_settings$chain_properties$record_every)
-  
+
   logpost_chain[1] <- lposterior_total(curr_aug_dat,
                                        curr_theta,
                                        obs_dat,
                                        hyperparameters,
                                        index_dates,
                                        range_dates)
-  
+
   # Track acceptance counts for all move types
   n_accepted_D_moves <- 0
   n_proposed_D_moves <- 0
-  
+
   n_accepted_E_moves <- 0
   n_proposed_E_moves <- 0
-  
-  n_accepted_swapE_moves <- 0 
-  n_proposed_swapE_moves <- 0 
-  
+
+  n_accepted_swapE_moves <- 0
+  n_proposed_swapE_moves <- 0
+
   n_accepted_mu_moves <- lapply(seq_len(n_groups),
                                 function(g) rep(0, ncol(index_dates[[g]])))
   n_proposed_mu_moves <- n_accepted_mu_moves
-  
+
   n_accepted_CV_moves <- n_accepted_mu_moves
   n_proposed_CV_moves <- n_accepted_mu_moves
-  
+
   #----------------------------------------------------------------------------
   # Run the MCMC
-  
+
   print("... Burnin ...")
   for (k in seq_len(MCMC_settings$chain_properties$n_iter - 1)) {
-    
+
     output_stuff <- (k >= MCMC_settings$chain_properties$burnin) &
                     (k %% MCMC_settings$chain_properties$record_every) == 0
-    
+
     if (output_stuff) {
       print(sprintf("... %d / %d ...", k,
                     MCMC_settings$chain_properties$n_iter))
     }
-    
+
     # Move some of the D_i (augmented event dates) ----------------------------
     if (MCMC_settings$moves_switch$D_on) {
-      
+
       # Loop over each group
       for (g in seq_len(n_groups)) {
-        
+
         # Loop over each date column in that group
         for(j in seq_len(ncol(curr_aug_dat$D[[g]]))) {
-          
+
           # propose moves for only a certain fraction of dates
           to_update <- sample(seq_len(nrow(obs_dat[[g]])),
             round(nrow(obs_dat[[g]]) *
-                  MCMC_settings$moves_options$fraction_Di_to_update)) 
-          
+                  MCMC_settings$moves_options$fraction_Di_to_update))
+
           n_groups_to_update <- floor(
             length(to_update) /
             MCMC_settings$moves_options$move_D_by_groups_of_size
             )
-          
+
           for(i in seq_len(n_groups_to_update)) {
-            
+
             indices <- to_update[
               MCMC_settings$moves_options$move_D_by_groups_of_size * (i - 1) +
                 (seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))
               ]
-            
+
             tmp <- move_Di(indices,
                            g,
-                           j, 
+                           j,
                            curr_aug_dat,
-                           curr_theta, 
-                           obs_dat, 
-                           hyperparameters, 
+                           curr_theta,
+                           obs_dat,
+                           hyperparameters,
                            index_dates,
-                           range_dates) 
+                           range_dates)
 
             n_proposed_D_moves <- n_proposed_D_moves + 1
             n_accepted_D_moves <- n_accepted_D_moves + tmp$accept
-            
+
             # if accepted move, update accordingly
             if(tmp$accept == 1) curr_aug_dat <- tmp$new_aug_dat
           }
         }
       }
     }
-    
+
     # move some of the E_i (error indicators) ---------------------------------
     if (MCMC_settings$moves_switch$E_on) {
-      
+
       # Loop over each group
       for (g in seq_len(n_groups)) {
 
         # Loop over each date column in each group
         for(j in seq_len(ncol(curr_aug_dat$E[[g]]))) {
-          
+
           # proposing moves for only a certain fraction of dates
           to_update <- sample(seq_len(nrow(obs_dat[[g]])),
             round(nrow(obs_dat[[g]]) *
                   MCMC_settings$moves_options$fraction_Ei_to_update))
 
           n_groups_to_update <- length(to_update)
-          
+
           for (i in seq_len(n_groups_to_update)) {
             tmp <- move_Ei(to_update[i],
                             g,
@@ -314,20 +314,20 @@ RunMCMC <- function(obs_dat,
                             hyperparameters,
                             index_dates,
                             range_dates)
-            
+
             n_proposed_E_moves <- n_proposed_E_moves + 1
             n_accepted_E_moves <- n_accepted_E_moves + tmp$accept
-            
+
             # if accepted move, update accordingly
             if (tmp$accept == 1) curr_aug_dat <- tmp$new_aug_dat
           }
         }
       }
     }
-    
+
     # swap eligible E values (i.e. 0 <-> 1)
     if (MCMC_settings$moves_switch$swapE_on) {
-      
+
       # Loop over each group
       for (g in seq_len(n_groups)) {
 
@@ -343,7 +343,7 @@ RunMCMC <- function(obs_dat,
                          hyperparameters,
                          index_dates,
                          range_dates)
-          
+
           n_proposed_swapE_moves <- n_proposed_swapE_moves + 1
           n_accepted_swapE_moves <- n_accepted_swapE_moves + tmp$accept
           # if accepted move, update accordingly
@@ -351,13 +351,13 @@ RunMCMC <- function(obs_dat,
         }
       }
     }
-    
+
     # Update zeta using Gibbs sampling ----------------------------------------
     if (MCMC_settings$moves_switch$zeta_on) {
       tmp <- move_zeta_gibbs(curr_aug_dat, curr_theta, obs_dat, hyperparameters)
       curr_theta <- tmp$new_theta
     }
-    
+
     # Move mu and CV using log-normal proposals -------------------------------
     for (param in c("mu", "CV")) {
       if (MCMC_settings$moves_switch[[paste0(param,"_on")]]) {
@@ -386,7 +386,7 @@ RunMCMC <- function(obs_dat,
         }
       }
     }
-    
+
     # Record parameter values and corresponding posterior after all moves -----
     if (output_stuff) {
       idx <- (k - MCMC_settings$chain_properties$burnin) /
@@ -402,10 +402,10 @@ RunMCMC <- function(obs_dat,
       # Previous note: CONSIDER DOING THIS USING SAPPLY AFTER THE WHOLE THING
     }
   }
-  
+
   #----------------------------------------------------------------------------
   # Compute acceptance probabilities
-  
+
   accept_prob <- list(
     D_moves = n_accepted_D_moves / n_proposed_D_moves,
     E_moves = n_accepted_E_moves / n_proposed_E_moves,
@@ -419,35 +419,35 @@ RunMCMC <- function(obs_dat,
                         }),
     zeta_moves = 1 # always accepted (Gibbs)
     )
-  
+
   #----------------------------------------------------------------------------
   # Return list of outputs of interest
-  
+
   res <- list(theta_chain = theta_chain,
               aug_dat_chain = aug_dat_chain,
               logpost_chain = logpost_chain,
               accept_prob = accept_prob,
               index_dates = index_dates)
-  
+
   return(res)
 }
 
 #' Compute correlation between the MCMC chains of mean and CV for each delay
-#' 
+#'
 #' @description
 #' This function computes Pearson correlation coefficients between the posterior
 #'  samples of mu and CV for each delay distribution. Optionally, it produces
 #'   scatter plots to visually inspect correlations.
-#' 
-#' 
-#' @param MCMCres The output of function \code{\link{RunMCMC}}. 
+#'
+#'
+#' @param MCMCres The output of function \code{\link{RunMCMC}}.
 #' @param plot A boolean indicating whether to plot the correlations.
 #' @param group_labels Optional character vector of group names for more
 #'  informative plots. If \code{NULL}, group index will be used.
 #' @param date_labels Optional list of character vectors giving the names of
 #'  each date column per group. This is used to automatically generate delay
 #'   labels. If \code{NULL}, delay index will be used.
-#' 
+#'
 #' @return A list of correlation test results (obtained using
 #'  \code{\link{cor.test}}), one per group and delay, assessing correlations
 #'   between the posterior mean and posterior CV for each delay.
@@ -471,21 +471,21 @@ RunMCMC <- function(obs_dat,
 #'   prop_missing_data = 0.2,
 #'   zeta = 0.05
 #'  )
-#' 
+#'
 #' n_per_group <- rep(10, n_groups)
 #' range_dates <- c(0, 30)
-#' 
+#'
 #' simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
 #'                              simul_error = TRUE)
 #' obs_dat <- simul_dat$obs_dat
-#' 
+#'
 #' # Set up hyperparameters
 #' hyperparameters <- list(
 #'     shape1_prob_error = 3,
 #'     shape2_prob_error = 12,
 #'     mean_mean_delay = 10,
 #'     mean_CV_delay = 10)
-#' 
+#'
 #' # Set up MCMC
 #' MCMC_settings <- list(
 #' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
@@ -513,13 +513,13 @@ RunMCMC <- function(obs_dat,
 #'     record_every = 10
 #'   )
 #' )
-#' 
+#'
 #' # Run MCMC
 #' MCMC_result <- RunMCMC(obs_dat,
 #'                        MCMC_settings,
 #'                        hyperparameters,
 #'                        index_dates)
-#'                        
+#'
 #' compute_correlations_mu_CV(MCMCres = MCMC_result,
 #'                            plot = TRUE,
 #'                            group_labels = c("Community-alive",
@@ -531,19 +531,19 @@ RunMCMC <- function(obs_dat,
 #'                               c("Onset", "Death", "Report"),
 #'                               c("Onset", "Hosp", "Disch", "Report"),
 #'                               c("Onset", "Hosp", "Death", "Report")
-#'                             ))  
+#'                             ))
 compute_correlations_mu_CV <- function(MCMCres,
                                        plot = TRUE,
                                        group_labels = NULL,
                                        date_labels = NULL) {
-  
+
   iterations <- seq_along(MCMCres$theta_chain)
   n_groups <- length(MCMCres$theta_chain[[1]]$mu)
   n_delays <- sapply(MCMCres$theta_chain[[1]]$mu, length)
-  
+
   # default group labels
   if (is.null(group_labels)) group_labels <- paste("Group", seq_len(n_groups))
-  
+
   # create delay labels
   if (!is.null(date_labels)) {
     delay_labels <- lapply(seq_along(MCMCres$index_dates), function(g) {
@@ -555,18 +555,18 @@ compute_correlations_mu_CV <- function(MCMCres,
     # default delay labels
     delay_labels <- lapply(n_delays, function(n) paste("Delay", seq_len(n)))
   }
-  
+
   cor_mu_CV <- list()
   df_list <- list()
-  
+
   for (g in seq_len(n_groups)) {
     cor_mu_CV[[g]] <- list()
     for (d in seq_len(n_delays[g])) {
       mu_vals <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[g]][d])
       CV_vals <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[g]][d])
-      
+
       cor_mu_CV[[g]][[d]] <- cor.test(mu_vals, CV_vals)
-      
+
       df_list[[length(df_list) + 1]] <- data.frame(
         mu = mu_vals,
         CV = CV_vals,
@@ -575,13 +575,13 @@ compute_correlations_mu_CV <- function(MCMCres,
       )
     }
   }
-  
+
   # plot
   if (plot) {
-    
+
     full_df <- bind_rows(df_list) %>%
       mutate(panel_label = paste0(group, ": ", delay))
-    
+
     cor_plot <- ggplot(full_df, aes(x = mu, y = CV)) +
       geom_point(alpha = 0.5, size = 1.2) +
       facet_wrap(~ panel_label) +
@@ -594,14 +594,14 @@ compute_correlations_mu_CV <- function(MCMCres,
         )
     print(cor_plot)
   }
-  
+
   return(cor_mu_CV)
 }
 
 
 
-#' Compute autocorrelation for each parameter in the MCMC chains 
-#' 
+#' Compute autocorrelation for each parameter in the MCMC chains
+#'
 #' @param MCMCres The output of function \code{\link{RunMCMC}}.
 #' @param group_labels Optional character vector of group names for more
 #'  informative plots. If \code{NULL}, group index will be used.
@@ -628,21 +628,21 @@ compute_correlations_mu_CV <- function(MCMCres,
 #'   prop_missing_data = 0.2,
 #'   zeta = 0.05
 #'  )
-#' 
+#'
 #' n_per_group <- rep(10, n_groups)
 #' range_dates <- c(0, 30)
-#' 
+#'
 #' simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
 #'                              simul_error = TRUE)
 #' obs_dat <- simul_dat$obs_dat
-#' 
+#'
 #' # Set up hyperparameters
 #' hyperparameters <- list(
 #'     shape1_prob_error = 3,
 #'     shape2_prob_error = 12,
 #'     mean_mean_delay = 10,
 #'     mean_CV_delay = 10)
-#' 
+#'
 #' # Set up MCMC
 #' MCMC_settings <- list(
 #' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
@@ -670,13 +670,13 @@ compute_correlations_mu_CV <- function(MCMCres,
 #'     record_every = 10
 #'   )
 #' )
-#' 
+#'
 #' # Run MCMC
 #' MCMC_result <- RunMCMC(obs_dat,
 #'                        MCMC_settings,
 #'                        hyperparameters,
 #'                        index_dates)
-#'                        
+#'
 #' compute_autocorr(MCMCres = MCMC_result,
 #'                  group_labels = c("Community-alive",
 #'                                   "Community-dead",
@@ -687,17 +687,17 @@ compute_correlations_mu_CV <- function(MCMCres,
 #'                    c("Onset", "Death", "Report"),
 #'                    c("Onset", "Hosp", "Disch", "Report"),
 #'                    c("Onset", "Hosp", "Death", "Report")
-#'                  ))  
+#'                  ))
 compute_autocorr <- function(MCMCres,
                              group_labels = NULL,
                              date_labels = NULL) {
-  
+
   autocorr <- list(mu = list(), CV = list())
-  
+
   n_groups <- length(MCMCres$index_dates)
   n_delays <- sapply(MCMCres$index_dates, ncol)
   iterations <- seq_len(length(MCMCres$theta_chain))
-  
+
   # Create delay labels if date_labels are provided
   if (!is.null(date_labels)) {
     delay_labels <- lapply(seq_along(MCMCres$index_dates), function(g) {
@@ -708,43 +708,43 @@ compute_autocorr <- function(MCMCres,
   } else {
     delay_labels <- lapply(n_delays, function(n) paste0("Delay ", seq_len(n)))
   }
-  
+
   if (is.null(group_labels)) {
     group_labels <- paste("Group", seq_len(n_groups))
   }
-  
+
   # Estimate plot layout
   total_plots <- sum(n_delays) * 2 + 1  # mu + CV + zeta
   n_cols <- ceiling(sqrt(total_plots))
   n_rows <- ceiling(total_plots / n_cols)
   par(mfrow = c(n_rows, n_cols), mar = c(4, 4, 3, 1))
-  
+
   for (g in seq_len(n_groups)) {
     autocorr$mu[[g]] <- list()
     autocorr$CV[[g]] <- list()
-    
+
     for (d in seq_len(n_delays[g])) {
       mu_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$mu[[g]][d])
       CV_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$CV[[g]][d])
-      
+
       mu_label <- sprintf("Mu: %s, %s", group_labels[g], delay_labels[[g]][d])
       CV_label <- sprintf("CV: %s, %s", group_labels[g], delay_labels[[g]][d])
-      
+
       autocorr$mu[[g]][[d]] <- acf(mu_chain, main = mu_label)
       autocorr$CV[[g]][[d]] <- acf(CV_chain, main = CV_label)
     }
   }
-  
+
   # zeta
   zeta_chain <- sapply(iterations, function(e) MCMCres$theta_chain[[e]]$zeta)
   autocorr$zeta <- acf(zeta_chain, main = "Zeta")
-  
+
   return(autocorr)
 }
 
 #' Computes posterior estimates of parameters from the MCMC chain
-#' 
-#' @param MCMCres Output from \code{\link{RunMCMC}}. 
+#'
+#' @param MCMCres Output from \code{\link{RunMCMC}}.
 #' @param central A character string specifying what the central estimate
 #'  should be (either \code{"median"} or \code{"mean"} posterior)
 #' @param CrI A scalar in [0;1] used to compute the posterior credible
@@ -763,7 +763,7 @@ compute_autocorr <- function(MCMCres,
 #'   data point is not missing, it is recorded with error.}
 #' }
 #' The posterior distributions of parameters are then plotted together with
-#'  \code{theta_true}. 
+#'  \code{theta_true}.
 #' @param plot A boolean specifying whether to generate boxplots of the
 #'  posterior estimates.
 #' @param group_labels A character vector of length equal to the number of
@@ -771,7 +771,7 @@ compute_autocorr <- function(MCMCres,
 #'   \code{c("Community-alive", "Hospitalised-dead")}.
 #' @param date_labels A list of character vectors giving the names of each date
 #'  column per group. This is used to automatically generate delay labels.
-#'  
+#'
 #' @return A list with posterior estimates and optional plots:
 #' \itemize{
 #'  \item{\code{logpost}: A vector of three values, containing the central
@@ -794,15 +794,15 @@ compute_autocorr <- function(MCMCres,
 #' If \code{plot = TRUE}, a summary plot of the posterior distributions is also
 #'  displayed. This includes boxplots for the log-posterior, zeta, and the mu
 #'   and cv of delays for each group.
-#' 
+#'
 #' @import graphics
 #' @import ggplot2
 #' @import patchwork
 #' @importFrom colorspace scale_fill_discrete_qualitative
 #' @export
-#' 
+#'
 #' @seealso \code{\link{RunMCMC}}
-#' 
+#'
 #' @examples
 #' # Simulate data to use
 #' n_groups <- 4
@@ -818,21 +818,21 @@ compute_autocorr <- function(MCMCres,
 #'   prop_missing_data = 0.2,
 #'   zeta = 0.05
 #'  )
-#' 
+#'
 #' n_per_group <- rep(10, n_groups)
 #' range_dates <- c(0, 30)
-#' 
+#'
 #' simul_dat <- simul_true_data(theta, n_per_group, range_dates, index_dates,
 #'                              simul_error = TRUE)
 #' obs_dat <- simul_dat$obs_dat
-#' 
+#'
 #' # Set up hyperparameters
 #' hyperparameters <- list(
 #'     shape1_prob_error = 3,
 #'     shape2_prob_error = 12,
 #'     mean_mean_delay = 10,
 #'     mean_CV_delay = 10)
-#' 
+#'
 #' # Set up MCMC
 #' MCMC_settings <- list(
 #' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
@@ -860,13 +860,13 @@ compute_autocorr <- function(MCMCres,
 #'     record_every = 10
 #'   )
 #' )
-#' 
+#'
 #' # Run MCMC
 #' MCMC_result <- RunMCMC(obs_dat,
 #'                        MCMC_settings,
 #'                        hyperparameters,
 #'                        index_dates)
-#' 
+#'
 #' # Get summary
 #' get_param_posterior_estimates(MCMCres = MCMC_result,
 #'                               central = "mean",
@@ -884,7 +884,7 @@ compute_autocorr <- function(MCMCres,
 #'                                 c("Onset", "Hosp", "Death", "Report")
 #'                               ))
 #'
-#' 
+#'
 get_param_posterior_estimates <- function(MCMCres,
                                           central = c("median", "mean"),
                                           CrI = 0.95,
@@ -892,42 +892,42 @@ get_param_posterior_estimates <- function(MCMCres,
                                           plot = TRUE,
                                           group_labels = NULL,
                                           date_labels = NULL) {
-  
+
   # checks -------------------------------------------------------------------
-  
+
   if (is.null(group_labels)) stop("Supply group_labels (character vector)")
   if (length(group_labels) != length(MCMCres$aug_dat_chain[[1]]$D)) {
     stop("group_labels length must match the number of groups")
   }
   if (is.null(date_labels)) stop("Supply date_labels (list of character vectors)")
   if (is.null(MCMCres$index_dates)) stop("MCMCres must contain index_dates")
-  
+
   # create delay labels using index_dates and date_labels --------------------
   generate_delay_labels <- function(index_dates, date_labels) {
     delay_labels <- list()
     delay_orders <- list()
-    
+
     for (g in seq_along(index_dates)) {
       idx_mat <- index_dates[[g]]
       labels <- date_labels[[g]]
-      
+
       delays <- apply(idx_mat, 2, function(col) paste0(labels[col[1]], " to ", labels[col[2]]))
-      
+
       # Ordering by end date (col[2]) then start date (col[1])
       ordering <- order(idx_mat[2, ], idx_mat[1, ])
-      
+
       delay_labels[[g]] <- delays[ordering]
       delay_orders[[g]] <- ordering
     }
-    
+
     list(labels = delay_labels, order = delay_orders)
   }
-  
+
   index_dates <- MCMCres$index_dates
   delay_info <- generate_delay_labels(index_dates, date_labels)
   delay_labels <- delay_info$labels
   delay_order <- delay_info$order
-  
+
   delay_levels_df <- do.call(rbind, lapply(seq_along(group_labels), function(g) {
     data.frame(
       group = group_labels[g],
@@ -935,33 +935,33 @@ get_param_posterior_estimates <- function(MCMCres,
       delay_order = delay_order[[g]]
     )
   }))
-  
+
   iterations <- seq_len(length(MCMCres$theta_chain))
   output <- list()
-  
+
   # Log posterior summary ----------------------------------------------------
   output$logpost <- c(
     get(central)(MCMCres$logpost_chain),
     quantile(MCMCres$logpost_chain, c((1 - CrI) / 2, CrI + (1 - CrI) / 2))
   )
-  
+
   # Get parameter estimates --------------------------------------------------
   output$theta <- list(mu = list(), CV = list())
   if (plot) plot_data <- list()
-  
+
   for (group_idx in seq_along(group_labels)) {
     for (param in c("mu", "CV")) {
       values <- lapply(seq_len(ncol(index_dates[[group_idx]])), function(j) {
         sapply(iterations, function(e) MCMCres$theta_chain[[e]][[param]][[group_idx]][j])
       })
-      
+
       est_matrix <- sapply(seq_along(values), function(j) {
         c(get(central)(values[[j]]),
           quantile(values[[j]], c((1 - CrI) / 2, 1 - (1 - CrI) / 2)))
       })
-      
+
       output$theta[[param]][[group_idx]] <- est_matrix
-      
+
       if (plot) {
         plot_data[[length(plot_data) + 1]] <- do.call(
           rbind, lapply(seq_along(values), function(j) {
@@ -1022,24 +1022,24 @@ get_param_posterior_estimates <- function(MCMCres,
         panel.border = element_rect(colour = "grey", fill = NA),
         axis.title.y = element_text(margin = margin(r = 10))
       )
-    
+
     # Add reference line for true zeta if supplied
     if (!is.null(theta_true) && !is.null(theta_true$zeta)) {
       p2 <- p2 + geom_hline(yintercept = theta_true$zeta,
                             linetype = "dashed", color = "black")
     }
-    
+
     # plot mu delays ---------------------------------------------------------
     df_all <- do.call(rbind, plot_data)
     df_params <- df_all[df_all$param %in% c("mu", "CV"), ]
 
-    df_mu <- subset(df_params, param == "mu") 
-    
+    df_mu <- subset(df_params, param == "mu")
+
     df_mu <- df_mu %>%
       left_join(delay_levels_df, by = c("group", "delay")) %>%
       mutate(delay = factor(delay, levels = unique(delay[order(delay_order)]))) %>%
       select(-delay_order)
-    
+
     # Consistent colours
     all_delays <- sort(unique(df_mu$delay))
     delay_colours <- qualitative_hcl(length(all_delays), palette = "Dynamic")
@@ -1060,7 +1060,7 @@ get_param_posterior_estimates <- function(MCMCres,
         axis.title.y = element_text(margin = margin(r = 10)),
         legend.position = "none"
       )
-    
+
     # Add reference lines for true mu values if supplied
     if (!is.null(theta_true) && !is.null(theta_true$mu)) {
       df_mu_true <- do.call(rbind, lapply(seq_along(theta_true$mu), function(g) {
@@ -1079,7 +1079,7 @@ get_param_posterior_estimates <- function(MCMCres,
 
     # plot cv delays ---------------------------------------------------------
     df_cv <- subset(df_params, param == "CV")
-    
+
     df_cv <- df_cv %>%
       left_join(delay_levels_df, by = c("group", "delay")) %>%
       mutate(delay = factor(delay, levels = unique(delay[order(delay_order)]))) %>%
@@ -1101,7 +1101,7 @@ get_param_posterior_estimates <- function(MCMCres,
         axis.title.y = element_text(margin = margin(r = 10)),
         legend.position = "none"
       )
-    
+
     # Add reference lines for true CV values if supplied
     if (!is.null(theta_true) && !is.null(theta_true$CV)) {
       df_cv_true <- do.call(rbind, lapply(seq_along(theta_true$CV), function(g) {
@@ -1117,7 +1117,7 @@ get_param_posterior_estimates <- function(MCMCres,
         linetype = "dashed"
       )
     }
-    
+
     # plot together ----------------------------------------------------------
     left_column <- p1 / p2
     right_column <- p3 / p4

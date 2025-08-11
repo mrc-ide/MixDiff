@@ -798,7 +798,7 @@ compute_autocorr <- function(MCMCres,
 #' @import graphics
 #' @import ggplot2
 #' @import patchwork
-#' @importFrom colorspace scale_fill_discrete_qualitative
+#' @importFrom colorspace scale_fill_discrete_qualitative qualitative_hcl
 #' @export
 #'
 #' @seealso \code{\link{RunMCMC}}

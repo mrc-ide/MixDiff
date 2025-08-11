@@ -1046,32 +1046,32 @@ swap_Ei <- function(i,
   date_idx_resample <- date_idx[all_E_values %in% -1] ## works well if there are more than 1
 
   ## ANNE: first step is moving the E = 1 date(s) to E = 0
-  proposed_aug_dat_intermediate <- curr_aug_dat
-  proposed_aug_dat_intermediate$E[[group_idx]][i, date_idx_E1_to_E0] <- 0
-  proposed_aug_dat_intermediate$D[[group_idx]][i, date_idx_E1_to_E0] <-
+  proposed_aug_dat_step1 <- curr_aug_dat
+  proposed_aug_dat_step1$E[[group_idx]][i, date_idx_E1_to_E0] <- 0
+  proposed_aug_dat_step1$D[[group_idx]][i, date_idx_E1_to_E0] <-
     propose_move_from_E1_to_E0(i, group_idx, date_idx_E1_to_E0,
                                curr_aug_dat, theta, obs_dat, hyperparameters,
                                index_dates, range_dates)
 
   ## ANNE: the second step is then to move the other dates (now moving from E = 0 to E = 1) to
   ## dates that are plausible given the delay parameters
-  proposed_aug_dat <- proposed_aug_dat_intermediate
+  proposed_aug_dat_step2 <- proposed_aug_dat_step1
   proposed_aug_dat$E[[group_idx]][i, date_idx_E0_to_E1] <- 1
   proposed_aug_dat$D[[group_idx]][i, date_idx_E0_to_E1] <-
     propose_move_from_E0_to_E1(
-      i, group_idx, date_idx_E0_to_E1, proposed_aug_dat_intermediate,
+      i, group_idx, date_idx_E0_to_E1, proposed_aug_dat_step1,
       theta, obs_dat, hyperparameters, index_dates, range_dates
     )
 
   ## ANNE: the third then resamples the NA dates so
   ## that they are compatible with the new proposed dates.
   correct_factor_new_delay <- 0
-  proposed_aug_dat_fin <- proposed_aug_dat
+  proposed_aug_dat_step3 <- proposed_aug_dat_step2
   if(length(date_idx_resample) > 0) { ## If there are any missing dates for this individual
     for(k in date_idx_resample) { ## for each missing date
-      tmp_delay <- propose_new_delay(i, group_idx, k, proposed_aug_dat_fin,
+      tmp_delay <- propose_new_delay(i, group_idx, k, proposed_aug_dat_step3,
                                      theta, obs_dat, hyperparameters, index_dates, range_dates)
-      proposed_aug_dat_fin <- tmp_delay$proposed_aug_dat## propose a new date compatible with newly drawn dates
+      proposed_aug_dat_step3 <- tmp_delay$proposed_aug_dat## propose a new date compatible with newly drawn dates
       correct_factor_new_delay <- correct_factor_new_delay +
         get_correct_factor_new_delay(tmp_delay$curr_delay, tmp_delay$sample_delay, theta, group_idx, tmp_delay$which_delay)["prob_proposing_new_value"]
     }
@@ -1079,11 +1079,11 @@ swap_Ei <- function(i,
 
   ## mimic the reverse moved for correction factor calc
   # step 1
-  proposed_aug_dat_rev1 <- proposed_aug_dat_fin
+  proposed_aug_dat_rev1 <- proposed_aug_dat_step3
   proposed_aug_dat_rev1$E[[group_idx]][i, date_idx_E0_to_E1] <- 0
   proposed_aug_dat_rev1$D[[group_idx]][i, date_idx_E0_to_E1] <-
     propose_move_from_E1_to_E0(i, group_idx, date_idx_E0_to_E1,
-                               proposed_aug_dat_fin, theta, obs_dat, hyperparameters,
+                               proposed_aug_dat_step3, theta, obs_dat, hyperparameters,
                                index_dates, range_dates)
   # step 2
   proposed_aug_dat_rev2 <- proposed_aug_dat_rev1
@@ -1132,14 +1132,14 @@ swap_Ei <- function(i,
 
   ratio_post_obs <- sum(
     LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat_fin, theta, obs_dat, group_idx,
+      proposed_aug_dat_step3, theta, obs_dat, group_idx,
       date_idx_E1_to_E0, i, range_dates = range_dates
     ) - LL_observation_term_by_group_delay_and_indiv(
       curr_aug_dat, theta, obs_dat, group_idx,
       date_idx_E1_to_E0, i, range_dates = range_dates)
   ) + sum(
     LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat_fin, theta, obs_dat, group_idx,
+      proposed_aug_dat_step3, theta, obs_dat, group_idx,
       date_idx_E0_to_E1, i, range_dates = range_dates
     ) - LL_observation_term_by_group_delay_and_indiv(
       curr_aug_dat, theta, obs_dat, group_idx,
@@ -1149,7 +1149,7 @@ swap_Ei <- function(i,
   if(length(date_idx_resample) > 0) {
     ratio_post_obs <- ratio_post_obs + sum(
       LL_observation_term_by_group_delay_and_indiv(
-        proposed_aug_dat_fin, theta, obs_dat, group_idx,
+        proposed_aug_dat_step3, theta, obs_dat, group_idx,
         date_idx_resample, i, range_dates = range_dates
       ) - LL_observation_term_by_group_delay_and_indiv(
         curr_aug_dat, theta, obs_dat, group_idx,
@@ -1157,18 +1157,18 @@ swap_Ei <- function(i,
     )
   }
   ## should be the same as:
-  # LL_observation_term(proposed_aug_dat_fin, theta, obs_dat, range_dates) -
+  # LL_observation_term(proposed_aug_dat_step3, theta, obs_dat, range_dates) -
   # LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
 
   ratio_post_error <- sum(
     LL_error_term_by_group_delay_and_indiv(
-      proposed_aug_dat_fin, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
+      proposed_aug_dat_step3, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
     ) - LL_error_term_by_group_delay_and_indiv(
       curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
     )
   ) + sum(
     LL_error_term_by_group_delay_and_indiv(
-      proposed_aug_dat_fin, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
+      proposed_aug_dat_step3, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
     ) - LL_error_term_by_group_delay_and_indiv(
       curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
     )
@@ -1176,37 +1176,37 @@ swap_Ei <- function(i,
   if(length(date_idx_resample) > 0) {
     ratio_post_error <- ratio_post_error + sum(
       LL_error_term_by_group_delay_and_indiv(
-        proposed_aug_dat_fin, theta, obs_dat, group_idx, date_idx_resample, i
+        proposed_aug_dat_step3, theta, obs_dat, group_idx, date_idx_resample, i
       ) - LL_error_term_by_group_delay_and_indiv(
         curr_aug_dat, theta, obs_dat, group_idx, date_idx_resample, i
       )
     )
   }
   ## should be the same as:
-  # LL_error_term(proposed_aug_dat_fin, theta, obs_dat) -
+  # LL_error_term(proposed_aug_dat_step3, theta, obs_dat) -
   # LL_error_term(curr_aug_dat, theta, obs_dat)
-  ## LL_error_term_slow(proposed_aug_dat_fin, theta, obs_dat) -
+  ## LL_error_term_slow(proposed_aug_dat_step3, theta, obs_dat) -
   ## LL_error_term_slow(curr_aug_dat, theta, obs_dat)
 
   ratio_post_delay <- 0
   for (d in delay_idx) {
     ratio_post_delay <- ratio_post_delay + sum(
       LL_delays_term_by_group_delay_and_indiv(
-        proposed_aug_dat_fin, theta, obs_dat, group_idx, d, i, index_dates
+        proposed_aug_dat_step3, theta, obs_dat, group_idx, d, i, index_dates
       ) - LL_delays_term_by_group_delay_and_indiv(
         curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
       )
     )
   }
   ## should be the same as:
-  # LL_delays_term(proposed_aug_dat_fin, theta, obs_dat, index_dates) -
+  # LL_delays_term(proposed_aug_dat_step3, theta, obs_dat, index_dates) -
   # LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
 
   ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
 
   ### should be the same as:
   ## ANNE: this may need to be checked more thoroughly but does work on one example
-  # ratio_post_long <- lposterior_total(proposed_aug_dat_fin, theta, obs_dat,
+  # ratio_post_long <- lposterior_total(proposed_aug_dat_step3, theta, obs_dat,
   # hyperparameters, index_dates, range_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates)
 
@@ -1229,8 +1229,8 @@ swap_Ei <- function(i,
         i = i,
         group_idx = group_idx,
         date_idx = date_idx_E0_to_E1[e],
-        curr_aug_dat = proposed_aug_dat_intermediate,
-        proposed_aug_dat = proposed_aug_dat,
+        curr_aug_dat = proposed_aug_dat_step1,
+        proposed_aug_dat = proposed_aug_dat_step2,
         theta = theta,
         obs_dat = obs_dat,
         hyperparameters = hyperparameters,
@@ -1283,7 +1283,7 @@ swap_Ei <- function(i,
   # accept/reject step
   tmp <- log(runif(1))
   if (tmp < p_accept) { # accepting with a certain probability
-    new_aug_dat <- proposed_aug_dat_fin
+    new_aug_dat <- proposed_aug_dat_step3
     accept <- 1
   } else { # reject
     new_aug_dat <- curr_aug_dat

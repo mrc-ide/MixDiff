@@ -552,7 +552,7 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
 
     # Mean and CV of delays
     mu <- theta$mu[[group_idx]][which_delay[e]]
-    cv <- theta$CV[[group_idx]][which_delay][e]
+    cv <- theta$CV[[group_idx]][which_delay[e]]
 
     # Probability mass for delay after adjusting for invalid delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) / # ANNE: calculating the probability of randomly drawing the proposed delay
@@ -730,7 +730,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 
     # Mean and CV of delays
     mu <- theta$mu[[group_idx]][which_delay[e]]
-    cv <- theta$CV[[group_idx]][which_delay][e]
+    cv <- theta$CV[[group_idx]][which_delay[e]]
 
     # Probability mass for delay adjusting for invalid delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /

@@ -362,7 +362,7 @@ RunMCMC <- function(obs_dat,
     for (param in c("mu", "CV")) {
       if (MCMC_settings$moves_switch[[paste0(param,"_on")]]) {
         for (g in seq_len(n_groups)) {
-          for (j in seq_length(ncol(index_dates[[g]]))) { #for (j in seq(2, ncol(curr_aug_dat$D[[g]]))) {
+          for (j in seq_len(ncol(index_dates[[g]]))) { #for (j in seq(2, ncol(curr_aug_dat$D[[g]]))) {
             tmp <- move_lognormal(
               what = param,
               group_idx = g,

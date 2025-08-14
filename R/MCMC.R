@@ -184,7 +184,7 @@ RunMCMC <- function(obs_dat,
   # Initialise augmented data and parameters
 
   aug_dat <- initialise_aug_data(obs_dat,
-                                 compute_index_dates_order(index_dates),
+                                 index_dates, #compute_index_dates_order(index_dates),
                                  MCMC_settings)
   theta <- initialise_theta_from_aug_dat(aug_dat, index_dates)
   range_dates <- find_range(obs_dat)

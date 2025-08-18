@@ -191,27 +191,30 @@ find_params_gamma <- function(mean, sigma = mean * CV, CV) {
 #'    group. 
 #' @export
 #' @examples
-#' ### Number of groups of individuals to simulate
-#' n_groups <- 2
-#' ### Number of dates to simulate for each group
-#' n_dates <- c(2, 3)
-#' ### Setting up the parameters for the simulation
+#' # Number of groups of individuals to simulate
+#' n_groups <- 3
+#' # Number of dates to simulate for each group
+#' n_dates <- c(2, 3, 4)
+#' # Setting up the parameters for the simulation
 #' theta <- list()
-#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
-#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
-#' ### Number of individuals to simulate in each group
+#' theta$mu <- list(5, c(10, 15), c(10, 15, 20)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5)) # cv of these delays
+#' # Number of individuals to simulate in each group
 #' n_per_group <- rep(10, n_groups)
-#' ### Range of dates in which to draw the first set of dates for each group
+#' # Range of dates in which to draw the first set of dates for each group
 #' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
 #'                              as.Date("01/01/2015", "%d/%m/%Y")))
-#' ### Which delays to use to simulate subsequent dates from the first, in each
-#'  group?
-#' index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
-#' ### Perform the simulation
+#' # Which delays to use to simulate subsequent dates from the first, in each
+#'  # group?
+#' index_dates <- list(matrix(c(1, 2), nrow = 2),
+#'                     cbind(c(1, 2), c(1, 3)),
+#'                     cbind(c(1, 2), c(2, 3),c(1, 4)))
+#' # Perform the simulation
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-#' ### Compute the first delay for first individual in first group
-#' compute_delta_group_delay_and_indiv(D$true_dat, group_idx = 1, indiv_idx = 1,
-#'  delay_idx = 1, index_dates)
+#' # Compute the first delay for first individual in first group
+#' compute_delta_group_delay_and_indiv(D$true_dat, group_idx = 3, indiv_idx = 1,
+#'  delay_idx = 3, index_dates)
+#'
 compute_delta_group_delay_and_indiv <- function(D, group_idx, indiv_idx,
                                                 delay_idx, index_dates) {
   
@@ -240,25 +243,28 @@ compute_delta_group_delay_and_indiv <- function(D, group_idx, indiv_idx,
 #' @export
 #' @examples
 #' ### Number of groups of individuals to simulate
-#' n_groups <- 2
+#' n_groups <- 3
 #' ### Number of dates to simulate for each group
-#' n_dates <- c(2, 3)
+#' n_dates <- c(2, 3, 4)
 #' ### Setting up the parameters for the simulation
 #' theta <- list()
-#' theta$mu <- list(5, c(10, 15)) # mean delays, for each group
-#' theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
+#' theta$mu <- list(5, c(10, 15), c(10, 15, 20)) # mean delays, for each group
+#' theta$CV <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5)) # cv of these delays
 #' ### Number of individuals to simulate in each group
 #' n_per_group <- rep(10, n_groups)
 #' ### Range of dates in which to draw the first set of dates for each group ###
 #' range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
 #'  as.Date("01/01/2015", "%d/%m/%Y")))
 #' ### Which delays to use to simulate subsequent dates from the first, in each
-#'  group?
-#' index_dates <- list(matrix(c(1, 2), nrow=2), cbind(c(1, 2), c(1, 3)))
+#'  # group?
+#' index_dates <- list(matrix(c(1, 2), nrow = 2),
+#'                     cbind(c(1, 2), c(1, 3)),
+#'                     cbind(c(1, 2), c(2, 3),c(1, 4)))
 #' ### Perform the simulation
 #' D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 #' ### Compute the corresponding delays
 #' Delays <- compute_delta(D$true_dat, index_dates)
+#'
 compute_delta <- function(D, index_dates) {
   
   Delta <- lapply(seq_len(length(D)), function(g) {
@@ -281,7 +287,6 @@ compute_delta <- function(D, index_dates) {
 #' @param obs_dat A list of data, in the format of the first element (called
 #'  \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}. 
 #' @return A vector of two integers coresponding to the range in \code{obs_dat}. 
-#' @import stats
 #' @export
 #' @examples
 #' ### Number of groups of individuals to simulate
@@ -368,7 +373,7 @@ find_range <- function(obs_dat) {
 #' index_dates <- list(matrix(c(1, 2), nrow = 2), 
 #'                        cbind(c(1, 2), c(1, 3)), 
 #'                        cbind(c(1, 2), c(2, 3), c(1, 4)), 
-#'                        cbind(c(1, 2), c(2, 3), c(1, 4)) )
+#'                        cbind(c(1, 2), c(2, 3), c(1, 4)))
 #' index_dates_order <- compute_index_dates_order(index_dates)
 compute_index_dates_order <- function(index_dates) {
   
@@ -421,8 +426,9 @@ compute_index_dates_order <- function(index_dates) {
 }
 
 
-
-
+#' Check MCMC settings
+#' 
+#' @export
 check_MCMC_settings <- function(MCMC_settings, index_dates) {
   if (MCMC_settings$chain_properties$n_iter < MCMC_settings$chain_properties$burnin)
     stop("Burnin must be <= n_iter")

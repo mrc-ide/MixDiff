@@ -54,7 +54,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #'     (\code{E=1}), and where \code{obs_dat} is recorded with no error
 #'      (\code{E=0})}
 #' }
-#' @import stats
+#' @importFrom stats median
 #' @export
 #' @examples
 #' # Number of groups of individuals to simulate
@@ -175,7 +175,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
         }
       }
 
-      # now deal with missing dates - think this part is the issue currently
+      # now deal with missing dates
       missing_dates <- which(is.na(D[[g]][e, ]))
       while (length(missing_dates) > 0) {
 
@@ -277,7 +277,7 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
 #'  \item{\code{zeta}}{: A scalar in [0;1] giving the probability that, if a
 #'   data point is not missing, it is recorded with error.}
 #' }
-#' @import stats
+#' @importFrom stats sd
 #' @export
 #' @examples
 #' ### Number of groups of individuals to simulate ###

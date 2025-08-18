@@ -452,7 +452,7 @@ RunMCMC <- function(obs_dat,
 #'  \code{\link{cor.test}}), one per group and delay, assessing correlations
 #'   between the posterior mean and posterior CV for each delay.
 #' @import graphics
-#' @import stats
+#' @importFrom stats cor.test
 #' @import ggplot2
 #' @import dplyr
 #' @export
@@ -611,7 +611,7 @@ compute_correlations_mu_CV <- function(MCMCres,
 #' @return A list of autocorrelation results and plots for each parameter: mu,
 #'  CV and zeta (obtained using the function \code{\link{acf}}).
 #' @import graphics
-#' @import stats
+#' @importFrom stats acf
 #' @export
 #' @examples
 #' # Simulate data to use

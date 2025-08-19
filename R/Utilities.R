@@ -353,7 +353,7 @@ find_range <- function(obs_dat) {
 #'   sure the chosen value is consistent with the ordering of dates in that
 #'    group, and hence will not generate a null likelihood. 
 #' 
-#' @return A list of same lenght as index_dates, containing indications on
+#' @return A list of same length as index_dates, containing indications on
 #'  ordering of dates for each group. More specifically, each element of
 #'   \code{index_dates_order} is a matrix with 2 rows and a number of columns
 #'    corresponding to the delays with order rules for that group.
@@ -379,49 +379,49 @@ compute_index_dates_order <- function(index_dates) {
   
   index_dates_order <- index_dates
   
-  number_cols_added_at_this_round <- 0
-  for (e in seq_along(index_dates)) {
-    tmp <- index_dates_order[[e]]
-    link <- tmp[2, tmp[2, ] %in% tmp[1, ]]
-    for (k in link) {
-      for (i in which(tmp[2, ] == k)) {
-        for (j in which(tmp[1, ] == k)) {
-          # this means the rule obtained by transitivity is not yet present -->
-          # needs to be added
-          if (!any(sapply(
-            1:ncol(tmp), function(e) all(tmp[, e] == c(tmp[1, i], tmp[2, j]))))
-            ) {
-            index_dates_order[[e]] <- cbind(index_dates_order[[e]],
-                                            c(tmp[1, i], tmp[2, j]))
-            number_cols_added_at_this_round <- number_cols_added_at_this_round + 1
+  # Remove duplicates
+  for (e in seq_along(index_dates_order)) {
+    index_dates_order[[e]] <- unique(t(index_dates_order[[e]]), MARGIN = 1)
+    index_dates_order[[e]] <- t(index_dates_order[[e]])
+  }
+  
+  has_changed <- TRUE
+  while (has_changed) {
+    has_changed <- FALSE
+    for (e in seq_along(index_dates_order)) {
+      current_rules <- as.matrix(index_dates_order[[e]])
+      
+      all_pairs <- t(current_rules)
+      new_pairs_list <- list()
+      
+      # Find new transitive relationships e.g. if A -> B and B -> C then A -> C
+      for (i in 1:nrow(all_pairs)) {
+        for (j in 1:nrow(all_pairs)) {
+          if (all_pairs[i, 2] == all_pairs[j, 1]) {
+            new_rule <- c(all_pairs[i, 1], all_pairs[j, 2])
+            # Add the new rule to a temp list
+            new_pairs_list[[length(new_pairs_list) + 1]] <- new_rule
           }
+        }
+      }
+      
+      # Add new rules if any were found
+      if (length(new_pairs_list) > 0) {
+        # Convert the list of new pairs into a matrix
+        new_matrix <- do.call(cbind, new_pairs_list)
+        # Combine the original and new rules and then find unique columns
+        combined_rules <- cbind(current_rules, new_matrix)
+        unique_rules <- unique(t(combined_rules), MARGIN = 1)
+        
+        # Check if new rules were added
+        if (nrow(unique_rules) > ncol(current_rules)) {
+          index_dates_order[[e]] <- t(unique_rules)
+          has_changed <- TRUE
         }
       }
     }
   }
   
-  while (number_cols_added_at_this_round > 0) {
-    number_cols_added_at_this_round <- 0
-    for (e in seq_along(index_dates)) {
-      tmp <- index_dates_order[[e]]
-      link <- tmp[2, tmp[2, ] %in% tmp[1, ]]
-      for (k in link) {
-        for (i in which(tmp[2, ] == k)) {
-          for (j in which(tmp[1, ] == k)) {
-            # this means the rule obtained by transitivity is not yet present -->
-            # needs to be added
-            if (!any(sapply(
-              1:ncol(tmp), function(e) all(tmp[, e] == c(tmp[1, i], tmp[2, j]))))
-              ) {
-              index_dates_order[[e]] <- cbind(index_dates_order[[e]],
-                                              c(tmp[1, i], tmp[2, j]))
-              number_cols_added_at_this_round <- number_cols_added_at_this_round + 1
-            }
-          }
-        }
-      }
-    }
-  }
   return(index_dates_order)
 }
 

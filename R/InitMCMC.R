@@ -55,6 +55,7 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #'      (\code{E=0})}
 #' }
 #' @importFrom stats median
+#' @importFrom igraph distances graph
 #' @export
 #' @examples
 #' # Number of groups of individuals to simulate
@@ -91,16 +92,27 @@ are_dates_incompatible <- function(date1, date2, mindelay, maxdelay) {
 #' aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates, MCMC_settings)
 #'
 initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
-
-  # reminder - index_dates_order e.g.:
-  # delay_1             | delay_2
-  # date_1 (origin)     | date_2 (origin)
-  # date_2 (destination)| date_3 (destination)
   
   index_dates_order <- compute_index_dates_order(index_dates)
   n_groups <- length(obs_dat)
   D <- vector("list", n_groups)
 
+  # Calculate the number of steps for a delay e.g. if 1->2 and 2->3 then 1->3
+  # encompasses 2 delays - mindelay * 2 and maxdelay * 2
+  step_list <- lapply(seq_along(index_dates), function(g) {
+    n_nodes <- ncol(obs_dat[[g]])
+    graph <- graph(edges = as.vector(t(index_dates[[g]])), n = n_nodes, directed = TRUE)
+    distances <- distances(graph, mode = "out")
+    distances[is.infinite(distances)] <- NA # NA for non-existent paths
+    distances
+  })
+  
+  step_factors <- lapply(seq_along(index_dates_order), function(g) {
+    apply(index_dates_order[[g]], 2, function(delay) {
+      step_list[[g]][delay[1], delay[2]]
+    })
+  })
+  
   for (g in seq_len(n_groups)) {
     D[[g]] <- obs_dat[[g]]
     for (e in seq_len(nrow(D[[g]]))) {
@@ -108,23 +120,33 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
       # first deal with incompatible dates
       for (j in seq_len(ncol(index_dates_order[[g]]))) {
         if (!any(is.na(D[[g]][e, index_dates_order[[g]][, j]]))) {
+          
+          steps <- step_factors[[g]][j]
+          if (is.na(steps)) next
+          
+          scaled_mindelay <- steps * MCMC_settings$init_options$mindelay
+          scaled_maxdelay <- steps * MCMC_settings$init_options$maxdelay
+          
           # there is a problem if the dates have too short or too long delay
           if (are_dates_incompatible(
             D[[g]][e, index_dates_order[[g]][1, j]],
             D[[g]][e, index_dates_order[[g]][2, j]],
-            MCMC_settings$init_options$mindelay,
-            MCMC_settings$init_options$maxdelay)) {
+            scaled_mindelay,
+            scaled_maxdelay)) {
 
             # check if there is one of the dates involved in more than one
             # problematic delays, if so must be the problematic one:
             tmp <- table(as.vector(index_dates_order[[g]][, sapply(
               seq_len(ncol(index_dates_order[[g]])),
-              function(j) {
+              function(k) {
+                inner_steps <- step_factors[[g]][k]
+                if(is.na(inner_steps)) return(FALSE)
+                
                 are_dates_incompatible(
-                D[[g]][e, index_dates_order[[g]][1, j]],
-                D[[g]][e, index_dates_order[[g]][2, j]],
-                MCMC_settings$init_options$mindelay,
-                MCMC_settings$init_options$maxdelay
+                D[[g]][e, index_dates_order[[g]][1, k]],
+                D[[g]][e, index_dates_order[[g]][2, k]],
+                inner_steps * MCMC_settings$init_options$mindelay,
+                inner_steps * MCMC_settings$init_options$maxdelay
                 )
                 }
               )]))
@@ -149,12 +171,15 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
               # problematic delays, if so must be the problematic one:
               tmp <- table(as.vector(index_dates_order[[g]][, sapply(
                 seq_len(ncol(index_dates_order[[g]])),
-                function(j) {
+                function(jj) {
+                  inner_steps <- step_factors[[g]][jj]
+                  if(is.na(inner_steps)) return(FALSE)
+                  
                   are_dates_incompatible(
-                  D[[g]][e, index_dates_order[[g]][1, j]],
-                  D[[g]][e, index_dates_order[[g]][2, j]],
-                  MCMC_settings$init_options$mindelay,
-                  MCMC_settings$init_options$maxdelay)
+                  D[[g]][e, index_dates_order[[g]][1, jj]],
+                  D[[g]][e, index_dates_order[[g]][2, jj]],
+                  inner_steps * MCMC_settings$init_options$mindelay,
+                  inner_steps * MCMC_settings$init_options$maxdelay)
                   }
                 )]))
               if (any(tmp > 1)) {

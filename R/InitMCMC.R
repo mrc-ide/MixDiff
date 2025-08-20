@@ -101,15 +101,22 @@ initialise_aug_data <- function(obs_dat, index_dates, MCMC_settings) {
   # encompasses 2 delays - mindelay * 2 and maxdelay * 2
   step_list <- lapply(seq_along(index_dates), function(g) {
     n_nodes <- ncol(obs_dat[[g]])
-    graph <- graph(edges = as.vector(t(index_dates[[g]])), n = n_nodes, directed = TRUE)
-    distances <- distances(graph, mode = "out")
+    idx <- index_dates[[g]]
+    dep_graph <- graph(
+      edges = as.vector(rbind(idx[1, ], idx[2, ])),
+      n = n_nodes, directed = TRUE
+    )
+    distances <- distances(dep_graph, mode = "out")
     distances[is.infinite(distances)] <- NA # NA for non-existent paths
     distances
   })
   
   step_factors <- lapply(seq_along(index_dates_order), function(g) {
-    apply(index_dates_order[[g]], 2, function(delay) {
-      step_list[[g]][delay[1], delay[2]]
+    apply(index_dates_order[[g]], 2, function(delay_col) {
+      origin <- delay_col[1]
+      destination <- delay_col[2]
+      steps <- step_list[[g]][origin, destination]
+      ifelse(is.na(steps), 1L, as.integer(steps))
     })
   })
   

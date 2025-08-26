@@ -14,7 +14,6 @@ compute_p_accept_move_from_E1_to_E0(
   proposed_aug_dat,
   theta,
   obs_dat,
-  hyperparameters,
   index_dates,
   range_dates
 )
@@ -34,8 +33,6 @@ compute_p_accept_move_from_E1_to_E0(
 
 \item{obs_dat}{A list of observed data, in the format of the first element
 (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
-
-\item{hyperparameters}{A list of hyperparameters: see details.}
 
 \item{index_dates}{A list containing indications on which delays to consider
 in the estimation, see details.}

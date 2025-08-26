@@ -46,25 +46,28 @@ For each column (i.e. each delay), the first row gives the index of the
  origin date, and the second row gives the index of the destination date.
 }
 \examples{
-### Number of groups of individuals to simulate
-n_groups <- 2
-### Number of dates to simulate for each group
-n_dates <- c(2, 3)
-### Setting up the parameters for the simulation
+# Number of groups of individuals to simulate
+n_groups <- 3
+# Number of dates to simulate for each group
+n_dates <- c(2, 3, 4)
+# Setting up the parameters for the simulation
 theta <- list()
-theta$mu <- list(5, c(10, 15)) # mean delays, for each group
-theta$CV <- list(0.5, c(0.5, 0.5)) # coefficient of variation of these delays
-### Number of individuals to simulate in each group
+theta$mu <- list(5, c(10, 15), c(10, 15, 20)) # mean delays, for each group
+theta$CV <- list(0.5, c(0.5, 0.5), c(0.5, 0.5, 0.5)) # cv of these delays
+# Number of individuals to simulate in each group
 n_per_group <- rep(10, n_groups)
-### Range of dates in which to draw the first set of dates for each group
+# Range of dates in which to draw the first set of dates for each group
 range_dates <- date_to_int(c(as.Date("01/01/2014", "\%d/\%m/\%Y"),
                              as.Date("01/01/2015", "\%d/\%m/\%Y")))
-### Which delays to use to simulate subsequent dates from the first, in each
- group?
-index_dates <- list(matrix(c(1, 2), nrow = 2), cbind(c(1, 2), c(1, 3)))
-### Perform the simulation
+# Which delays to use to simulate subsequent dates from the first, in each
+ # group?
+index_dates <- list(matrix(c(1, 2), nrow = 2),
+                    cbind(c(1, 2), c(1, 3)),
+                    cbind(c(1, 2), c(2, 3),c(1, 4)))
+# Perform the simulation
 D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
-### Compute the first delay for first individual in first group
-compute_delta_group_delay_and_indiv(D$true_dat, group_idx = 1, indiv_idx = 1,
- delay_idx = 1, index_dates)
+# Compute the first delay for first individual in first group
+compute_delta_group_delay_and_indiv(D$true_dat, group_idx = 3, indiv_idx = 1,
+ delay_idx = 3, index_dates)
+
 }

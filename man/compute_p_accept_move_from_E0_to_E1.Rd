@@ -40,12 +40,12 @@ compute_p_accept_move_from_E0_to_E1(
 in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}.
-If NULL, will be computed automatically.
+ If NULL, will be computed automatically.
 
-@return Vector of length 2. The first element is the difference in log
- posterior between the proposed and current augmented data. The second
-  is the log proposal correction factor needed to adjust for asymmetry in
-   the proposal distribution.}
+ @return Vector of length 2. The first element is the difference in log
+  posterior between the proposed and current augmented data. The second
+   is the log proposal correction factor needed to adjust for asymmetry in
+    the proposal distribution.}
 }
 \description{
 Computes acceptance probability for a move from E = 0 (date observed

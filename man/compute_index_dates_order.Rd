@@ -11,7 +11,7 @@ compute_index_dates_order(index_dates)
 in the simulation, see details.}
 }
 \value{
-A list of same lenght as index_dates, containing indications on
+A list of same length as index_dates, containing indications on
  ordering of dates for each group. More specifically, each element of
   \code{index_dates_order} is a matrix with 2 rows and a number of columns
    corresponding to the delays with order rules for that group.
@@ -52,6 +52,6 @@ This function is used to find appropriate starting points for the MCMC,
 index_dates <- list(matrix(c(1, 2), nrow = 2), 
                        cbind(c(1, 2), c(1, 3)), 
                        cbind(c(1, 2), c(2, 3), c(1, 4)), 
-                       cbind(c(1, 2), c(2, 3), c(1, 4)) )
+                       cbind(c(1, 2), c(2, 3), c(1, 4)))
 index_dates_order <- compute_index_dates_order(index_dates)
 }

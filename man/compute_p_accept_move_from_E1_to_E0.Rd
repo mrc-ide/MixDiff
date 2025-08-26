@@ -41,11 +41,11 @@ compute_p_accept_move_from_E1_to_E0(
 in the estimation, see details.}
 
 \item{range_dates}{A vector containing the range of dates in \code{obs_dat}.
-If NULL, will be computed automatically.
+ If NULL, will be computed automatically.
 
-@return A vector of length 2. The first element is the log posterior
- difference (proposed - current), and the second element is the proposal
-  asymmetry correction.}
+ @return A vector of length 2. The first element is the log posterior
+  difference (proposed - current), and the second element is the proposal
+   asymmetry correction.}
 }
 \description{
 Calculates the log acceptance probability for an MCMC move that changes the

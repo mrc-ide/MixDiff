@@ -96,7 +96,7 @@ MCMC_result <- RunMCMC(obs_dat,
                        MCMC_settings,
                        hyperparameters,
                        index_dates)
-                       
+
 compute_correlations_mu_CV(MCMCres = MCMC_result,
                            plot = TRUE,
                            group_labels = c("Community-alive",
@@ -108,5 +108,5 @@ compute_correlations_mu_CV(MCMCres = MCMC_result,
                               c("Onset", "Death", "Report"),
                               c("Onset", "Hosp", "Disch", "Report"),
                               c("Onset", "Hosp", "Death", "Report")
-                            ))  
+                            ))
 }

@@ -86,7 +86,7 @@ MCMC_result <- RunMCMC(obs_dat,
                        MCMC_settings,
                        hyperparameters,
                        index_dates)
-                       
+
 compute_autocorr(MCMCres = MCMC_result,
                  group_labels = c("Community-alive",
                                   "Community-dead",
@@ -97,5 +97,5 @@ compute_autocorr(MCMCres = MCMC_result,
                    c("Onset", "Death", "Report"),
                    c("Onset", "Hosp", "Disch", "Report"),
                    c("Onset", "Hosp", "Death", "Report")
-                 ))  
+                 ))
 }

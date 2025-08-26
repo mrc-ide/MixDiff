@@ -97,9 +97,9 @@ Runs the MCMC estimation procedure.
   be a matrix with 2 rows and a number of columns corresponding to the delays
    of interest for that group. For each column (i.e. each delay), the first
     row gives the index of the origin date, and the second row gives the
-     index of the destination date. 
+     index of the destination date.
 The number of columns of index_dates[[k]] should match the length of
- theta$mu[[k]] and theta$CV[[k]] 
+ theta$mu[[k]] and theta$CV[[k]]
 
 If index_dates[[k]] has two columns containing respectively c(1, 2) and
  c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are
@@ -178,4 +178,5 @@ MCMC_result$logpost_chain
 plot(MCMC_result$logpost_chain, type = "l",
      ylab = "Log Posterior", xlab = "Iteration")
 MCMC_result$accept_prob
+
 }

@@ -79,7 +79,7 @@ Performs one iteration of an MCMC move for the augmented data representing
  \item{\code{mean_CV_delay}}{: A scalar giving the mean of the exponential
   prior used for parameter \code{theta$CV}}
 }
-\code{index_dates} should be a list of length 
+\code{index_dates} should be a list of length
  \code{n_groups = length(obs_dat)}. Each element of \code{index_dates}
   should be a matrix with 2 rows and a number of columns corresponding to
    the delays of interest for that group. For each column (i.e. each delay),

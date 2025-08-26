@@ -4,14 +4,12 @@
 \alias{compute_n_errors}
 \title{Compute number of errors and number of observed entries}
 \usage{
-compute_n_errors(aug_dat, obs_dat)
+compute_n_errors(aug_dat)
 }
 \arguments{
 \item{aug_dat}{List containing \code{E}, which is a list of matrices. Each
 matrix corresponds to a group and contains the error indicators for each
  date per individual (1, 0, -1).}
-
-\item{obs_dat}{List of observed data.}
 }
 \value{
 Numeric vector of length 2 containing the number of errors and the

@@ -65,9 +65,9 @@ Compute the log joint posterior distribution (likelihood + prior) of
   should be a matrix with 2 rows and a number of columns corresponding to
    the delays of interest for that group. For each column (i.e. each delay),
     the first row gives the index of the origin date, and the second row
-     gives the index of the destination date. 
+     gives the index of the destination date.
 The number of columns of index_dates[[k]] should match the length of
- theta$mu[[k]] and theta$CV[[k]] 
+ theta$mu[[k]] and theta$CV[[k]]
 
 If index_dates[[k]] has two columns containing respectively c(1, 2) and
  c(1, 3), this indicates that theta$mu[[k]] and theta$CV[[k]] are
@@ -107,9 +107,9 @@ obs_dat <- observed_D$obs_dat
 true_aug_dat <- list(D = D$true_dat, E = observed_D$E)
 
 # Define hyperparameters
-hyperparameters <- list(shape1_prob_error = 3, shape2_prob_error = 12, 
+hyperparameters <- list(shape1_prob_error = 3, shape2_prob_error = 12,
                      mean_mean_delay = 100, mean_CV_delay = 100)
-                     
+
 # Compute log posterior distribution for that data
 lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates,
                  range_dates = NULL)

@@ -1520,8 +1520,6 @@ move_lognormal <- function(what = c("mu", "CV"),
 #' @param aug_dat The augmented data; a list of observed data, in the format
 #'  returned by \code{\link{simul_true_data}}.
 #' @param curr_theta The current list of parameters; see details.
-#' @param obs_dat A list of observed data, in the format of the first element
-#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
 #' @param hyperparameters A list of hyperparameters: see details.
 #' @details \code{curr_theta} should be a list containing:
 #' \itemize{
@@ -1572,7 +1570,6 @@ move_lognormal <- function(what = c("mu", "CV"),
 #' ### TO WRITE OR ALTERNATIVELY REFER TO VIGNETTE TO BE WRITTEN ###
 move_zeta_gibbs <- function(aug_dat,
                             curr_theta,
-                            obs_dat,
                             hyperparameters) {
 
   tmp <- compute_n_errors(aug_dat)

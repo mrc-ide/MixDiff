@@ -354,7 +354,7 @@ RunMCMC <- function(obs_dat,
 
     # Update zeta using Gibbs sampling ----------------------------------------
     if (MCMC_settings$moves_switch$zeta_on) {
-      tmp <- move_zeta_gibbs(curr_aug_dat, curr_theta, obs_dat, hyperparameters)
+      tmp <- move_zeta_gibbs(curr_aug_dat, curr_theta, hyperparameters)
       curr_theta <- tmp$new_theta
     }
 

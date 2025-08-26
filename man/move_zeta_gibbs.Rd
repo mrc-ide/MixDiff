@@ -5,16 +5,13 @@
 \title{Performs one iteration of an MCMC move for the parameter zeta (probability
  of a data being recorded erroneously, given it is recorded)}
 \usage{
-move_zeta_gibbs(aug_dat, curr_theta, obs_dat, hyperparameters)
+move_zeta_gibbs(aug_dat, curr_theta, hyperparameters)
 }
 \arguments{
 \item{aug_dat}{The augmented data; a list of observed data, in the format
 returned by \code{\link{simul_true_data}}.}
 
 \item{curr_theta}{The current list of parameters; see details.}
-
-\item{obs_dat}{A list of observed data, in the format of the first element
-(called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
 
 \item{hyperparameters}{A list of hyperparameters: see details.}
 }

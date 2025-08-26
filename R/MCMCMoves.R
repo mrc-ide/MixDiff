@@ -1575,7 +1575,7 @@ move_zeta_gibbs <- function(aug_dat,
                             obs_dat,
                             hyperparameters) {
 
-  tmp <- compute_n_errors(aug_dat, obs_dat)
+  tmp <- compute_n_errors(aug_dat)
   number_of_errors <- tmp[1]
   number_of_recorded_dates <- tmp[2]
 

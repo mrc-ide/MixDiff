@@ -61,7 +61,7 @@ LL_observation_term <- function(aug_dat, theta, obs_dat, range_dates = NULL) {
     seq_len(length(obs_dat)),
     function(g) {
       sum(LL_observation_term_by_group_delay_and_indiv(
-        aug_dat, theta, obs_dat, g,
+        aug_dat, obs_dat, g,
         seq_len(ncol(aug_dat$D[[g]])),
         seq_len(nrow(obs_dat[[g]])),
         range_dates

@@ -77,14 +77,13 @@ LL_observation_term <- function(aug_dat, theta, obs_dat, range_dates = NULL) {
 #' @description
 #' For a given group, date index and set of individuals, compute the
 #' log-likelihood of the observed error indicators (E). This reflects the
-#'  probability of observing a date entry recorded with ot without error, given
+#'  probability of observing a date entry recorded without error, given
 #'   the error rate parameter, zeta.
 #'
 #' @param aug_data List containing augmented data, including:
 #' - D: date matrices (as integers) for each group
 #' - E: error indicator matrices for each group
 #' @param theta List of model parameters, including zeta.
-#' @param obs_data List of observed data
 #' @param group_idx Index of the group to consider
 #' @param date_idx Indices of the date column(s) to consider
 #' @param indiv_idx Indices of the individual(s) to consider
@@ -98,7 +97,7 @@ LL_error_term_by_group_delay_and_indiv <- function(aug_dat,
                                                    date_idx,
                                                    indiv_idx) {
 
-  # Intialise log-likelihood matrix with 0s
+  # Initialise log-likelihood matrix with 0s
   res <- matrix(0, length(indiv_idx), length(date_idx))
 
   # Identify which entries are not missing (E != -1)

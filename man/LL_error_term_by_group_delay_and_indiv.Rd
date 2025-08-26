@@ -7,7 +7,6 @@
 LL_error_term_by_group_delay_and_indiv(
   aug_dat,
   theta,
-  obs_dat,
   group_idx,
   date_idx,
   indiv_idx
@@ -25,8 +24,6 @@ LL_error_term_by_group_delay_and_indiv(
 \item{aug_data}{List containing augmented data, including:
 - D: date matrices (as integers) for each group
 - E: error indicator matrices for each group}
-
-\item{obs_data}{List of observed data}
 }
 \value{
 Matrix of log-likelihood contributions (rows: individuals,
@@ -35,6 +32,6 @@ Matrix of log-likelihood contributions (rows: individuals,
 \description{
 For a given group, date index and set of individuals, compute the
 log-likelihood of the observed error indicators (E). This reflects the
- probability of observing a date entry recorded with ot without error, given
+ probability of observing a date entry recorded without error, given
   the error rate parameter, zeta.
 }

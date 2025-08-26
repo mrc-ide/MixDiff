@@ -139,8 +139,8 @@ compute_n_errors <- function(aug_dat) {
 }
 
 #' Compute total log-likelihood for observed errors
-LL_error_term <- function(aug_dat, theta, obs_dat) {
-  tmp <- compute_n_errors(aug_dat, obs_dat)
+LL_error_term <- function(aug_dat, theta) {
+  tmp <- compute_n_errors(aug_dat)
   number_of_errors <- tmp[1]
   number_of_recorded_dates <- tmp[2]
 
@@ -211,7 +211,7 @@ LL_delays_term <- function(aug_dat, theta, obs_dat, index_dates, Delta = NULL) {
 LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates = NULL) {
 
   res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates) +
-    LL_error_term(aug_dat, theta, obs_dat) +
+    LL_error_term(aug_dat, theta) +
     LL_delays_term(aug_dat, theta, obs_dat, index_dates)
 
   return(res)

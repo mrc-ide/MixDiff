@@ -122,7 +122,6 @@ LL_error_term_by_group_delay_and_indiv <- function(aug_dat,
 #' @param aug_dat List containing \code{E}, which is a list of matrices. Each
 #'  matrix corresponds to a group and contains the error indicators for each
 #'   date per individual (1, 0, -1).
-#' @param obs_dat List of observed data.
 #'
 #' @returns Numeric vector of length 2 containing the number of errors and the
 #'  number of recorded dates in \code{aug_dat}.
@@ -133,7 +132,7 @@ LL_error_term_by_group_delay_and_indiv <- function(aug_dat,
 #' E_list <- list(matrix(c(1, 0, -1, 1, 0, 1), nrow = 2))
 #' aug_dat <- list(E = E_list)
 #' compute_n_errors(aug_dat, NULL)
-compute_n_errors <- function(aug_dat, obs_dat) {
+compute_n_errors <- function(aug_dat) {
   number_of_errors <- sum(unlist(aug_dat$E) == 1)
   number_of_recorded_dates <- sum(unlist(aug_dat$E) != -1)
   return(c(number_of_errors, number_of_recorded_dates))

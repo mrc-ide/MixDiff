@@ -53,7 +53,7 @@ LL_observation_term_by_group_delay_and_indiv <- function(aug_dat,
 }
 
 #' Compute total observation likelihood over all individuals, dates, and groups
-LL_observation_term <- function(aug_dat, theta, obs_dat, range_dates = NULL) {
+LL_observation_term <- function(aug_dat, obs_dat, range_dates = NULL) {
 
   if (is.null(range_dates)) range_dates <- find_range(obs_dat)
 
@@ -210,7 +210,7 @@ LL_delays_term <- function(aug_dat, theta, obs_dat, index_dates, Delta = NULL) {
 #' Compute full likelihood (observation + delay + error)
 LL_total <- function(aug_dat, theta, obs_dat, index_dates, range_dates = NULL) {
 
-  res <- LL_observation_term(aug_dat, theta, obs_dat, range_dates) +
+  res <- LL_observation_term(aug_dat, obs_dat, range_dates) +
     LL_error_term(aug_dat, theta) +
     LL_delays_term(aug_dat, theta, obs_dat, index_dates)
 

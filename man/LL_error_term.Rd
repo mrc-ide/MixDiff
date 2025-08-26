@@ -4,7 +4,7 @@
 \alias{LL_error_term}
 \title{Compute total log-likelihood for observed errors}
 \usage{
-LL_error_term(aug_dat, theta, obs_dat)
+LL_error_term(aug_dat, theta)
 }
 \description{
 Compute total log-likelihood for observed errors

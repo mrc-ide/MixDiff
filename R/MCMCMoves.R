@@ -1583,7 +1583,6 @@ move_zeta_gibbs <- function(aug_dat,
   list(new_theta = new_theta, accept = accept)
 
 }
-# test_move_zeta_gibbs <- move_zeta_gibbs(aug_dat, curr_theta = theta, obs_dat,
-# hyperparameters)
+# test_move_zeta_gibbs <- move_zeta_gibbs(aug_dat, theta, hyperparameters)
 # test_move_zeta_gibbs$new_theta$zeta # new value
 # theta$zeta # old value

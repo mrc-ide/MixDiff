@@ -13,7 +13,6 @@
 #'  - If error or missing (E = 1 or -1), observed date is treated as uniformly
 #'   likely over \code{range_dates}.
 LL_observation_term_by_group_delay_and_indiv <- function(aug_dat,
-                                                         theta,
                                                          obs_dat,
                                                          group_idx,
                                                          date_idx,

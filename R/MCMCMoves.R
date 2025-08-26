@@ -253,12 +253,12 @@ move_Di <- function(i,
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
 
   ll_proposed <- LL_observation_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat,
+    proposed_aug_dat, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
   )
 
   ll_current <- LL_observation_term_by_group_delay_and_indiv(
-    curr_aug_dat, theta, obs_dat,
+    curr_aug_dat, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
   )
 
@@ -488,10 +488,10 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
 
   # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat,
+    proposed_aug_dat, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
   ) - LL_observation_term_by_group_delay_and_indiv(
-    curr_aug_dat, theta, obs_dat,
+    curr_aug_dat, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
   )
 
@@ -666,10 +666,10 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 
   # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat,
+    proposed_aug_dat, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
   ) - LL_observation_term_by_group_delay_and_indiv(
-    curr_aug_dat, theta, obs_dat,
+    curr_aug_dat, obs_dat,
     group_idx, date_idx, i, range_dates = range_dates
   )
 
@@ -1187,27 +1187,27 @@ swap_Ei <- function(i,
 
   ratio_post_obs <- sum(
     LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, theta, obs_dat, group_idx,
+      proposed_aug_dat_step3, obs_dat, group_idx,
       date_idx_E1_to_E0, i, range_dates = range_dates
     ) - LL_observation_term_by_group_delay_and_indiv(
-      curr_aug_dat, theta, obs_dat, group_idx,
+      curr_aug_dat, obs_dat, group_idx,
       date_idx_E1_to_E0, i, range_dates = range_dates)
   ) + sum(
     LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, theta, obs_dat, group_idx,
+      proposed_aug_dat_step3, obs_dat, group_idx,
       date_idx_E0_to_E1, i, range_dates = range_dates
     ) - LL_observation_term_by_group_delay_and_indiv(
-      curr_aug_dat, theta, obs_dat, group_idx,
+      curr_aug_dat, obs_dat, group_idx,
       date_idx_E0_to_E1, i, range_dates = range_dates)
   )
 
   if(length(date_idx_resample) > 0) {
     ratio_post_obs <- ratio_post_obs + sum(
       LL_observation_term_by_group_delay_and_indiv(
-        proposed_aug_dat_step3, theta, obs_dat, group_idx,
+        proposed_aug_dat_step3, obs_dat, group_idx,
         date_idx_resample, i, range_dates = range_dates
       ) - LL_observation_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, obs_dat, group_idx,
+        curr_aug_dat, obs_dat, group_idx,
         date_idx_resample, i, range_dates = range_dates)
     )
   }

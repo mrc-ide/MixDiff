@@ -457,7 +457,6 @@ propose_move_from_E0_to_E1 <- function(i,
 #' @param theta List of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element
 #'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
-#' @param hyperparameters A list of hyperparameters: see details.
 #' @param index_dates A list containing indications on which delays to consider
 #'  in the estimation, see details.
 #' @param range_dates A vector containing the range of dates in \code{obs_dat}.
@@ -475,7 +474,6 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
                                                 proposed_aug_dat,
                                                 theta,
                                                 obs_dat,
-                                                hyperparameters,
                                                 index_dates,
                                                 range_dates = NULL) {
 
@@ -867,7 +865,7 @@ move_Ei <- function(i,
 
       tmp <- compute_p_accept_move_from_E0_to_E1(
         i, group_idx, date_idx, curr_aug_dat, proposed_aug_dat,
-        theta, obs_dat, hyperparameters, index_dates, range_dates
+        theta, obs_dat, index_dates, range_dates
       )
 
       if (any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp)
@@ -1078,7 +1076,6 @@ swap_Ei <- function(i,
           proposed_aug_dat = proposed_aug_dat_step2,
           theta = theta,
           obs_dat = obs_dat,
-          hyperparameters = hyperparameters,
           index_dates = index_dates,
           range_dates = range_dates
         )[2]
@@ -1156,7 +1153,6 @@ swap_Ei <- function(i,
           proposed_aug_dat = proposed_aug_dat_rev2,
           theta = theta,
           obs_dat = obs_dat,
-          hyperparameters = hyperparameters,
           index_dates = index_dates,
           range_dates = range_dates
         )[2]
@@ -1210,8 +1206,8 @@ swap_Ei <- function(i,
     )
   }
   ## should be the same as:
-  # LL_observation_term(proposed_aug_dat_step3, theta, obs_dat, range_dates) -
-  # LL_observation_term(curr_aug_dat, theta, obs_dat, range_dates)
+  # LL_observation_term(proposed_aug_dat_step3, obs_dat, range_dates) -
+  # LL_observation_term(curr_aug_dat, obs_dat, range_dates)
 
   ratio_post_error <- sum(
     LL_error_term_by_group_delay_and_indiv(
@@ -1236,8 +1232,7 @@ swap_Ei <- function(i,
     )
   }
   ## should be the same as:
-  # LL_error_term(proposed_aug_dat_step3, theta, obs_dat) -
-  # LL_error_term(curr_aug_dat, theta, obs_dat)
+  # LL_error_term(proposed_aug_dat_step3, theta) - LL_error_term(curr_aug_dat, theta)
   ## LL_error_term_slow(proposed_aug_dat_step3, theta, obs_dat) -
   ## LL_error_term_slow(curr_aug_dat, theta, obs_dat)
 
@@ -1286,7 +1281,6 @@ swap_Ei <- function(i,
   #       proposed_aug_dat = proposed_aug_dat_step2,
   #       theta = theta,
   #       obs_dat = obs_dat,
-  #       hyperparameters = hyperparameters,
   #       index_dates = index_dates,
   #       range_dates = range_dates)[2]}))
 
@@ -1301,7 +1295,6 @@ swap_Ei <- function(i,
   #       proposed_aug_dat = proposed_aug_dat_rev1,
   #       theta = theta,
   #       obs_dat = obs_dat,
-  #       hyperparameters = hyperparameters,
   #       index_dates = index_dates,
   #       range_dates = range_dates)[2]}))
 

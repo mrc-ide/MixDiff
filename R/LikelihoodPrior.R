@@ -94,7 +94,6 @@ LL_observation_term <- function(aug_dat, theta, obs_dat, range_dates = NULL) {
 #'
 LL_error_term_by_group_delay_and_indiv <- function(aug_dat,
                                                    theta,
-                                                   obs_dat,
                                                    group_idx,
                                                    date_idx,
                                                    indiv_idx) {

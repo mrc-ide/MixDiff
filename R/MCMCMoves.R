@@ -270,9 +270,9 @@ move_Di <- function(i,
 
   if (any(different_E)) {
     ratio_post <- ratio_post +
-      LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta, obs_dat,
+      LL_error_term_by_group_delay_and_indiv(proposed_aug_dat, theta,
                                              group_idx, date_idx, i) -
-      LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta, obs_dat,
+      LL_error_term_by_group_delay_and_indiv(curr_aug_dat, theta,
                                              group_idx, date_idx, i)
   }
 
@@ -497,9 +497,9 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
 
   # Difference in error likelihood
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i
+    proposed_aug_dat, theta, group_idx, date_idx, i
   ) - LL_error_term_by_group_delay_and_indiv(
-    curr_aug_dat, theta, obs_dat, group_idx, date_idx, i
+    curr_aug_dat, theta, group_idx, date_idx, i
   )
 
   # For each affected delay, difference in delay likelihood
@@ -675,9 +675,9 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 
   # Difference in error likelihood
   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
-    proposed_aug_dat, theta, obs_dat, group_idx, date_idx, i
+    proposed_aug_dat, theta, group_idx, date_idx, i
   ) - LL_error_term_by_group_delay_and_indiv(
-    curr_aug_dat, theta, obs_dat, group_idx, date_idx, i
+    curr_aug_dat, theta, group_idx, date_idx, i
   )
 
   # For each affected delay, difference in delay likelihood
@@ -1217,23 +1217,23 @@ swap_Ei <- function(i,
 
   ratio_post_error <- sum(
     LL_error_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
+      proposed_aug_dat_step3, theta, group_idx, date_idx_E1_to_E0, i
     ) - LL_error_term_by_group_delay_and_indiv(
-      curr_aug_dat, theta, obs_dat, group_idx, date_idx_E1_to_E0, i
+      curr_aug_dat, theta, group_idx, date_idx_E1_to_E0, i
     )
   ) + sum(
     LL_error_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
+      proposed_aug_dat_step3, theta, group_idx, date_idx_E0_to_E1, i
     ) - LL_error_term_by_group_delay_and_indiv(
-      curr_aug_dat, theta, obs_dat, group_idx, date_idx_E0_to_E1, i
+      curr_aug_dat, theta, group_idx, date_idx_E0_to_E1, i
     )
   )
   if(length(date_idx_resample) > 0) {
     ratio_post_error <- ratio_post_error + sum(
       LL_error_term_by_group_delay_and_indiv(
-        proposed_aug_dat_step3, theta, obs_dat, group_idx, date_idx_resample, i
+        proposed_aug_dat_step3, theta, group_idx, date_idx_resample, i
       ) - LL_error_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, obs_dat, group_idx, date_idx_resample, i
+        curr_aug_dat, theta, group_idx, date_idx_resample, i
       )
     )
   }

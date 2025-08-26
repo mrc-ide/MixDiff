@@ -4,7 +4,7 @@
 \alias{LL_observation_term}
 \title{Compute total observation likelihood over all individuals, dates, and groups}
 \usage{
-LL_observation_term(aug_dat, theta, obs_dat, range_dates = NULL)
+LL_observation_term(aug_dat, obs_dat, range_dates = NULL)
 }
 \description{
 Compute total observation likelihood over all individuals, dates, and groups

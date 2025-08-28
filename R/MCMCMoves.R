@@ -734,6 +734,18 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 # Move E
 # ----------------------------------------------------------------------------
 
+#' Add documentation
+decide_acceptance <- function(log_p_accept, proposed_dat, current_dat) {
+  if (is.na(log_p_accept)) log_p_accept <- -Inf
+  if (log_p_accept > 0) log_p_accept <- 0
+  
+  if (log(runif(1)) < log_p_accept) {
+    return(list(new_aug_dat = proposed_dat, accept = 1))
+  } else {
+    return(list(new_aug_dat = current_dat, accept = 0))
+  }
+}
+
 #' Performs one iteration of an MCMC move for the augmented data representing
 #'  the indicator of error in observations
 #'
@@ -823,89 +835,58 @@ move_Ei <- function(i,
                     index_dates,
                     range_dates = NULL) {
 
-  if (length(i) > 1) {
-    i <- i[1]
-    warning(
-      "In move_Ei, i should be a numeric, not a vector. Using i[1] instead."
-    )
-  }
-
   if (is.null(range_dates)) range_dates <- find_range(obs_dat)
 
   curr_E_value <- curr_aug_dat$E[[group_idx]][i, date_idx]
-  proposed_aug_dat <- curr_aug_dat
 
-  # if data not missing
+  # if date is missing do nothing
   if (curr_E_value != -1) {
-
-    new_E_value <- 1 - curr_E_value
-    proposed_aug_dat$E[[group_idx]][i, date_idx] <- new_E_value
-
-    # moving from E=0 to E=1
-    if (curr_E_value == 0) {
-
-      proposed_aug_dat$D[[group_idx]][i, date_idx] <- propose_move_from_E0_to_E1(
-        i, group_idx, date_idx, curr_aug_dat, theta,
-        obs_dat, hyperparameters, index_dates, range_dates
-      )
-
-      tmp <- compute_p_accept_move_from_E0_to_E1(
-        i, group_idx, date_idx, curr_aug_dat, proposed_aug_dat,
-        theta, obs_dat, index_dates, range_dates
-      )
-
-      if (any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp)
-      if (p_accept > 0) p_accept <- 0
-
-      # accept/reject step
-      tmp <- log(runif(1))
-      if (tmp < p_accept) { # accepting with a certain probability
-        new_aug_dat <- proposed_aug_dat
-        accept <- 1
-      } else { # reject
-        new_aug_dat <- curr_aug_dat
-        accept <- 0
-      }
-
-      # return a list of size 2 where
-      #		the first value is the new augmented data set in the chain
-      #		the second value is 1 if the proposed value was accepted, 0 otherwise
-      res <- list(new_aug_dat = new_aug_dat, accept = accept)
-
-    } else if (curr_E_value == 1) { # moving from E=1 to E=0
-
-      proposed_aug_dat$D[[group_idx]][i, date_idx] <- propose_move_from_E1_to_E0(
-        i, group_idx, date_idx, obs_dat
-      )
-
-      tmp <- compute_p_accept_move_from_E1_to_E0(
-        i, group_idx, date_idx, curr_aug_dat, proposed_aug_dat,
-        theta, obs_dat, index_dates, range_dates
-      )
-
-      if (any(is.infinite(tmp))) p_accept <- -Inf else p_accept <- sum(tmp)
-      if (p_accept > 0) p_accept <- 0
-
-      # accept/reject step
-      tmp <- log(runif(1))
-      if (tmp < p_accept) { # accepting with a certain probability
-        new_aug_dat <- proposed_aug_dat
-        accept <- 1
-      } else { # reject
-        new_aug_dat <- curr_aug_dat
-        accept <- 0
-      }
-
-      # return a list of size 2 where
-      #		the first value is the new augmented data set in the chain
-      #		the second value is 1 if the proposed value was accepted, 0 otherwise
-      res <- list(new_aug_dat = new_aug_dat, accept = accept)
-    }
-  } else { # if E=-1, can't move.
-    res <- list(curr_aug_dat = curr_aug_dat, accept = 0)
+    return(list(new_aug_dat = curr_aug_dat, accept = 0))
   }
-  return(res)
-}
+  
+  proposed_aug_dat <- curr_aug_dat
+  p_accept <- -Inf # reject as the default
+  
+  # moving from E=0 to E=1
+  if (curr_E_value == 0) {
+  
+    proposed_aug_dat$E[[group_idx]][i, date_idx] <- 1
+    proposed_aug_dat$D[[group_idx]][i, date_idx] <- propose_move_from_E0_to_E1(
+      i, group_idx, date_idx, curr_aug_dat, theta,
+      obs_dat, hyperparameters, index_dates, range_dates
+    )
+
+    tmp <- compute_p_accept_move_from_E0_to_E1(
+      i, group_idx, date_idx, curr_aug_dat, proposed_aug_dat,
+      theta, obs_dat, index_dates, range_dates
+    )
+
+    if (!any(is.infinite(tmp))) p_accept <- sum(tmp)
+  
+    # moving from E=1 to E=0
+  } else if (curr_E_value == 1) {
+    
+    proposed_aug_dat$E[[group_idx]][i, date_idx] <- 0
+    proposed_aug_dat$D[[group_idx]][i, date_idx] <- propose_move_from_E1_to_E0(
+      i, group_idx, date_idx, obs_dat
+    )
+    
+    tmp <- compute_p_accept_move_from_E1_to_E0(
+      i, group_idx, date_idx, curr_aug_dat, proposed_aug_dat,
+      theta, obs_dat, index_dates, range_dates
+    )
+    
+    if (!any(is.infinite(tmp))) p_accept <- sum(tmp)
+  }
+
+    res <- decide_acceptance(p_accept, proposed_aug_dat, curr_aug_dat)
+    
+    # return a list of size 2 where
+    #		the first value is the new augmented data set in the chain
+    #		the second value is 1 if the proposed value was accepted, 0 otherwise
+    return(res)
+    
+  }
 
 # ----------------------------------------------------------------------------
 # Swap Es - when only 2 Es, related by a delay, are recorded, one with error

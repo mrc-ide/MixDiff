@@ -18,7 +18,13 @@ This will be returned if the move is accepted.}
 if the move is rejected.}
 }
 \value{
-
+A list containing two elements:
+\itemise{
+ \item{`new_aug_dat`}: The augmented data set for the next step in the
+    MCMC chain (either `proposed_dat` or `current_dat`).
+  \item{`accept`}: An indicator with value `1` if the move was accepted or
+    `0` if it was rejected.
+}
 }
 \description{
 Helper function to perform accept/reject step of a Metropolis-Hastings move.

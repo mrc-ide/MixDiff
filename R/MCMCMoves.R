@@ -756,6 +756,7 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 #'     MCMC chain (either `proposed_dat` or `current_dat`).
 #'   \item{`accept`}: An indicator with value `1` if the move was accepted or
 #'     `0` if it was rejected.
+#' }
 #' 
 #' @export
 #' 

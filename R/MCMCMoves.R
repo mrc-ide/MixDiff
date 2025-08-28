@@ -1330,6 +1330,60 @@ swap_Ei <- function(i,
   
   # Reverse of step 2
   
+  # Move function out:
+  reverse_E0_to_E1_swap <- function(i,
+                                    group_idx,
+                                    date_idx_E0_to_E1,
+                                    current_reverted_dat,
+                                    original_dat,
+                                    theta,
+                                    obs_dat,
+                                    index_dates,
+                                    range_dates) {
+    
+    correction_factor_rev <- 0
+    reverted_dat <- current_reverted_dat
+    
+    if (length(date_idx_E0_to_E1) > 0) {
+      # Loop backwards
+      for (k in rev(date_idx_E0_to_E1)) {
+        state_before_revert <- reverted_dat
+        
+        # Revert E and D for this date to original values
+        reverted_dat$E[[group_idx]][i, k] <- 0
+        reverted_dat$D[[group_idx]][i, k] <- original_dat$D[[group_idx]][i, k]
+        
+        # Calculate reverse probability
+        correction_factor_rev <- correction_factor_rev +
+          compute_p_accept_move_from_E0_to_E1(
+            i = i,
+            group_idx = group_idx,
+            date_idx = k,
+            curr_aug_dat = state_before_this_revert,
+            proposed_aug_dat = reverted_dat,
+            theta = theta,
+            obs_dat = obs_dat,
+            index_dates = index_dates,
+            range_dates = range_dates
+          )[2]
+      }
+    }
+  
+    return(list(
+      reverted_aug_dat = reverted_dat,
+      correction_factor = correction_factor_rev
+    ))
+  }
+  
+  rev_step2_results <- reverse_E0_to_E1_swap(
+    i, group_idx, date_idx_E0_to_E1,
+    current_reverted_dat = rev_step3_results$reverted_aug_dat,
+    original_dat = curr_aug_dat,
+    theta, obs_dat, index_dates, range_dates
+  )
+  
+  correct_factor_new_delay_rev <- rev_step3_results$correction_factor
+  corr_1_E0_to_E1_rev <- rev_step2_results$correction_factor
   
   # corr_1_E0_to_E1_rev <- 0
   # proposed_aug_dat_rev2 <- proposed_aug_dat_rev3
@@ -1355,7 +1409,6 @@ swap_Ei <- function(i,
   #   }
   # }
   
-
   delay_idx <- which(
     colSums(matrix(index_dates[[group_idx]] %in% date_idx_E1_to_E0,
                    nrow = nrow(index_dates[[group_idx]]))) > 0

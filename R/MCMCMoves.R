@@ -1042,7 +1042,7 @@ swap_Ei <- function(i,
   
   ## Step 1: Move E = 1 date(s) to E = 0
   
-  # Move this function out of this script
+  # Move this function out of here
   perform_E1_to_E0_swap <- function(i, group_idx, date_idx_E1_to_E0,
                                     curr_aug_dat, theta, obs_dat,
                                     hyperparameters, index_dates, range_dates) {
@@ -1066,7 +1066,8 @@ swap_Ei <- function(i,
   proposed_aug_dat_step1 <- perform_E1_to_E0_swap(
     i, group_idx, date_idx_E1_to_E0,
     curr_aug_dat, theta, obs_dat,
-    hyperparameters, index_dates, range_dates)
+    hyperparameters, index_dates, range_dates
+    )
   
   # proposed_aug_dat_step1 <- curr_aug_dat
   # if (length(date_idx_E1_to_E0) > 0) {
@@ -1082,31 +1083,96 @@ swap_Ei <- function(i,
   
   ## Step 2: Move the original E = 0 dates to E = 1 ensuring that dates are
   ## plausible given the delay parameters
-  proposed_aug_dat_step2 <- proposed_aug_dat_step1
-  corr_1_E0_to_E1 <- 0
-  if (length(date_idx_E0_to_E1) > 0) {
+  
+  # Move this function out of here
+  perform_E0_to_E1_swap <- function(i,
+                                    group_idx,
+                                    date_idx_E0_to_E1,
+                                    current_aug_dat,
+                                    theta,
+                                    obs_dat,
+                                    hyperparameters,
+                                    index_dates,
+                                    range_dates) {
+    
+    proposed_aug_dat <- current_aug_dat
+    correction_factor <- 0
+    
+    # If there are no dates to swap return inputs unchanged
+    if (length(date_idx_E0_to_E1) == 0) {
+      return(list(
+        proposed_aug_dat = proposed_aug_dat,
+        correction_factor = correction_factor
+      ))
+    }
+    
+    # Loop through each date that was originally E=0
     for (k in date_idx_E0_to_E1) {
-      current_state <- proposed_aug_dat_step2
-      proposed_aug_dat_step2$E[[group_idx]][i, k] <- 1
-      proposed_aug_dat_step2$D[[group_idx]][i, k] <-
+      state_before_swap <- proposed_aug_dat
+      
+      # Propose new state for this date
+      proposed_aug_dat$E[[group_idx]][i, k] <- 1
+      proposed_aug_dat$D[[group_idx]][i, k] <-
         propose_move_from_E0_to_E1(
-          i, group_idx, k, current_state,
+          i, group_idx, k, state_before_swap,
           theta, obs_dat, hyperparameters, index_dates, range_dates
         )
-      corr_1_E0_to_E1 <- corr_1_E0_to_E1 +
+      
+      # Calculate and accumulate correction factors
+      correction_factor <- correction_factor +
         compute_p_accept_move_from_E0_to_E1(
           i = i,
           group_idx = group_idx,
           date_idx = k,
-          curr_aug_dat = current_state,
-          proposed_aug_dat = proposed_aug_dat_step2,
+          curr_aug_dat = state_before_this_swap,
+          proposed_aug_dat = proposed_aug_dat,
           theta = theta,
           obs_dat = obs_dat,
           index_dates = index_dates,
           range_dates = range_dates
-        )[2]
+        )[2] # only need second element of the result
     }
+    
+    return(list(
+      proposed_aug_dat = proposed_aug_dat,
+      correction_factor = correction_factor
+    ))
   }
+  
+  step2_results <- perform_E0_to_E1_swap(
+    i, group_idx, date_idx_E0_to_E1, proposed_aug_dat_step1,
+    theta, obs_dat, hyperparameters, index_dates, range_dates
+    )
+  
+  proposed_aug_dat_step2 <- step2_results$proposed_aug_dat
+  corr_1_E0_to_E1 <- step2_results$correction_factor
+  
+  
+  # proposed_aug_dat_step2 <- proposed_aug_dat_step1
+  # corr_1_E0_to_E1 <- 0
+  # if (length(date_idx_E0_to_E1) > 0) {
+  #   for (k in date_idx_E0_to_E1) {
+  #     current_state <- proposed_aug_dat_step2
+  #     proposed_aug_dat_step2$E[[group_idx]][i, k] <- 1
+  #     proposed_aug_dat_step2$D[[group_idx]][i, k] <-
+  #       propose_move_from_E0_to_E1(
+  #         i, group_idx, k, current_state,
+  #         theta, obs_dat, hyperparameters, index_dates, range_dates
+  #       )
+  #     corr_1_E0_to_E1 <- corr_1_E0_to_E1 +
+  #       compute_p_accept_move_from_E0_to_E1(
+  #         i = i,
+  #         group_idx = group_idx,
+  #         date_idx = k,
+  #         curr_aug_dat = current_state,
+  #         proposed_aug_dat = proposed_aug_dat_step2,
+  #         theta = theta,
+  #         obs_dat = obs_dat,
+  #         index_dates = index_dates,
+  #         range_dates = range_dates
+  #       )[2]
+  #   }
+  # }
 
   ## Step 3: Resample missing dates so that they are compatible with
   ## the new proposed dates.

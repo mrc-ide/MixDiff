@@ -929,17 +929,50 @@ move_Ei <- function(i,
 # and one without error, propose to swap the two
 # ----------------------------------------------------------------------------
 
-# Identify rows where (other than -1s) errors are not all the same
-# i.e. mixed errors and non-errors
-## ANNE: TODO for Rebecca to add documentation for this function
-## ANNE: this function finds individuals that have among all their dates one that is E = 0 and one that is E = 1 which hence could be swapped
+#' Find individuals with mixed error types for swapping
+#' 
+#' @description
+#' Helper function for the MCMC sampler that identifies which individuals are
+#' eligible for the `swap_Ei` move. An individual is eligible if their set of
+#' recorded dates contains at least one date marked as correct (`E=0`) and at
+#' least one date marked as an error (`E=1`). Individuals with only correct
+#' dates, only erroneous dates, or only missing dates, are not eligible for
+#' this swap move.
+#' 
+#' @param group_idx Integer specifying the index of the group to check
+#' @param curr_aug_dat Current augmented data list, which must contain a list
+#'  of error matrices named `E`
+#'  
+#' @return Vector containing the row indices of the individuals (within the
+#'  specified group) who have a mix of `E=0` and `E=1` values. Returns an
+#'  empty vector if no individuals are found.
+#' 
+#' @export
+#' 
+#' @examples
+#' # Augmented data with one group and four individuals
+#' aug_dat <- list(E = list(
+#'   matrix(c(
+#'     0, 0, -1, 0,  # all correct or missing (not eligible)
+#'     1, 1, 1, -1,   # all errors or missing (not eligible)
+#'     0, 1, -1, 0,  # mix of 0, 1, and -1 (eligible)
+#'     1, 0, 1, 0   # mix of 0 and 1 (eligible)
+#'   ), nrow = 4, byrow = TRUE)
+#' ))
+#'
+#' # find_Eis_to_swap should identify individuals 3 and 4 as eligible
+#' find_Eis_to_swap(group_idx = 1, curr_aug_dat = aug_dat)
+#' 
 find_Eis_to_swap <- function(group_idx, curr_aug_dat) {
+  
   Es <- curr_aug_dat$E[[group_idx]]
-  # check for more than one unique non_missing entry
+  
+  # for each row (individual) check for more than one unique non_missing entry
   which(sapply(seq_len(nrow(Es)), function(i) {
     non_missing <- Es[i, Es[i, ] != -1]
     unique_values_of_E_i <- unique(non_missing)
-    length(unique_values_of_E_i) > 1 # this only has length >1 if it contains both a zero and a one.
+    # length only >1 if both a 0 and 1 present
+    length(unique_values_of_E_i) > 1
   }))
 }
 

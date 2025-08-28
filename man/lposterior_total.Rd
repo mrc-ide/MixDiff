@@ -104,21 +104,14 @@ D <- simul_true_data(theta, n_per_group, range_dates, index_dates)
 observed_D <- simul_obs_dat(D$true_dat, theta, range_dates,
                             remove_allNA_indiv = TRUE)
 obs_dat <- observed_D$obs_dat
-true_aug_dat <- list(D = D$true_dat, E = observed_D$E)
+aug_dat <- initialise_aug_data(obs_dat, index_dates, MCMC_settings)
 
-# Define hyperparameters
 hyperparameters <- list(shape1_prob_error = 3, shape2_prob_error = 12,
                      mean_mean_delay = 100, mean_CV_delay = 100)
 
-# Compute log posterior distribution for that data
-lposterior_total(true_aug_dat, theta, obs_dat, hyperparameters, index_dates,
-                 range_dates = NULL)
-
-# Now use initialised augmented data and check that posterior value for this
-# is lower than for true data:
 MCMC_settings <- list(init_options = list(mindelay = 0, maxdelay = 100))
-aug_dat <- initialise_aug_data(observed_D$obs_dat, index_dates,
-                               MCMC_settings)
+
 lposterior_total(aug_dat, theta, obs_dat, hyperparameters, index_dates,
                  range_dates = NULL)
+                 
 }

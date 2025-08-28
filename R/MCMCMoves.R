@@ -1036,23 +1036,49 @@ swap_Ei <- function(i,
   all_E_values <- curr_aug_dat$E[[group_idx]][i, ]
   date_idx <- seq_len(ncol(curr_aug_dat$E[[group_idx]]))
 
-  # TO DO: Add tests to see how these handle multiple values
   date_idx_E0_to_E1 <- date_idx[all_E_values %in% 0]
   date_idx_E1_to_E0 <- date_idx[all_E_values %in% 1]
   date_idx_resample <- date_idx[all_E_values %in% -1]
   
   ## Step 1: Move E = 1 date(s) to E = 0
-  proposed_aug_dat_step1 <- curr_aug_dat
-  if (length(date_idx_E1_to_E0) > 0) {
+  
+  # Move this function out of this script
+  perform_E1_to_E0_swap <- function(i, group_idx, date_idx_E1_to_E0,
+                                    curr_aug_dat, theta, obs_dat,
+                                    hyperparameters, index_dates, range_dates) {
+    
+    proposed_aug_dat <- curr_aug_dat
+    if (length(date_idx_E1_to_E0) == 0) {
+      return(proposed_aug_dat)
+    }
+    
     for (k in date_idx_E1_to_E0) {
-      proposed_aug_dat_step1$E[[group_idx]][i, k] <- 0
-      proposed_aug_dat_step1$D[[group_idx]][i, k] <-
+      proposed_aug_dat$E[[group_idx]][i, k] <- 0
+      proposed_aug_dat$D[[group_idx]][i, k] <-
         propose_move_from_E1_to_E0(
           i, group_idx, k, curr_aug_dat, theta, obs_dat,
           hyperparameters, index_dates, range_dates
         )
     }
+    return(proposed_aug_dat)
   }
+  
+  proposed_aug_dat_step1 <- perform_E1_to_E0_swap(
+    i, group_idx, date_idx_E1_to_E0,
+    curr_aug_dat, theta, obs_dat,
+    hyperparameters, index_dates, range_dates)
+  
+  # proposed_aug_dat_step1 <- curr_aug_dat
+  # if (length(date_idx_E1_to_E0) > 0) {
+  #   for (k in date_idx_E1_to_E0) {
+  #     proposed_aug_dat_step1$E[[group_idx]][i, k] <- 0
+  #     proposed_aug_dat_step1$D[[group_idx]][i, k] <-
+  #       propose_move_from_E1_to_E0(
+  #         i, group_idx, k, curr_aug_dat, theta, obs_dat,
+  #         hyperparameters, index_dates, range_dates
+  #       )
+  #   }
+  # }
   
   ## Step 2: Move the original E = 0 dates to E = 1 ensuring that dates are
   ## plausible given the delay parameters

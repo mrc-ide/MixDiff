@@ -734,7 +734,42 @@ compute_p_accept_move_from_E1_to_E0 <- function(i,
 # Move E
 # ----------------------------------------------------------------------------
 
-#' Add documentation
+#' Metropolis-Hastings accept/reject step
+#' 
+#' @description
+#' Helper function to perform accept/reject step of a Metropolis-Hastings move.
+#' It compares the final log posterior acceptance probability to a random draw
+#' from a uniform distribution to decide whether to accept the proposed state
+#' or keep the current state.
+#' 
+#' @param log_p_accept Log acceptance probability. Sum of the log posterior
+#'  ratio and the log proposal correction factor. The function handles `NA`
+#'  values by treating them as `-Inf` and caps positive values at `0`.
+#' @param proposed_dat Augmented data representing the new, proposed state.
+#'  This will be returned if the move is accepted.
+#' @param current_dat Original state before the proposal. This will be returned
+#'  if the move is rejected.
+#'  
+#' @return A list containing two elements:
+#' \itemise{
+#'  \item{`new_aug_dat`}: The augmented data set for the next step in the
+#'     MCMC chain (either `proposed_dat` or `current_dat`).
+#'   \item{`accept`}: An indicator with value `1` if the move was accepted or
+#'     `0` if it was rejected.
+#' 
+#' @export
+#' 
+#' @examples
+#' current_state <- list(D = 10)
+#' proposed_state <- list(D = 15)
+#' 
+#' set.seed(1)
+#' # Expect to accept
+#' decide_acceptance(log_p_accept = 0, proposed_state, current_state)
+#' 
+#' # Expect to reject
+#' decide_acceptance(log_p_accept = -10, proposed_state, current_state)
+#' 
 decide_acceptance <- function(log_p_accept, proposed_dat, current_dat) {
   if (is.na(log_p_accept)) log_p_accept <- -Inf
   if (log_p_accept > 0) log_p_accept <- 0

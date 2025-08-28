@@ -875,7 +875,7 @@ move_Ei <- function(i,
   curr_E_value <- curr_aug_dat$E[[group_idx]][i, date_idx]
 
   # if date is missing do nothing
-  if (curr_E_value != -1) {
+  if (curr_E_value == -1) {
     return(list(new_aug_dat = curr_aug_dat, accept = 0))
   }
   

@@ -1253,62 +1253,107 @@ swap_Ei <- function(i,
   #   }
   # }
 
-  ## Mimic the reverse moves for correction factor calc
-  # # step 1
-  # proposed_aug_dat_rev1 <- proposed_aug_dat_step3
-  # proposed_aug_dat_rev1$E[[group_idx]][i, date_idx_E0_to_E1] <- 0
-  # proposed_aug_dat_rev1$D[[group_idx]][i, date_idx_E0_to_E1] <-
-  #   propose_move_from_E1_to_E0(i, group_idx, date_idx_E0_to_E1,
-  #                              proposed_aug_dat_step3, theta, obs_dat, hyperparameters,
-  #                              index_dates, range_dates)
-  
+  ## Mimic the reverse moves for correction factor calc -----------------------
   
   # Reverse of step 3
-  correct_factor_new_delay_rev <- 0
-  proposed_aug_dat_rev3 <- proposed_aug_dat_step3
-  curr_delays <- compute_delta(proposed_aug_dat_rev3$D, index_dates)[[group_idx]][i, ]
-  if(length(date_idx_resample) > 0) {
-    for(k in date_idx_resample) {
-      proposed_aug_dat_rev3$D[[group_idx]][i, k] <- curr_aug_dat$D[[group_idx]][i, k]
-    }
-    new_delays <- compute_delta(proposed_aug_dat_rev3$D, index_dates)[[group_idx]][i, ]
+  
+  # Move function out:
+  reverse_resample_missing_dates <- function(i,
+                                             group_idx,
+                                             date_idx_resample,
+                                             final_proposed_dat,
+                                             original_dat,
+                                             theta,
+                                             index_dates) {
     
-    for(k in date_idx_resample) {
-      tmp_delay_idx <- which(index_dates[[group_idx]] == k, arr.ind = TRUE)[, 2]
-      for(kk in tmp_delay_idx) {
-        correct_factor_new_delay_rev <- correct_factor_new_delay_rev +
-          (1/length(tmp_delay_idx)) *
-          get_correct_factor_new_delay(
-            curr_delays[kk], new_delays[kk], theta, group_idx, kk
-          )['prob_proposing_new_value']
+    correction_factor_rev <- 0
+    reverted_dat <- final_proposed_dat
+    
+    if (length(date_idx_resample) > 0) {
+      # Delays from final proposed state
+      curr_delays <- compute_delta(final_proposed_dat$D, index_dates)[[group_idx]][i, ]
+      
+      # Revert the dates for all resampled incides at once
+      reverted_dat$D[[group_idx]][i, date_idx_resample] <- original_dat$D[[group_idx]][i, date_idx_resample]
+      
+      # Get new delays after reverting the dates
+      new_delays <- compute_delta(reverted_dat$D, index_dates)[[group_idx]][i, ]
+      
+      # Calculate the reverse correction factor
+      for (k in date_idx_resample) {
+        # Find which delays were affected by changing date k
+        tmp_delay_idx <- which(index_dates[[group_idx]] == k, arr.ind = TRUE)[, 2]
+        for (kk in tmp_delay_idx) {
+          correction_factor_rev <- correction_factor_rev +
+            (1 / length(tmp_delay_idx)) *
+            get_correct_factor_new_delay(
+              curr_delays[kk], new_delays[kk], theta, group_idx, kk
+            )['prob_proposing_new_value']
+        }
       }
     }
+    
+    return(list(
+      reverted_aug_dat = reverted_dat,
+      correction_factor = correction_factor_rev
+    ))
   }
+  
+  rev_step_3_results <- reverse_resample_missing_dates(
+    i, group_idx, date_idx_resample,
+    final_proposed_dat = proposed_aug_dat_step3,
+    original_dat = curr_aug_dat, # the original state
+    theta, index_dates
+  )
+  
+  
+  # correct_factor_new_delay_rev <- 0
+  # proposed_aug_dat_rev3 <- proposed_aug_dat_step3
+  # curr_delays <- compute_delta(proposed_aug_dat_rev3$D, index_dates)[[group_idx]][i, ]
+  # if(length(date_idx_resample) > 0) {
+  #   for(k in date_idx_resample) {
+  #     proposed_aug_dat_rev3$D[[group_idx]][i, k] <- curr_aug_dat$D[[group_idx]][i, k]
+  #   }
+  #   new_delays <- compute_delta(proposed_aug_dat_rev3$D, index_dates)[[group_idx]][i, ]
+  #   
+  #   for(k in date_idx_resample) {
+  #     tmp_delay_idx <- which(index_dates[[group_idx]] == k, arr.ind = TRUE)[, 2]
+  #     for(kk in tmp_delay_idx) {
+  #       correct_factor_new_delay_rev <- correct_factor_new_delay_rev +
+  #         (1/length(tmp_delay_idx)) *
+  #         get_correct_factor_new_delay(
+  #           curr_delays[kk], new_delays[kk], theta, group_idx, kk
+  #         )['prob_proposing_new_value']
+  #     }
+  #   }
+  # }
   
   # Reverse of step 2
-  corr_1_E0_to_E1_rev <- 0
-  proposed_aug_dat_rev2 <- proposed_aug_dat_rev3
   
-  if (length(date_idx_E0_to_E1) > 0) {
-    for (k in rev(date_idx_E0_to_E1)) {
-      current_state <- proposed_aug_dat_rev2
-      proposed_aug_dat_rev2$E[[group_idx]][i, k] <- 0
-      proposed_aug_dat_rev2$D[[group_idx]][i, k] <- curr_aug_dat$D[[group_idx]][i, k]
-      
-      corr_1_E0_to_E1_rev <- corr_1_E0_to_E1_rev +
-        compute_p_accept_move_from_E0_to_E1(
-          i = i,
-          group_idx = group_idx,
-          date_idx = k,
-          curr_aug_dat = current_state,
-          proposed_aug_dat = proposed_aug_dat_rev2,
-          theta = theta,
-          obs_dat = obs_dat,
-          index_dates = index_dates,
-          range_dates = range_dates
-        )[2]
-    }
-  }
+  
+  # corr_1_E0_to_E1_rev <- 0
+  # proposed_aug_dat_rev2 <- proposed_aug_dat_rev3
+  # 
+  # if (length(date_idx_E0_to_E1) > 0) {
+  #   for (k in rev(date_idx_E0_to_E1)) {
+  #     current_state <- proposed_aug_dat_rev2
+  #     proposed_aug_dat_rev2$E[[group_idx]][i, k] <- 0
+  #     proposed_aug_dat_rev2$D[[group_idx]][i, k] <- curr_aug_dat$D[[group_idx]][i, k]
+  #     
+  #     corr_1_E0_to_E1_rev <- corr_1_E0_to_E1_rev +
+  #       compute_p_accept_move_from_E0_to_E1(
+  #         i = i,
+  #         group_idx = group_idx,
+  #         date_idx = k,
+  #         curr_aug_dat = current_state,
+  #         proposed_aug_dat = proposed_aug_dat_rev2,
+  #         theta = theta,
+  #         obs_dat = obs_dat,
+  #         index_dates = index_dates,
+  #         range_dates = range_dates
+  #       )[2]
+  #   }
+  # }
   
 
   delay_idx <- which(

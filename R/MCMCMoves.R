@@ -926,6 +926,223 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat) {
   }))
 }
 
+## FORWARD MOVES ------------------------------------------------------------
+
+# Add documentation
+perform_E1_to_E0_swap <- function(i, group_idx, date_idx_E1_to_E0,
+                                  curr_aug_dat, theta, obs_dat,
+                                  hyperparameters, index_dates, range_dates) {
+  
+  proposed_aug_dat <- curr_aug_dat
+  if (length(date_idx_E1_to_E0) == 0) {
+    return(proposed_aug_dat)
+  }
+  
+  for (k in date_idx_E1_to_E0) {
+    proposed_aug_dat$E[[group_idx]][i, k] <- 0
+    proposed_aug_dat$D[[group_idx]][i, k] <-
+      propose_move_from_E1_to_E0(i, group_idx, k, obs_dat)
+  }
+  return(proposed_aug_dat)
+}
+
+# Add documentation
+perform_E0_to_E1_swap <- function(i,
+                                  group_idx,
+                                  date_idx_E0_to_E1,
+                                  current_aug_dat,
+                                  theta,
+                                  obs_dat,
+                                  hyperparameters,
+                                  index_dates,
+                                  range_dates) {
+  
+  proposed_aug_dat <- current_aug_dat
+  correction_factor <- 0
+  
+  # If there are no dates to swap return inputs unchanged
+  if (length(date_idx_E0_to_E1) == 0) {
+    return(list(
+      proposed_aug_dat = proposed_aug_dat,
+      correction_factor = correction_factor
+    ))
+  }
+  
+  # Loop through each date that was originally E=0
+  for (k in date_idx_E0_to_E1) {
+    state_before_swap <- proposed_aug_dat
+    
+    # Propose new state for this date
+    proposed_aug_dat$E[[group_idx]][i, k] <- 1
+    proposed_aug_dat$D[[group_idx]][i, k] <-
+      propose_move_from_E0_to_E1(
+        i, group_idx, k, state_before_swap,
+        theta, obs_dat, hyperparameters, index_dates, range_dates
+      )
+    
+    # Calculate and accumulate correction factors
+    correction_factor <- correction_factor +
+      compute_p_accept_move_from_E0_to_E1(
+        i = i,
+        group_idx = group_idx,
+        date_idx = k,
+        curr_aug_dat = state_before_this_swap,
+        proposed_aug_dat = proposed_aug_dat,
+        theta = theta,
+        obs_dat = obs_dat,
+        index_dates = index_dates,
+        range_dates = range_dates
+      )[2] # only need second element of the result
+  }
+  
+  return(list(
+    proposed_aug_dat = proposed_aug_dat,
+    correction_factor = correction_factor
+  ))
+}
+
+# Add documentation
+resample_missing_dates <- function(i,
+                                   group_idx,
+                                   date_idx_resample,
+                                   current_aug_dat,
+                                   theta,
+                                   obs_dat,
+                                   hyperparameters,
+                                   index_dates,
+                                   range_dates) {
+  
+  proposed_aug_dat <- current_aug_dat
+  correction_factor <- 0
+  
+  # If there are no dates to resample return inputs unchanged
+  if (length(date_idx_resample) == 0) {
+    return(list(
+      proposed_aug_dat = proposed_aug_dat,
+      correction_factor = correction_factor
+    ))
+  }
+  
+  # Loop through each date that was originally missing
+  for (k in date_idx_resample) {
+    # Propose a new delay and get the intermediate values
+    tmp_delay_info <- propose_new_delay(
+      i, group_idx, k, proposed_aug_dat,
+      theta, obs_dat, hyperparameters, index_dates, range_dates
+    )
+    
+    # Update the augmented data with the new proposal from this iteration
+    proposed_aug_dat <- tmp_delay_info$proposed_aug_dat
+    
+    # Calculate and accumulate the correction factor for this specific move
+    correction_factor <- correction_factor +
+      get_correct_factor_new_delay(
+        tmp_delay_info$curr_delay,
+        tmp_delay_info$sample_delay,
+        theta,
+        group_idx,
+        tmp_delay_info$which_delay
+      )["prob_proposing_new_value"]
+  }
+  
+  return(list(
+    proposed_aug_dat = proposed_aug_dat,
+    correction_factor = correction_factor
+  ))
+}
+
+
+## REVERSE MOVES ------------------------------------------------------------
+
+# Add documentation
+reverse_resample_missing_dates <- function(i,
+                                           group_idx,
+                                           date_idx_resample,
+                                           final_proposed_dat,
+                                           original_dat,
+                                           theta,
+                                           index_dates) {
+  
+  correction_factor_rev <- 0
+  reverted_dat <- final_proposed_dat
+  
+  if (length(date_idx_resample) > 0) {
+    # Delays from final proposed state
+    curr_delays <- compute_delta(final_proposed_dat$D, index_dates)[[group_idx]][i, ]
+    
+    # Revert the dates for all resampled incides at once
+    reverted_dat$D[[group_idx]][i, date_idx_resample] <-
+      original_dat$D[[group_idx]][i, date_idx_resample]
+    
+    # Get new delays after reverting the dates
+    new_delays <- compute_delta(reverted_dat$D, index_dates)[[group_idx]][i, ]
+    
+    # Calculate the reverse correction factor
+    for (k in date_idx_resample) {
+      # Find which delays were affected by changing date k
+      tmp_delay_idx <- which(index_dates[[group_idx]] == k, arr.ind = TRUE)[, 2]
+      for (kk in tmp_delay_idx) {
+        correction_factor_rev <- correction_factor_rev +
+          (1 / length(tmp_delay_idx)) *
+          get_correct_factor_new_delay(
+            curr_delays[kk], new_delays[kk], theta, group_idx, kk
+          )['prob_proposing_new_value']
+      }
+    }
+  }
+  
+  return(list(
+    reverted_aug_dat = reverted_dat,
+    correction_factor = correction_factor_rev
+  ))
+}
+
+# Add documentation
+reverse_E0_to_E1_swap <- function(i,
+                                  group_idx,
+                                  date_idx_E0_to_E1,
+                                  current_reverted_dat,
+                                  original_dat,
+                                  theta,
+                                  obs_dat,
+                                  index_dates,
+                                  range_dates) {
+  
+  correction_factor_rev <- 0
+  reverted_dat <- current_reverted_dat
+  
+  if (length(date_idx_E0_to_E1) > 0) {
+    # Loop backwards
+    for (k in rev(date_idx_E0_to_E1)) {
+      state_before_revert <- reverted_dat
+      
+      # Revert E and D for this date to original values
+      reverted_dat$E[[group_idx]][i, k] <- 0
+      reverted_dat$D[[group_idx]][i, k] <- original_dat$D[[group_idx]][i, k]
+      
+      # Calculate reverse probability
+      correction_factor_rev <- correction_factor_rev +
+        compute_p_accept_move_from_E0_to_E1(
+          i = i,
+          group_idx = group_idx,
+          date_idx = k,
+          curr_aug_dat = state_before_this_revert,
+          proposed_aug_dat = reverted_dat,
+          theta = theta,
+          obs_dat = obs_dat,
+          index_dates = index_dates,
+          range_dates = range_dates
+        )[2]
+    }
+  }
+  
+  return(list(
+    reverted_aug_dat = reverted_dat,
+    correction_factor = correction_factor_rev
+  ))
+}
+
+
 #' Performs one iteration of an MCMC move for the augmented data where the
 #'  indicators of error in observations for one individual are swapped, i.e.
 #'   the errors become non errors and vice versa.
@@ -1025,26 +1242,9 @@ swap_Ei <- function(i,
   date_idx_E1_to_E0 <- date_idx[all_E_values %in% 1]
   date_idx_resample <- date_idx[all_E_values %in% -1]
   
+  ## Forward moves ------------------------------------------------------------
+  
   ## Step 1: Move E = 1 date(s) to E = 0
-  
-  # Move this function out of here
-  perform_E1_to_E0_swap <- function(i, group_idx, date_idx_E1_to_E0,
-                                    curr_aug_dat, theta, obs_dat,
-                                    hyperparameters, index_dates, range_dates) {
-    
-    proposed_aug_dat <- curr_aug_dat
-    if (length(date_idx_E1_to_E0) == 0) {
-      return(proposed_aug_dat)
-    }
-    
-    for (k in date_idx_E1_to_E0) {
-      proposed_aug_dat$E[[group_idx]][i, k] <- 0
-      proposed_aug_dat$D[[group_idx]][i, k] <-
-        propose_move_from_E1_to_E0(i, group_idx, k, obs_dat)
-    }
-    return(proposed_aug_dat)
-  }
-  
   proposed_aug_dat_step1 <- perform_E1_to_E0_swap(
     i, group_idx, date_idx_E1_to_E0,
     curr_aug_dat, theta, obs_dat,
@@ -1053,62 +1253,6 @@ swap_Ei <- function(i,
   
   ## Step 2: Move the original E = 0 dates to E = 1 ensuring that dates are
   ## plausible given the delay parameters
-  
-  # Move this function out of here
-  perform_E0_to_E1_swap <- function(i,
-                                    group_idx,
-                                    date_idx_E0_to_E1,
-                                    current_aug_dat,
-                                    theta,
-                                    obs_dat,
-                                    hyperparameters,
-                                    index_dates,
-                                    range_dates) {
-    
-    proposed_aug_dat <- current_aug_dat
-    correction_factor <- 0
-    
-    # If there are no dates to swap return inputs unchanged
-    if (length(date_idx_E0_to_E1) == 0) {
-      return(list(
-        proposed_aug_dat = proposed_aug_dat,
-        correction_factor = correction_factor
-      ))
-    }
-    
-    # Loop through each date that was originally E=0
-    for (k in date_idx_E0_to_E1) {
-      state_before_swap <- proposed_aug_dat
-      
-      # Propose new state for this date
-      proposed_aug_dat$E[[group_idx]][i, k] <- 1
-      proposed_aug_dat$D[[group_idx]][i, k] <-
-        propose_move_from_E0_to_E1(
-          i, group_idx, k, state_before_swap,
-          theta, obs_dat, hyperparameters, index_dates, range_dates
-        )
-      
-      # Calculate and accumulate correction factors
-      correction_factor <- correction_factor +
-        compute_p_accept_move_from_E0_to_E1(
-          i = i,
-          group_idx = group_idx,
-          date_idx = k,
-          curr_aug_dat = state_before_this_swap,
-          proposed_aug_dat = proposed_aug_dat,
-          theta = theta,
-          obs_dat = obs_dat,
-          index_dates = index_dates,
-          range_dates = range_dates
-        )[2] # only need second element of the result
-    }
-    
-    return(list(
-      proposed_aug_dat = proposed_aug_dat,
-      correction_factor = correction_factor
-    ))
-  }
-  
   step2_results <- perform_E0_to_E1_swap(
     i, group_idx, date_idx_E0_to_E1, proposed_aug_dat_step1,
     theta, obs_dat, hyperparameters, index_dates, range_dates
@@ -1119,57 +1263,6 @@ swap_Ei <- function(i,
   
   ## Step 3: Resample missing dates so that they are compatible with
   ## the new proposed dates.
-  
-  # Move function out of here
-  resample_missing_dates <- function(i,
-                                     group_idx,
-                                     date_idx_resample,
-                                     current_aug_dat,
-                                     theta,
-                                     obs_dat,
-                                     hyperparameters,
-                                     index_dates,
-                                     range_dates) {
-    
-    proposed_aug_dat <- current_aug_dat
-    correction_factor <- 0
-    
-    # If there are no dates to resample return inputs unchanged
-    if (length(date_idx_resample) == 0) {
-      return(list(
-        proposed_aug_dat = proposed_aug_dat,
-        correction_factor = correction_factor
-      ))
-    }
-    
-    # Loop through each date that was originally missing
-    for (k in date_idx_resample) {
-      # Propose a new delay and get the intermediate values
-      tmp_delay_info <- propose_new_delay(
-        i, group_idx, k, proposed_aug_dat,
-        theta, obs_dat, hyperparameters, index_dates, range_dates
-      )
-      
-      # Update the augmented data with the new proposal from this iteration
-      proposed_aug_dat <- tmp_delay_info$proposed_aug_dat
-      
-      # Calculate and accumulate the correction factor for this specific move
-      correction_factor <- correction_factor +
-        get_correct_factor_new_delay(
-          tmp_delay_info$curr_delay,
-          tmp_delay_info$sample_delay,
-          theta,
-          group_idx,
-          tmp_delay_info$which_delay
-        )["prob_proposing_new_value"]
-    }
-    
-    return(list(
-      proposed_aug_dat = proposed_aug_dat,
-      correction_factor = correction_factor
-    ))
-  }
-  
   step3_results <- resample_missing_dates(
     i, group_idx, date_idx_resample, proposed_aug_dat_step2,
     theta, obs_dat, hyperparameters, index_dates, range_dates
@@ -1178,52 +1271,9 @@ swap_Ei <- function(i,
   proposed_aug_dat_step3 <- step3_results$proposed_aug_dat
   correct_factor_new_delay <- step3_results$correction_factor
   
-  ## Mimic the reverse moves for correction factor calc -----------------------
+  ## Reverse moves (for correction factor calc) -----------------------
   
   # Reverse of step 3
-  
-  # Move function out:
-  reverse_resample_missing_dates <- function(i,
-                                             group_idx,
-                                             date_idx_resample,
-                                             final_proposed_dat,
-                                             original_dat,
-                                             theta,
-                                             index_dates) {
-    
-    correction_factor_rev <- 0
-    reverted_dat <- final_proposed_dat
-    
-    if (length(date_idx_resample) > 0) {
-      # Delays from final proposed state
-      curr_delays <- compute_delta(final_proposed_dat$D, index_dates)[[group_idx]][i, ]
-      
-      # Revert the dates for all resampled incides at once
-      reverted_dat$D[[group_idx]][i, date_idx_resample] <- original_dat$D[[group_idx]][i, date_idx_resample]
-      
-      # Get new delays after reverting the dates
-      new_delays <- compute_delta(reverted_dat$D, index_dates)[[group_idx]][i, ]
-      
-      # Calculate the reverse correction factor
-      for (k in date_idx_resample) {
-        # Find which delays were affected by changing date k
-        tmp_delay_idx <- which(index_dates[[group_idx]] == k, arr.ind = TRUE)[, 2]
-        for (kk in tmp_delay_idx) {
-          correction_factor_rev <- correction_factor_rev +
-            (1 / length(tmp_delay_idx)) *
-            get_correct_factor_new_delay(
-              curr_delays[kk], new_delays[kk], theta, group_idx, kk
-            )['prob_proposing_new_value']
-        }
-      }
-    }
-    
-    return(list(
-      reverted_aug_dat = reverted_dat,
-      correction_factor = correction_factor_rev
-    ))
-  }
-  
   rev_step_3_results <- reverse_resample_missing_dates(
     i, group_idx, date_idx_resample,
     final_proposed_dat = proposed_aug_dat_step3,
@@ -1231,64 +1281,13 @@ swap_Ei <- function(i,
     theta, index_dates
   )
   
-  correct_factor_new_delay_rev <- rev_step3_results$correction_factor
-  
   # Reverse of step 2
-  
-  # Move function out:
-  reverse_E0_to_E1_swap <- function(i,
-                                    group_idx,
-                                    date_idx_E0_to_E1,
-                                    current_reverted_dat,
-                                    original_dat,
-                                    theta,
-                                    obs_dat,
-                                    index_dates,
-                                    range_dates) {
-    
-    correction_factor_rev <- 0
-    reverted_dat <- current_reverted_dat
-    
-    if (length(date_idx_E0_to_E1) > 0) {
-      # Loop backwards
-      for (k in rev(date_idx_E0_to_E1)) {
-        state_before_revert <- reverted_dat
-        
-        # Revert E and D for this date to original values
-        reverted_dat$E[[group_idx]][i, k] <- 0
-        reverted_dat$D[[group_idx]][i, k] <- original_dat$D[[group_idx]][i, k]
-        
-        # Calculate reverse probability
-        correction_factor_rev <- correction_factor_rev +
-          compute_p_accept_move_from_E0_to_E1(
-            i = i,
-            group_idx = group_idx,
-            date_idx = k,
-            curr_aug_dat = state_before_this_revert,
-            proposed_aug_dat = reverted_dat,
-            theta = theta,
-            obs_dat = obs_dat,
-            index_dates = index_dates,
-            range_dates = range_dates
-          )[2]
-      }
-    }
-  
-    return(list(
-      reverted_aug_dat = reverted_dat,
-      correction_factor = correction_factor_rev
-    ))
-  }
-  
   rev_step2_results <- reverse_E0_to_E1_swap(
     i, group_idx, date_idx_E0_to_E1,
     current_reverted_dat = rev_step3_results$reverted_aug_dat,
     original_dat = curr_aug_dat,
     theta, obs_dat, index_dates, range_dates
   )
-  
-  proposed_aug_dat_rev2 <- rev_step2_results$reverted_aug_dat
-  corr_1_E0_to_E1_rev <- rev_step2_results$correction_factor
 
 
   
@@ -1441,8 +1440,8 @@ swap_Ei <- function(i,
   # correct_factor_new_delay # computes the log_prob_proposing_new_missing_values
   # correct_factor_new_delay_rev # computes the log_prob_proposing_old_missing_values
 
-  corr <- (corr_1_E0_to_E1 - corr_1_E0_to_E1_rev) + # to obtain log_p_new_to_old - log_p_old_to_new
-    (correct_factor_new_delay_rev - correct_factor_new_delay) # to obtain log_p_new_to_old - log_p_old_to_new
+  corr <- (rev_step2_results$correction_factor - step2_results$correction_factor) +
+          (rev_step3_results$correction_factor - step3_results$correction_factor)
 
   #print(paste(c(ratio_post ,
   #                corr_1_E0_to_E1 , corr_1_E0_to_E1_rev ,

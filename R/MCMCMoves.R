@@ -1176,23 +1176,82 @@ swap_Ei <- function(i,
 
   ## Step 3: Resample missing dates so that they are compatible with
   ## the new proposed dates.
-  proposed_aug_dat_step3 <- proposed_aug_dat_step2
-  correct_factor_new_delay <- 0
-  if (length(date_idx_resample) > 0) {
+  
+  # Move function out of here
+  resample_missing_dates <- function(i,
+                                     group_idx,
+                                     date_idx_resample,
+                                     current_aug_dat,
+                                     theta,
+                                     obs_dat,
+                                     hyperparameters,
+                                     index_dates,
+                                     range_dates) {
+    
+    proposed_aug_dat <- current_aug_dat
+    correction_factor <- 0
+    
+    # If there are no dates to resample return inputs unchanged
+    if (length(date_idx_resample) == 0) {
+      return(list(
+        proposed_aug_dat = proposed_aug_dat,
+        correction_factor = correction_factor
+      ))
+    }
+    
+    # Loop through each date that was originally missing
     for (k in date_idx_resample) {
-      tmp_delay <- propose_new_delay(
-        i, group_idx, k, proposed_aug_dat_step3,
+      # Propose a new delay and get the intermediate values
+      tmp_delay_info <- propose_new_delay(
+        i, group_idx, k, proposed_aug_dat,
         theta, obs_dat, hyperparameters, index_dates, range_dates
       )
-      # propose a new date compatible with newly drawn dates
-      proposed_aug_dat_step3 <- tmp_delay$proposed_aug_dat
-      correct_factor_new_delay <- correct_factor_new_delay +
+      
+      # Update the augmented data with the new proposal from this iteration
+      proposed_aug_dat <- tmp_delay_info$proposed_aug_dat
+      
+      # Calculate and accumulate the correction factor for this specific move
+      correction_factor <- correction_factor +
         get_correct_factor_new_delay(
-          tmp_delay$curr_delay, tmp_delay$sample_delay, theta,
-          group_idx, tmp_delay$which_delay
+          tmp_delay_info$curr_delay,
+          tmp_delay_info$sample_delay,
+          theta,
+          group_idx,
+          tmp_delay_info$which_delay
         )["prob_proposing_new_value"]
     }
+    
+    return(list(
+      proposed_aug_dat = proposed_aug_dat,
+      correction_factor = correction_factor
+    ))
   }
+  
+  step3_results <- resample_missing_dates(
+    i, group_idx, date_idx_resample, proposed_aug_dat_step2,
+    theta, obs_dat, hyperparameters, index_dates, range_dates
+  )
+  
+  proposed_aug_dat_step3 <- step3_results$proposed_aug_dat
+  correct_factor_new_delay <- step3_results$correction_factor
+  
+  # proposed_aug_dat_step3 <- proposed_aug_dat_step2
+  # correct_factor_new_delay <- 0
+  # if (length(date_idx_resample) > 0) {
+  #   for (k in date_idx_resample) {
+  #     tmp_delay <- propose_new_delay(
+  #       i, group_idx, k, proposed_aug_dat_step3,
+  #       theta, obs_dat, hyperparameters, index_dates, range_dates
+  #     )
+  #     # propose a new date compatible with newly drawn dates
+  #     proposed_aug_dat_step3 <- tmp_delay$proposed_aug_dat
+  #     correct_factor_new_delay <- correct_factor_new_delay +
+  #       get_correct_factor_new_delay(
+  #         tmp_delay$curr_delay, tmp_delay$sample_delay, theta,
+  #         group_idx, tmp_delay$which_delay
+  #       )["prob_proposing_new_value"]
+  #   }
+  # }
 
   ## Mimic the reverse moves for correction factor calc
   # # step 1

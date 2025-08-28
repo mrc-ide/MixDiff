@@ -6,17 +6,7 @@
  (observed with error) to 0 (observed with no error). This move assumes the
  true date was correctly recorded and simply sets D to the observed date.}
 \usage{
-propose_move_from_E1_to_E0(
-  i,
-  group_idx,
-  date_idx,
-  curr_aug_dat,
-  theta,
-  obs_dat,
-  hyperparameters,
-  index_dates,
-  range_dates
-)
+propose_move_from_E1_to_E0(i, group_idx, date_idx, obs_dat)
 }
 \arguments{
 \item{i}{Index of individual(s) for whom augmented data should be moved.}
@@ -25,21 +15,8 @@ propose_move_from_E1_to_E0(
 
 \item{date_idx}{Index of the date which should be moved.}
 
-\item{curr_aug_dat}{The current augmented data; a list of observed data, in
-the format returned by \code{\link{simul_true_data}}.}
-
-\item{theta}{List of parameters; see details.}
-
 \item{obs_dat}{A list of observed data, in the format of the first element
 (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
-
-\item{hyperparameters}{A list of hyperparameters: see details.}
-
-\item{index_dates}{A list containing indications on which delays to consider
-in the estimation, see details.}
-
-\item{range_dates}{A vector containing the range of dates in \code{obs_dat}.
-If NULL, will be computed automatically.}
 }
 \value{
 Proposed true date, which is the same as the observed date.

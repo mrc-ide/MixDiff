@@ -584,28 +584,15 @@ compute_p_accept_move_from_E0_to_E1 <- function(i,
 #' @param i Index of individual(s) for whom augmented data should be moved.
 #' @param group_idx Index of the group for whom augmented data should be moved.
 #' @param date_idx Index of the date which should be moved.
-#' @param curr_aug_dat The current augmented data; a list of observed data, in
-#'  the format returned by \code{\link{simul_true_data}}.
-#' @param theta List of parameters; see details.
 #' @param obs_dat A list of observed data, in the format of the first element
 #'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
-#' @param hyperparameters A list of hyperparameters: see details.
-#' @param index_dates A list containing indications on which delays to consider
-#'  in the estimation, see details.
-#' @param range_dates A vector containing the range of dates in \code{obs_dat}.
-#'  If NULL, will be computed automatically.
 #'
 #' @return Proposed true date, which is the same as the observed date.
 
 propose_move_from_E1_to_E0 <- function(i,
                                        group_idx,
                                        date_idx,
-                                       curr_aug_dat, # remove
-                                       theta, # remove
-                                       obs_dat,
-                                       hyperparameters, # remove
-                                       index_dates, # remove
-                                       range_dates) { # remove
+                                       obs_dat) {
 
   proposed_aug_dat_value <- obs_dat[[group_idx]][i, date_idx]
 
@@ -889,8 +876,7 @@ move_Ei <- function(i,
     } else if (curr_E_value == 1) { # moving from E=1 to E=0
 
       proposed_aug_dat$D[[group_idx]][i, date_idx] <- propose_move_from_E1_to_E0(
-        i, group_idx, date_idx, curr_aug_dat, theta,
-        obs_dat, hyperparameters, index_dates, range_dates
+        i, group_idx, date_idx, obs_dat
       )
 
       tmp <- compute_p_accept_move_from_E1_to_E0(
@@ -1055,10 +1041,7 @@ swap_Ei <- function(i,
     for (k in date_idx_E1_to_E0) {
       proposed_aug_dat$E[[group_idx]][i, k] <- 0
       proposed_aug_dat$D[[group_idx]][i, k] <-
-        propose_move_from_E1_to_E0(
-          i, group_idx, k, curr_aug_dat, theta, obs_dat,
-          hyperparameters, index_dates, range_dates
-        )
+        propose_move_from_E1_to_E0(i, group_idx, k, obs_dat)
     }
     return(proposed_aug_dat)
   }
@@ -1074,10 +1057,7 @@ swap_Ei <- function(i,
   #   for (k in date_idx_E1_to_E0) {
   #     proposed_aug_dat_step1$E[[group_idx]][i, k] <- 0
   #     proposed_aug_dat_step1$D[[group_idx]][i, k] <-
-  #       propose_move_from_E1_to_E0(
-  #         i, group_idx, k, curr_aug_dat, theta, obs_dat,
-  #         hyperparameters, index_dates, range_dates
-  #       )
+  #       propose_move_from_E1_to_E0(i, group_idx, k, obs_dat)
   #   }
   # }
   

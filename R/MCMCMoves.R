@@ -789,6 +789,11 @@ move_Ei <- function(i,
                     hyperparameters,
                     index_dates,
                     range_dates = NULL) {
+  
+  if (length(i) > 1) {
+    i <- i[1]
+    warning("In move_Ei, i should be a single number, not a vector. Using i[1] instead.")
+  }
 
   if (is.null(range_dates)) range_dates <- find_range(obs_dat)
 

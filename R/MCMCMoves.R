@@ -1127,7 +1127,48 @@ reverse_resample_missing_dates <- function(i,
   ))
 }
 
-# Add documentation
+#' Calculate reverse proposal probability for E=0 to E=1 swaps
+#' 
+#' @description
+#' Sequential step within `swap_Ei`. It performs the reverse of the
+#' `perform_E0_to_E1_swap` step. It reverts the error indicators (`E`) and
+#' dates (`D`) for the relevant dates back to their original state and
+#' calculates the correction factor for this reverse move.
+#' 
+#' @details
+#' Takes the partially reverted data from the previous step
+#' (`reverse_resample_missing_dates`) and continues the reversal process. It
+#' iterates backwards (`rev()`) through the dates that were originally `E=0`
+#' and were swapped to `E=1` in the forward move.
+#'
+#' For each date, it reverts both the `E` and `D` values to their state in the
+#' original data. It then calculates the log-probability of the forward move
+#' from this newly reverted state back to the state before the revert. This
+#' value is accumulated to create the total correction factor for this part of
+#' the reverse path.
+#' 
+#' @param i Index of the individual.
+#' @param group_idx Index of the group.
+#' @param date_idx_E0_to_E1 Numeric vector of column indices for the dates
+#'   that were `E=0` in the original data.
+#' @param current_reverted_dat Augmented data list after the missing dates
+#'   have already been reverted in the preceding step.
+#' @param original_dat Augmented data list before any proposals were made.
+#' @param theta List of model parameters (`mu`, `CV`, `zeta`).
+#' @param obs_dat List of the observed data.
+#' @param index_dates List defining the delays for each group.
+#' @param range_dates Vector containing the overall range of dates.
+#' 
+#' @return A list containing two elements:
+#' \itemize{
+#'   \item{`reverted_aug_dat`}: Augmented data with the relevant dates
+#'     reverted back to their original `E=0` state.
+#'   \item{`correction_factor`}: Sum of the log-probabilities for this
+#'     part of the reverse proposal.
+#' }
+#' @export
+#' @seealso `perform_E0_to_E1_swap`, `compute_p_accept_move_E`
+#' 
 reverse_E0_to_E1_swap <- function(i,
                                   group_idx,
                                   date_idx_E0_to_E1,

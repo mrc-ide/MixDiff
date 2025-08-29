@@ -43,7 +43,7 @@ in the estimation, see details.}
 }
 \value{
 A list of two elements:
- \itemize{
+ \itemise{
  \item{\code{new_theta}: Same as \code{curr_theta} but where
   \code{curr_theta$zeta} has been updated}
  \item{\code{accept}: A scalar with value 1 if the move was accepted and 0
@@ -56,7 +56,7 @@ Performs one iteration of an MCMC move for either the parameter mu or the
 }
 \details{
 \code{curr_theta} should be a list containing:
-\itemize{
+\itemise{
  \item{\code{mu}}{: A list of length \code{n_groups} (the number of groups
   to be simulated data). Each element of \code{mu} should be a scalar of
    vector giving the mean delay(s) to use for simulation of dates in that
@@ -68,7 +68,7 @@ Performs one iteration of an MCMC move for either the parameter mu or the
   data point is not missing, it is recorded with error.}
 }
 \code{hyperparameters} should be a list containing:
-\itemize{
+\itemise{
  \item{\code{shape1_prob_error}}{: A scalar giving the first shape parameter
   for the beta prior used for parameter \code{theta$zeta}}
  \item{\code{shape2_prob_error}}{: A scalar giving the second shape

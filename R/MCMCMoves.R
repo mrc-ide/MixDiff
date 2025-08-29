@@ -970,7 +970,41 @@ perform_E0_to_E1_swap <- function(i,
   ))
 }
 
-# Add documentation
+#' Resample missing dates
+#' 
+#' @description
+#' Resamples any missing dates (`E=-1`) within the `swap_Ei` function to ensure
+#' they remain consistent with the newly proposed dates from the preceding
+#' steps of the swap.
+#' 
+#' @details
+#' After the error indicators (`E=0` and `E=1`) have been swapped, this function
+#' iterates through dates marked as missing (`E=-1`) for a given individual. For
+#' each missing date it calls `propose_new_delay()` to generate a new date that
+#' is conditional on the already updated dates. It also calculates the log-
+#' probability of making these proposals.
+#' 
+#' @param i Index of the individual for whom the dates are being resampled
+#' @param group_idx Index of the group for the individual
+#' @param date_idx_resample Numeric vector of column indixes for the missing
+#'  dates (`E=-1`) that need to be resampled.
+#' @param current_aug_dat Augmented data list after the E=0/E=1 swaps that have
+#'  already been performed in the preceding steps.
+#' @param theta List of model parameters (`mu`, `CV`, `zeta`)
+#' @param obs_dat List of observed data
+#' @param hyperparameters List of model hyperparameters
+#' @param index_dates List defining the delays for each group
+#' @param range_dates Vector containing the overall range of dates to consider
+#' 
+#' @return List containing two elements:
+#' \itemise{
+#'  \item{`proposed_aug_dat`}: Augmented data with missing dates resampled to
+#'    be consistent with the other proposed changes.
+#'  \item{`correction_factor`}: Sum of the log-probabilities for the proposal
+#'    of the missing dates.
+#' }
+#' @export
+#' 
 resample_missing_dates <- function(i,
                                    group_idx,
                                    date_idx_resample,

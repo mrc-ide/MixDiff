@@ -897,7 +897,39 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat) {
 
 ## FORWARD MOVES ------------------------------------------------------------
 
-# Add documentation
+#' Perform the E=1 to E=0 swap for a set of dates
+#' 
+#' @description
+#' First sequential step within `swap_Ei`. It takes all dates for a given
+#' individual that are currently marked as an error (`E=1`) and proposes a new
+#' state where they are marked as correct (`E=0`).
+#' 
+#' @details
+#' This is a deterministic proposal. For each date being moved, the error
+#' indicator `E` is set to `0`, and the true date `D` is set to the
+#' corresponding observed date from `obs_dat`. As this move is deterministic,
+#' the forward proposal probability is 1, and the log-probability is 0.
+#' 
+#' @param i Index of the individual.
+#' @param group_idx Index of the group.
+#' @param date_idx_E1_to_E0 Numeric vector of column indices for the dates
+#'   that are `E=1` and will be moved.
+#' @param curr_aug_dat Current augmented data list before the move.
+#' @param obs_dat List of the observed data.
+#' @param theta List of model parameters (not used in this specific function
+#'   but passed for consistency with other swap steps).
+#' @param hyperparameters A list of model hyperparameters (not used in this
+#'   specific function).
+#' @param index_dates A list defining delays for each group (not used in this
+#'   specific function).
+#' @param range_dates A vector of the overall date range (not used in this
+#'   specific function).
+#'
+#' @return The augmented data list (`proposed_aug_dat`) with the relevant dates
+#'   and error indicators updated.
+#' @export
+#' @seealso `swap_Ei`, `propose_move_from_E1_to_E0`
+#'
 perform_E1_to_E0_swap <- function(i, group_idx, date_idx_E1_to_E0,
                                   curr_aug_dat, theta, obs_dat,
                                   hyperparameters, index_dates, range_dates) {

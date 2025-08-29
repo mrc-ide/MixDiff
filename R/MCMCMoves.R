@@ -447,116 +447,6 @@ propose_move_from_E0_to_E1 <- function(i,
 }
 
 
-# compute_p_accept_move_from_E0_to_E1 <- function(i,
-#                                                 group_idx,
-#                                                 date_idx,
-#                                                 curr_aug_dat,
-#                                                 proposed_aug_dat,
-#                                                 theta,
-#                                                 obs_dat,
-#                                                 index_dates,
-#                                                 range_dates = NULL) {
-# 
-#   proposed_aug_dat_value <- proposed_aug_dat$D[[group_idx]][i, date_idx]
-# 
-#   # Delays that are affected by the change in date date_idx
-#   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
-# 
-#   # Compute log posterior difference (proposed - current) ---------------------
-# 
-#   # Difference in observation likelihood
-#   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
-#     proposed_aug_dat, obs_dat,
-#     group_idx, date_idx, i, range_dates = range_dates
-#   ) - LL_observation_term_by_group_delay_and_indiv(
-#     curr_aug_dat, obs_dat,
-#     group_idx, date_idx, i, range_dates = range_dates
-#   )
-# 
-#   # Difference in error likelihood
-#   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
-#     proposed_aug_dat, theta, group_idx, date_idx, i
-#   ) - LL_error_term_by_group_delay_and_indiv(
-#     curr_aug_dat, theta, group_idx, date_idx, i
-#   )
-# 
-#   # For each affected delay, difference in delay likelihood
-#   for (d in delay_idx) {
-#     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
-#       proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-#     ) - LL_delays_term_by_group_delay_and_indiv(
-#       curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-#     )
-#   }
-# 
-#   # Combine all log likelihood differences
-#   ratio_post <- sum(ratio_post)
-# 
-#   ### note that ratio_post should be the same as:
-#   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat,
-#   # hyperparameters, index_dates) -
-#   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
-# 
-#   # ANNE: the above now seems to work but maybe worth checking a bit more thoroughly in tests
-# 
-#   # Correct asymmetry ---------------------------------------------------------
-# 
-#   # Index for the date within index_dates
-#   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
-# 
-#   # Index for the delay
-#   which_delay <- x[, 2]
-# 
-#   # Index for the other date involved in each delay
-#   from_idx <- sapply(
-#     seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]
-#   )
-# 
-#   # Extract value of the other date for each delay
-#   from_value <- sapply(
-#     seq_len(nrow(x)),
-#     function(k) curr_aug_dat$D[[group_idx]][i, index_dates[[group_idx]][-x[k, 1], x[k, 2]]]
-#   )
-# 
-#   # Proposal correction factor for each delay
-#   find_correction_factor <- function(e) {
-#     if (date_idx < from_idx[e]) {
-#       delay <- from_value[e] - proposed_aug_dat_value
-#       forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx] # ANNE: this is the delay corresponding to the observed date, hence would keep E = 0 and not allow a move to E = 1
-#     } else {
-#       delay <- proposed_aug_dat_value - from_value[e]
-#       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
-#     }
-# 
-#     # Mean and CV of delays
-#     mu <- theta$mu[[group_idx]][which_delay[e]]
-#     cv <- theta$CV[[group_idx]][which_delay[e]]
-# 
-#     # Probability mass for delay after adjusting for invalid delay
-#     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) / # ANNE: calculating the probability of randomly drawing the proposed delay
-#       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE)) # ANNE: renormalising because we do not allow this specific delay
-# 
-#     K # probability of drawing the proposed delay if this specific delay index is chosen
-#   }
-# 
-#   # Average correction factors over all delays involving this date
-#   # ANNE: this accounts for the fact that the proposal distribution is a mixture distribution
-#   # where the index of the delay used for sampling is drawn at random.
-#   # hence the correction factor, which should be the probability of drawing the proposed delay irrespective of which delay index was chosen
-#   # hence it's P(proposed delay | delay index 1) * P(delay index 1) + P(proposed delay | delay index 2) * P(delay index 2) + ...
-#   # which simplifies to just the mean of P(proposed delay | delay index i) because all the P(delay index i) are the same
-#   K <- mean(sapply(seq_along(which_delay), find_correction_factor))
-# 
-#   # Log proposal correction factor
-#   # ANNE: this should be calculated as logP(proposing current delay) - logP(proposing new delay)
-#   # but this: logP(proposing current delay) is zero because P(proposing current delay) = 1 because there is only 1 way of moving to the observed date i.e. to generate E = 0
-#   # hence logcorrection <- 0 - logP(proposing new delay)
-#   logcorrection <- -log(K) # log_p_move_from_new_to_old - log_p_move_from_old_to_new
-# 
-#   return(c(ratio_post, logcorrection))
-# }
-
-
 #' Propose the observed date when transitioning the error indicator from 1
 #'  (observed with error) to 0 (observed with no error). This move assumes the
 #'  true date was correctly recorded and simply sets D to the observed date.
@@ -578,117 +468,6 @@ propose_move_from_E1_to_E0 <- function(i,
   proposed_aug_dat_value
 }
 
-
-
-# compute_p_accept_move_from_E1_to_E0 <- function(i,
-#                                                 group_idx,
-#                                                 date_idx,
-#                                                 curr_aug_dat,
-#                                                 proposed_aug_dat,
-#                                                 theta,
-#                                                 obs_dat,
-#                                                 index_dates,
-#                                                 range_dates) {
-# 
-#   ### ANNE: this is the exact opposite move from compute_p_accept_move_from_E0_to_E1
-#   ## hence most of the code is the same
-#   ## the ratio of the posteriors is just as usual Post(new proposed value) - Post (old value)
-#   ## and the probability of accepting a move is calculated exactly in the opposite way compared to compute_p_accept_move_from_E0_to_E1
-#   ## i.e. there is only 1 way of moving from E1 to E0 (because there is only one date that is equal to the observed date), so P(proposing the new value) = 1 and hence the log is zero
-#   ## and the Probability of moving from E0 to this specific E1 and D combination is calculated according to the delay distribution, i.e. DircGamma, but discounting the one value we cannot choose
-#   ## because it corresponds to E = 0 not E = 1.
-# 
-#   # Current date before the move
-#   curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-# 
-#   # Delays that are affected by the change in date date_idx
-#   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
-# 
-#   # Compute log posterior difference (proposed - current) ---------------------
-# 
-#   # Difference in observation likelihood
-#   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
-#     proposed_aug_dat, obs_dat,
-#     group_idx, date_idx, i, range_dates = range_dates
-#   ) - LL_observation_term_by_group_delay_and_indiv(
-#     curr_aug_dat, obs_dat,
-#     group_idx, date_idx, i, range_dates = range_dates
-#   )
-# 
-#   # Difference in error likelihood
-#   ratio_post <- ratio_post + LL_error_term_by_group_delay_and_indiv(
-#     proposed_aug_dat, theta, group_idx, date_idx, i
-#   ) - LL_error_term_by_group_delay_and_indiv(
-#     curr_aug_dat, theta, group_idx, date_idx, i
-#   )
-# 
-#   # For each affected delay, difference in delay likelihood
-#   for (d in delay_idx)
-#     ratio_post <- ratio_post + LL_delays_term_by_group_delay_and_indiv(
-#       proposed_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-#     ) - LL_delays_term_by_group_delay_and_indiv(
-#       curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-#     )
-# 
-#   # Combine all log-likelihood differences
-#   ratio_post <- sum(ratio_post)
-# 
-#   ### note that ratio_post should be the same as:
-#   ## ANNE: TODO check this works
-#   # ratio_post_long <- lposterior_total(proposed_aug_dat, theta, obs_dat,
-#   # hyperparameters, index_dates) -
-#   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
-# 
-#   # Correct asymmetry ---------------------------------------------------------
-# 
-#   # Index for the date within index_dates
-#   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
-# 
-#   # Index for the delay
-#   which_delay <- x[, 2]
-# 
-#   # Index for the other date involved in each delay
-#   from_idx <- sapply(
-#     seq_len(nrow(x)), function(k) index_dates[[group_idx]][-x[k, 1], x[k, 2]]
-#   )
-# 
-#   # Extract value of the other date for each delay
-#   from_value <- sapply(
-#     seq_len(nrow(x)),
-#     function(k) curr_aug_dat$D[[group_idx]][i, index_dates[[group_idx]][-x[k, 1], x[k, 2]]]
-#   )
-# 
-#   # Proposal correction factor for each delay
-#   find_correction_factor_2 <- function(e) {
-#     ## ANNE: TODO check if this is any different from the find_correction_factor function,
-#     ## if so perhaps move out of these move functions so you can merge into one single function
-#     if (date_idx < from_idx[e]) {
-#       delay <- from_value[e] - curr_aug_dat_value
-#       forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx]
-#     } else {
-#       delay <- curr_aug_dat_value - from_value[e]
-#       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
-#     }
-# 
-#     # Mean and CV of delays
-#     mu <- theta$mu[[group_idx]][which_delay[e]]
-#     cv <- theta$CV[[group_idx]][which_delay[e]]
-# 
-#     # Probability mass for delay adjusting for invalid delay
-#     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
-#       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
-# 
-#     K
-#   }
-# 
-#   # Average correction factors over all delays involving this date
-#   K <- mean(sapply(seq_along(which_delay), find_correction_factor_2))
-# 
-#   # Log proposal correction factor
-#   logcorrection <- +log(K)
-# 
-#   return(c(ratio_post, logcorrection))
-# }
 
 # ----------------------------------------------------------------------------
 # Combine compute_p_accept_move_* functions
@@ -735,10 +514,12 @@ compute_p_accept_move_E <- function(direction = c("E0_to_E1", "E1_to_E0"),
   
   direction <- match.arg(direction)
   
-  # Delays that are affected by the change in date date_idx
+  # Delays that are affected by changing this specific date (date_idx)
   delay_idx <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)[, 2]
   
-  # Compute log posterior difference (proposed - current) ---------------------
+  # Compute log posterior ratio ----------------------------------------------
+  # Calculate the log(P(new) / P(old)) by summing the changes in the
+  # log-likelihood for each component
   
   # Difference in observation likelihood
   ratio_post <- LL_observation_term_by_group_delay_and_indiv(
@@ -774,7 +555,9 @@ compute_p_accept_move_E <- function(direction = c("E0_to_E1", "E1_to_E0"),
   # hyperparameters, index_dates) -
   # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates)
   
-  # Correct for proposal asymmetry -------------------------------------------
+  # Proposal correction factor -----------------------------------------------
+  # Calculate the log of the posterior ratio: log(q(old|new) / q(new|old))
+  # to correct for the asymmetric proposal
   
   # Index for the date within index_dates
   x <- which(index_dates[[group_idx]] == date_idx, arr.ind = TRUE)
@@ -791,44 +574,76 @@ compute_p_accept_move_E <- function(direction = c("E0_to_E1", "E1_to_E0"),
     function(k) curr_aug_dat$D[[group_idx]][i, index_dates[[group_idx]][-x[k, 1], x[k, 2]]]
   )
   
-  # The value of the date being moved determines the delay calculation
+  # To calculate the correction, take the date value from the state where E=1
   date_value_for_corr <- if (direction == "E0_to_E1") {
+    # In this move, the proposed state has E=1 so we use this date
     proposed_aug_dat$D[[group_idx]][i, date_idx]
   } else if (direction == "E1_to_E0") {
+    # In this move, the current state has E=1 so we use this date
     curr_aug_dat$D[[group_idx]][i, date_idx]
   }
   
-  # Proposal correction factor for each delay
+  # Calculate the probability (K) of proposing the 'date_value_for_corr' for
+  # a single delay it is involved in
   find_correction_factor <- function(e) {
+    
+    # Calculate delay ensuring it's a positive value
     if (date_idx < from_idx[e]) {
       delay <- from_value[e] - date_value_for_corr
-      forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx]
     } else {
       delay <- date_value_for_corr - from_value[e]
+    }
+    
+    # Delay corresponding to the observed date. Moving to E=1 requires
+    # D != obs_dat so this specific delay value is 'forbidden'
+    if (date_idx < from_idx[e]) {
+      forbidden_delay <- from_value[e] - obs_dat[[group_idx]][i, date_idx]
+    } else {
       forbidden_delay <- obs_dat[[group_idx]][i, date_idx] - from_value[e]
     }
     
     mu <- theta$mu[[group_idx]][which_delay[e]]
     cv <- theta$CV[[group_idx]][which_delay[e]]
     
-    # ANNE: calculating the probability of randomly drawing the proposed delay
-    # ANNE: renormalising because we do not allow this specific delay
+    # Calculate the probability of randomly drawing the proposed delay,
+    # renormalising the distribution because we cannot choose forbidden delay
     K <- DiscrGamma(k = delay, mu = mu, cv = cv, log = FALSE) /
       (1 - DiscrGamma(k = forbidden_delay, mu = mu, cv = cv, log = FALSE))
     
     return(K)
   }
   
-  # ANNE: this accounts for the fact that the proposal distribution is a mixture
+  # Average correction factors over all delays involving this date
+  # ANNE: accounts for the fact that the proposal distrib is a mixture distrib
   # where the index of the delay used for sampling is drawn at random.
+  # hence the correction factor, which should be the probability of drawing the
+  # proposed delay irrespective of which delay index was chosen
+  # hence it's P(proposed delay | delay index 1) * P(delay index 1) +
+  # P(proposed delay | delay index 2) * P(delay index 2) + ...
+  # which simplifies to just the mean of P(proposed delay | delay index i)
+  # because all the P(delay index i) are the same
   K <- mean(sapply(seq_along(which_delay), find_correction_factor))
   
-  # Log proposal correction factor
-  # ANNE: this should be calculated as logP(proposing current) - logP(proposing new)
+  # Log proposal correction factor - calculated differently depending on the
+  # direction of the move, because the proposal mechanism is asymmetric.
+  #
+  # E1 -> E0: There is only 1 way to move (true date must become observed date).
+  # The probability of proposing this specific move is 1, so it's
+  # log probability is 0.
+  #
+  # E0 -> E1: The probability of proposing a specific new date is calculated
+  # from the delay distribution (DiscrGamma), discounting the one value that
+  # would correspond to E=0.
+  #
+  # The log correction is always logP(proposing current) - logP(proposing new)
   logcorrection <- if (direction == "E0_to_E1") {
-    -log(K) # log(1) - log(K)
+    # Forward move is probabilistic (K), reverse is deterministic (1)
+    # log(1) - log(K) = -log(K)
+    -log(K)
   } else if (direction == "E1_to_E0") {
-    +log(K) # log(K) - log(1)
+    # Forward move is deterministic (1), reverse is probabilistic (K)
+    # log(K) - log(1) = +log(K)
+    +log(K)
   }
 
   return(c(ratio_post, logcorrection))

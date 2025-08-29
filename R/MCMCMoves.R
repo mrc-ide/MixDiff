@@ -1057,7 +1057,34 @@ resample_missing_dates <- function(i,
 
 ## REVERSE MOVES ------------------------------------------------------------
 
-# Add documentation
+#' Calculate reverse proposal probability for resampled missing dates
+#' 
+#' @description
+#' Sequential step within `swap_Ei`. It performs the reverse of the
+#' `resample_missing_dates` step. It reverts the dates for missing indices
+#' back to their original values and calculates the correction factor for this
+#' reverse move.
+#' 
+#' @param i Index of the individual.
+#' @param group_idx Index of the group.
+#' @param date_idx_resample Numeric vector of column indices for the dates
+#'   that were resampled in the forward move.
+#' @param final_proposed_dat Augmented data list after the full forward
+#'   proposal has been completed.
+#' @param original_dat Augmented data list before any proposals were made.
+#' @param theta List of model parameters (`mu`, `CV`, `zeta`).
+#' @param index_dates List defining the delays for each group.
+#' 
+#' @return A list containing two elements:
+#' \itemise{
+#'   \item{`reverted_aug_dat`}: Augmented data with the resampled dates
+#'     reverted back to their original state.
+#'   \item{`correction_factor`}: Sum of the log-probabilities for the
+#'     reverse proposal of the missing dates.
+#' }
+#' @export
+#' @seealso `resample_missing_dates`
+#' 
 reverse_resample_missing_dates <- function(i,
                                            group_idx,
                                            date_idx_resample,

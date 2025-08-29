@@ -31,13 +31,13 @@ but passed for consistency with other swap steps).}
 
 \item{obs_dat}{List of the observed data.}
 
-\item{hyperparameters}{A list of model hyperparameters (not used in this
+\item{hyperparameters}{List of model hyperparameters (not used in this
 specific function).}
 
-\item{index_dates}{A list defining delays for each group (not used in this
+\item{index_dates}{List defining delays for each group (not used in this
 specific function).}
 
-\item{range_dates}{A vector of the overall date range (not used in this
+\item{range_dates}{Vector of the overall date range (not used in this
 specific function).}
 }
 \value{

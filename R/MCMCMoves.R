@@ -918,11 +918,11 @@ find_Eis_to_swap <- function(group_idx, curr_aug_dat) {
 #' @param obs_dat List of the observed data.
 #' @param theta List of model parameters (not used in this specific function
 #'   but passed for consistency with other swap steps).
-#' @param hyperparameters A list of model hyperparameters (not used in this
+#' @param hyperparameters List of model hyperparameters (not used in this
 #'   specific function).
-#' @param index_dates A list defining delays for each group (not used in this
+#' @param index_dates List defining delays for each group (not used in this
 #'   specific function).
-#' @param range_dates A vector of the overall date range (not used in this
+#' @param range_dates Vector of the overall date range (not used in this
 #'   specific function).
 #'
 #' @return The augmented data list (`proposed_aug_dat`) with the relevant dates
@@ -947,7 +947,46 @@ perform_E1_to_E0_swap <- function(i, group_idx, date_idx_E1_to_E0,
   return(proposed_aug_dat)
 }
 
-# Add documentation
+#' Perform the E=0 to E=1 swap for a set of dates
+#' 
+#' @description
+#' Second sequential step within `swap_Ei`. It takes all dates for a given
+#' individual that are currently marked as correct (`E=0`) and proposes a new
+#' state where they are marked as an error (`E=1`).
+#' 
+#' @details
+#' This is a non-deterministic proposal. For each date being moved, the error
+#' indicator `E` is set to `1`, and a new plausible true date `D` is sampled
+#' via `propose_move_from_E0_to_E1`. This sampling is conditional on the other
+#' dates, including those updated in the previous step of the swap.
+#' 
+#' This function also calculates and accumulates the log-probability
+#' of making these sequential proposals. This is done by calling
+#' `compute_p_accept_move_E` for each move and summing the resulting
+#' correction factors.
+#' 
+#' @param i Index of the individual.
+#' @param group_idx Index of the group.
+#' @param date_idx_E0_to_E1 Numeric vector of column indices for the dates
+#'   that are `E=0` and will be moved.
+#' @param current_aug_dat Augmented data list after the E=1 to E=0 swap
+#'   has already been performed in the preceding step.
+#' @param theta List of model parameters (`mu`, `CV`, `zeta`).
+#' @param obs_dat List of the observed data.
+#' @param hyperparameters List of the model's hyperparameters.
+#' @param index_dates List defining the delays for each group.
+#' @param range_dates Vector containing the overall date range.
+#' 
+#' @return A list containing two elements:
+#' \itemise{
+#'   \item{`proposed_aug_dat`}: Augmented data with the relevant dates
+#'     updated to the new `E=1` state.
+#'   \item{`correction_factor`}: Sum of the log-probabilities for the
+#'     proposal of these dates.
+#' }
+#' @export
+#' @seealso `swap_Ei`, `propose_move_from_E0_to_E1`, `compute_p_accept_move_E`
+#'
 perform_E0_to_E1_swap <- function(i,
                                   group_idx,
                                   date_idx_E0_to_E1,

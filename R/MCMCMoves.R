@@ -328,25 +328,58 @@ move_Di <- function(i,
 # Move augmented indicator for whether date is correctly recorded E
 # -----------------------------------------------------------------------------
 
-#' Propose a new value for the true date when transitioning the error indicator
-#'  from 0 (no error) to 1 (observed with error), ensuring the new date is
-#'   different from the observed date.
+#' Propose a new date when moving from no error (`E=0`) to observed with error
+#'  (`E=1`), ensuring the new date is different from the observed date.
+#'  
+#' @description Helper function that proposes a new true date `D` when an error
+#' indicator `E` is being swapped from 0 to 1. The proposed date is sampled
+#' from one of the delay distributions the date is involved in.
 #'
-#' @param i Index of individual(s) for whom augmented data should be moved.
-#' @param group_idx Index of the group for whom augmented data should be moved.
-#' @param date_idx Index of the date which should be moved.
+#' @details The function first identifies all delays that the specified date
+#' (`date_idx`) is a part of. It then chooses one of these delays at random.
+#' A new delay value is sampled from the corresponding discrete gamma
+#' distribution, and this is used to calculate a new proposed date `D`. The
+#' function ensures that the proposed date is not the same as the observed date,
+#' which is necessary for the date to have an error indicator of `E=1`. This
+#' function only proposes a new `D` and doesn't update `E`.
+#'
+#' @param i Index of the individual for whom augmented data should be moved.
+#' @param group_idx Index of the group the individual is in.
+#' @param date_idx Numeric vector of date indices being moved.
 #' @param curr_aug_dat The current augmented data.
-#' @param theta List of parameters, including mu, CV and zeta.
-#' @param obs_dat A list of observed data, in the format of the first element
-#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
-#' @param hyperparameters A list of hyperparameters.
-#' @param index_dates A list containing the delays defined for each group.
-#' @param range_dates A vector containing the range of dates in \code{obs_dat}.
+#' @param theta List of parameters, including `mu`, `CV` and `zeta`.
+#' @param obs_dat List of observed data.
+#' @param hyperparameters List of hyperparameters.
+#' @param index_dates List containing the delays defined for each group.
+#' @param range_dates Vector containing the range of dates in \code{obs_dat}.
 #'  If NULL, will be computed automatically.
 #'
-#' @return A vector of proposed true dates that differ from the observed dates.
-
-## ANNE: TODO: clarify in comments that this actually doesn't move E just the corresponding D.
+#' @return Numeric vector of proposed new dates `D`.
+#' @export
+#' 
+#' @examples
+#' # Create minimal data for a single individual
+#' theta_ex <- list(mu = list(c(5, 10)), CV = list(c(0.2, 0.3)))
+#' index_dates_ex <- list(matrix(c(1, 2, 2, 3), nrow = 2, byrow = TRUE))
+#' curr_aug_dat_ex <- list(D = list(matrix(c(10, 15, 25), nrow = 1)))
+#' obs_dat_ex <- list(matrix(c(10, 16, 25), nrow = 1))
+#' 
+#' # Set seed for reproducible random choice of delay
+#' set.seed(1)
+#' 
+#' # Propose a new value for the second date (date_idx = 2)
+#' # This date is involved in two delays. With seed(1), the first delay (1->2)
+#' # is chosen. The new date will be date 1 + sample_delay = 10 + 4 = 14.
+#' new_date <- propose_move_from_E0_to_E1(
+#'   i = 1, group_idx = 1, date_idx = 2,
+#'   curr_aug_dat = curr_aug_dat_ex,
+#'   theta = theta_ex,
+#'   obs_dat = obs_dat_ex,
+#'   hyperparameters = NULL,
+#'   index_dates = index_dates_ex
+#' )
+#' print(new_date)
+#' 
 propose_move_from_E0_to_E1 <- function(i,
                                        group_idx,
                                        date_idx,
@@ -357,7 +390,7 @@ propose_move_from_E0_to_E1 <- function(i,
                                        index_dates,
                                        range_dates = NULL) {
 
-  # ANNE: which delays is this date / are these dates involved in
+  # Find all delays these dates are involved in
   x <- lapply(seq_along(date_idx), function(e) {
     which(index_dates[[group_idx]] == date_idx[e], arr.ind = TRUE)
   })
@@ -399,18 +432,6 @@ propose_move_from_E0_to_E1 <- function(i,
     from_value[[e]][tmp[[e]]]
   })
 
-  # ANNE: retrieve the corresponding delay parameters
-  param_delay <- lapply(seq_along(date_idx), function(e) {
-    find_params_gamma(
-      theta$mu[[group_idx]][which_delay[[e]]],
-      CV = theta$CV[[group_idx]][which_delay[[e]]]
-    )
-  })
-
-  # ANNE: store the current corresponding augmented dates
-  # ANNE: TODO: remove this line, not needed in this function
-  curr_aug_dat_value <- curr_aug_dat$D[[group_idx]][i, date_idx]
-
   # ANNE: this function just samples from the selected delay to obtain a new
   # proposed augmented date D
   get_one_proposed_aug_value <- function(e) {
@@ -447,15 +468,21 @@ propose_move_from_E0_to_E1 <- function(i,
 }
 
 
-#' Propose the observed date when transitioning the error indicator from 1
-#'  (observed with error) to 0 (observed with no error). This move assumes the
-#'  true date was correctly recorded and simply sets D to the observed date.
+#' Propose the observed date when moving from error (`E=1`) to no error (`E=0`).
+#' 
+#' @description Helper function that proposes a move to the originally observed
+#'  date from `obs_dat` when `E` is being swapped from 1 to 0.
 #'
-#' @param i Index of individual(s) for whom augmented data should be moved.
-#' @param group_idx Index of the group for whom augmented data should be moved.
-#' @param date_idx Index of the date which should be moved.
-#' @param obs_dat A list of observed data, in the format of the first element
-#'  (called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.
+#' @details This is a deterministic move. When an error is corrected, the new
+#' "true" date is assumed to be the date that was originally observed.
+#' This function operates on a single `date_idx` at a time. The calling
+#' function (`perform_E1_to_E0_swap`) is responsible for looping
+#' through multiple dates if necessary.
+#'
+#' @param i Index of the individual.
+#' @param group_idx Index of the group.
+#' @param date_idx Index of the date being moved.
+#' @param obs_dat A list of observed data.
 #'
 #' @return Proposed true date, which is the same as the observed date.
 propose_move_from_E1_to_E0 <- function(i,

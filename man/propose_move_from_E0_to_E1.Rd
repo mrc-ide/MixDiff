@@ -2,9 +2,8 @@
 % Please edit documentation in R/MCMCMoves.R
 \name{propose_move_from_E0_to_E1}
 \alias{propose_move_from_E0_to_E1}
-\title{Propose a new value for the true date when transitioning the error indicator
- from 0 (no error) to 1 (observed with error), ensuring the new date is
-  different from the observed date.}
+\title{Propose a new date when moving from no error (`E=0`) to observed with error
+ (`E=1`), ensuring the new date is different from the observed date.}
 \usage{
 propose_move_from_E0_to_E1(
   i,
@@ -19,31 +18,63 @@ propose_move_from_E0_to_E1(
 )
 }
 \arguments{
-\item{i}{Index of individual(s) for whom augmented data should be moved.}
+\item{i}{Index of the individual for whom augmented data should be moved.}
 
-\item{group_idx}{Index of the group for whom augmented data should be moved.}
+\item{group_idx}{Index of the group the individual is in.}
 
-\item{date_idx}{Index of the date which should be moved.}
+\item{date_idx}{Numeric vector of date indices being moved.}
 
 \item{curr_aug_dat}{The current augmented data.}
 
-\item{theta}{List of parameters, including mu, CV and zeta.}
+\item{theta}{List of parameters, including `mu`, `CV` and `zeta`.}
 
-\item{obs_dat}{A list of observed data, in the format of the first element
-(called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
+\item{obs_dat}{List of observed data.}
 
-\item{hyperparameters}{A list of hyperparameters.}
+\item{hyperparameters}{List of hyperparameters.}
 
-\item{index_dates}{A list containing the delays defined for each group.}
+\item{index_dates}{List containing the delays defined for each group.}
 
-\item{range_dates}{A vector containing the range of dates in \code{obs_dat}.
+\item{range_dates}{Vector containing the range of dates in \code{obs_dat}.
 If NULL, will be computed automatically.}
 }
 \value{
-A vector of proposed true dates that differ from the observed dates.
+Numeric vector of proposed new dates `D`.
 }
 \description{
-Propose a new value for the true date when transitioning the error indicator
- from 0 (no error) to 1 (observed with error), ensuring the new date is
-  different from the observed date.
+Helper function that proposes a new true date `D` when an error
+indicator `E` is being swapped from 0 to 1. The proposed date is sampled
+from one of the delay distributions the date is involved in.
+}
+\details{
+The function first identifies all delays that the specified date
+(`date_idx`) is a part of. It then chooses one of these delays at random.
+A new delay value is sampled from the corresponding discrete gamma
+distribution, and this is used to calculate a new proposed date `D`. The
+function ensures that the proposed date is not the same as the observed date,
+which is necessary for the date to have an error indicator of `E=1`. This
+function only proposes a new `D` and doesn't update `E`.
+}
+\examples{
+# Create minimal data for a single individual
+theta_ex <- list(mu = list(c(5, 10)), CV = list(c(0.2, 0.3)))
+index_dates_ex <- list(matrix(c(1, 2, 2, 3), nrow = 2, byrow = TRUE))
+curr_aug_dat_ex <- list(D = list(matrix(c(10, 15, 25), nrow = 1)))
+obs_dat_ex <- list(matrix(c(10, 16, 25), nrow = 1))
+
+# Set seed for reproducible random choice of delay
+set.seed(1)
+
+# Propose a new value for the second date (date_idx = 2)
+# This date is involved in two delays. With seed(1), the first delay (1->2)
+# is chosen. The new date will be date 1 + sample_delay = 10 + 4 = 14.
+new_date <- propose_move_from_E0_to_E1(
+  i = 1, group_idx = 1, date_idx = 2,
+  curr_aug_dat = curr_aug_dat_ex,
+  theta = theta_ex,
+  obs_dat = obs_dat_ex,
+  hyperparameters = NULL,
+  index_dates = index_dates_ex
+)
+print(new_date)
+
 }

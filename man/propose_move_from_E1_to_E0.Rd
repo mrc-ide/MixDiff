@@ -2,27 +2,30 @@
 % Please edit documentation in R/MCMCMoves.R
 \name{propose_move_from_E1_to_E0}
 \alias{propose_move_from_E1_to_E0}
-\title{Propose the observed date when transitioning the error indicator from 1
- (observed with error) to 0 (observed with no error). This move assumes the
- true date was correctly recorded and simply sets D to the observed date.}
+\title{Propose the observed date when moving from error (`E=1`) to no error (`E=0`).}
 \usage{
 propose_move_from_E1_to_E0(i, group_idx, date_idx, obs_dat)
 }
 \arguments{
-\item{i}{Index of individual(s) for whom augmented data should be moved.}
+\item{i}{Index of the individual.}
 
-\item{group_idx}{Index of the group for whom augmented data should be moved.}
+\item{group_idx}{Index of the group.}
 
-\item{date_idx}{Index of the date which should be moved.}
+\item{date_idx}{Index of the date being moved.}
 
-\item{obs_dat}{A list of observed data, in the format of the first element
-(called \code{obs_dat}) in the list returned by \code{\link{simul_obs_dat}}.}
+\item{obs_dat}{A list of observed data.}
 }
 \value{
 Proposed true date, which is the same as the observed date.
 }
 \description{
-Propose the observed date when transitioning the error indicator from 1
- (observed with error) to 0 (observed with no error). This move assumes the
- true date was correctly recorded and simply sets D to the observed date.
+Helper function that proposes a move to the originally observed
+ date from `obs_dat` when `E` is being swapped from 1 to 0.
+}
+\details{
+This is a deterministic move. When an error is corrected, the new
+"true" date is assumed to be the date that was originally observed.
+This function operates on a single `date_idx` at a time. The calling
+function (`perform_E1_to_E0_swap`) is responsible for looping
+through multiple dates if necessary.
 }

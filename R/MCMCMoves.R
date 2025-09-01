@@ -1058,7 +1058,7 @@ perform_E0_to_E1_swap <- function(i,
         i = i,
         group_idx = group_idx,
         date_idx = k,
-        curr_aug_dat = state_before_this_swap,
+        curr_aug_dat = state_before_swap,
         proposed_aug_dat = proposed_aug_dat,
         theta = theta,
         obs_dat = obs_dat,
@@ -1300,7 +1300,7 @@ reverse_E0_to_E1_swap <- function(i,
           i = i,
           group_idx = group_idx,
           date_idx = k,
-          curr_aug_dat = state_before_this_revert,
+          curr_aug_dat = state_before_revert,
           proposed_aug_dat = reverted_dat,
           theta = theta,
           obs_dat = obs_dat,
@@ -1589,7 +1589,7 @@ swap_Ei <- function(i,
   ## Reverse moves (for correction factor calc) -----------------------
   
   # Reverse of step 3
-  rev_step_3_results <- reverse_resample_missing_dates(
+  rev_step3_results <- reverse_resample_missing_dates(
     i, group_idx, date_idx_resample,
     final_proposed_dat = proposed_aug_dat_step3,
     original_dat = curr_aug_dat, # the original state

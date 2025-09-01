@@ -1316,6 +1316,50 @@ reverse_E0_to_E1_swap <- function(i,
   ))
 }
 
+#' Identify delays affected by date changes
+#' 
+#' @param index_dates_group Index dates defining the delays for a group, where
+#'  each column is a delay and the rows are the start/end date indices
+#' @param all_changed_dates Unique numeric vector containing the indices of all
+#'  dates that have been moved or changed e.g. from E0 to E1, from E1 to E0, and
+#'  resampled if they were missing
+#'  
+#' @return Unique vector of the indices of all delays affected by the changed
+#'  dates
+#'
+#' @export
+#' 
+#' @examples
+#' # Example using 3 delays (1->2, 2->3, 1->4)
+#' index_dates_group <- matrix(c(1, 2, 1,
+#'                               2, 3, 4), nrow = 2, byrow = TRUE)
+#' 
+#' # 1. Change two dates in a hypothetical move
+#' changed_dates <- c(2, 4)
+#' 
+#' # These dates are involved in all 3 delays
+#' identify_affected_delays(index_dates_group, changed_dates)
+#' 
+#' # 2. Change one date in a hypothetical move
+#' changed_dates <- 1
+#' 
+#' # Date 1 is only involved in delay indices 1 and 3
+#' identify_affected_delays(index_dates_group, changed_dates)
+#' 
+#'
+identify_affected_delays <- function(index_dates_group, all_changed_dates){
+  
+  # Return empty vector if no dates changed
+  if (length(all_changed_dates) == 0) {
+    return(integer(0))
+  }
+  
+  # Find delays where any of the changed dates are involved
+  affected_cols <- colSums(matrix(index_dates_group %in% all_changed_dates,
+                                  nrow = nrow(index_dates_group))) > 0
+  
+  return(which(affected_cols))
+}
 
 #' Performs one iteration of an MCMC move for the augmented data where the
 #'  indicators of error in observations for one individual are swapped, i.e.
@@ -1463,27 +1507,18 @@ swap_Ei <- function(i,
     theta, obs_dat, index_dates, range_dates
   )
 
-
+  # Identify all dates affected
+  all_changed_dates <- unique(c(date_idx_E1_to_E0,
+                                date_idx_E0_to_E1,
+                                date_idx_resample))
   
-  delay_idx <- which(
-    colSums(matrix(index_dates[[group_idx]] %in% date_idx_E1_to_E0,
-                   nrow = nrow(index_dates[[group_idx]]))) > 0
+  # Identify delays affected by date changes
+  delay_idx <- identify_affected_delays(
+    index_dates[[group_idx]],
+    all_changed_dates
   )
 
-  delay_idx <- c(delay_idx, which(
-    colSums(matrix(index_dates[[group_idx]] %in% date_idx_E0_to_E1,
-                   nrow = nrow(index_dates[[group_idx]]))) > 0
-  ))
-
-  if(length(date_idx_resample) > 0) {
-    delay_idx <- c(delay_idx, which(
-      colSums(matrix(index_dates[[group_idx]] %in% date_idx_resample,
-                     nrow = nrow(index_dates[[group_idx]]))) > 0
-    ))
-  }
-
-  delay_idx <- sort(unique(delay_idx)) ## ANNE: TODO: I think by definition this will be all the delays!
-
+  # Calculate the change in the observation likelihood term
   ratio_post_obs <- sum(
     LL_observation_term_by_group_delay_and_indiv(
       proposed_aug_dat_step3, obs_dat, group_idx,

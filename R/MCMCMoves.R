@@ -1392,6 +1392,36 @@ calculate_obs_ratio <- function(proposed_dat, current_dat, i, group_idx,
   return(ratio)
 }
 
+
+#' Calculates the change in the error log-likelihood
+#'
+#' @description
+#' Calculate the change in the error component of the log-likelihood
+#' between a proposed and current state.
+#' 
+#' @param proposed_dat Proposed augmented data (e.g. `proposed_aug_dat_step3`)
+#' @param current_dat Current augmented data (state before the new proposal)
+#' @param i Index for individual
+#' @param group_idx Index for group
+#' @param all_changed_dates Vector of all date indices that were modified
+#' @param theta List of model parameters, including `zeta`.
+#' 
+#' @export
+#' @return Numeric value for the log-ratio of the error likelihoods
+#' 
+calculate_error_ratio <- function(proposed_dat, current_dat, i, group_idx,
+                                  all_changed_dates, theta) {
+  
+  ratio <- sum(
+    LL_error_term_by_group_delay_and_indiv(
+      proposed_dat, theta, group_idx, all_changed_dates, i
+    ) - LL_error_term_by_group_delay_and_indiv(
+      current_dat, theta, group_idx, all_changed_dates, i
+    )
+  )
+  return(ratio)
+}
+
 #' Performs one iteration of an MCMC move for the augmented data where the
 #'  indicators of error in observations for one individual are swapped, i.e.
 #'   the errors become non errors and vice versa.
@@ -1562,28 +1592,13 @@ swap_Ei <- function(i,
   # LL_observation_term(proposed_aug_dat_step3, obs_dat, range_dates) -
   # LL_observation_term(curr_aug_dat, obs_dat, range_dates)
 
-  ratio_post_error <- sum(
-    LL_error_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, theta, group_idx, date_idx_E1_to_E0, i
-    ) - LL_error_term_by_group_delay_and_indiv(
-      curr_aug_dat, theta, group_idx, date_idx_E1_to_E0, i
-    )
-  ) + sum(
-    LL_error_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, theta, group_idx, date_idx_E0_to_E1, i
-    ) - LL_error_term_by_group_delay_and_indiv(
-      curr_aug_dat, theta, group_idx, date_idx_E0_to_E1, i
-    )
-  )
-  if(length(date_idx_resample) > 0) {
-    ratio_post_error <- ratio_post_error + sum(
-      LL_error_term_by_group_delay_and_indiv(
-        proposed_aug_dat_step3, theta, group_idx, date_idx_resample, i
-      ) - LL_error_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, group_idx, date_idx_resample, i
-      )
-    )
-  }
+  ratio_post_error <- calculate_error_ratio(proposed_dat = proposed_aug_dat_step3,
+                                            current_dat = curr_aug_dat,
+                                            i = i,
+                                            group_idx = group_idx,
+                                            all_changed_dates = all_changed_dates,
+                                            theta = theta)
+
   ## should be the same as:
   # LL_error_term(proposed_aug_dat_step3, theta) - LL_error_term(curr_aug_dat, theta)
   ## LL_error_term_slow(proposed_aug_dat_step3, theta, obs_dat) -

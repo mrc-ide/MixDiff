@@ -1623,10 +1623,6 @@ swap_Ei <- function(i,
                                         all_changed_dates = all_changed_dates,
                                         obs_dat = obs_dat,
                                         range_dates = range_dates)
-    
-  ## should be the same as:
-  # LL_observation_term(proposed_aug_dat_step3, obs_dat, range_dates) -
-  # LL_observation_term(curr_aug_dat, obs_dat, range_dates)
 
   # Calculate the change in the error likelihood term
   ratio_post_error <- calculate_error_ratio(proposed_dat = proposed_aug_dat_step3,
@@ -1635,11 +1631,6 @@ swap_Ei <- function(i,
                                             group_idx = group_idx,
                                             all_changed_dates = all_changed_dates,
                                             theta = theta)
-
-  ## should be the same as:
-  # LL_error_term(proposed_aug_dat_step3, theta) - LL_error_term(curr_aug_dat, theta)
-  ## LL_error_term_slow(proposed_aug_dat_step3, theta, obs_dat) -
-  ## LL_error_term_slow(curr_aug_dat, theta, obs_dat)
 
   # Calculate the change in the delay likelihood term
   ratio_post_delay <- calculate_delay_ratio(proposed_dat = proposed_aug_dat_step3,
@@ -1651,17 +1642,8 @@ swap_Ei <- function(i,
                                             obs_dat = obs_dat,
                                             index_dates = index_dates)
   
-  ## should be the same as:
-  # LL_delays_term(proposed_aug_dat_step3, theta, obs_dat, index_dates) -
-  # LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)
 
   ratio_post <- ratio_post_obs + ratio_post_error + ratio_post_delay
-
-  ### should be the same as:
-  ## ANNE: this may need to be checked more thoroughly but does work on one example
-  # ratio_post_long <- lposterior_total(proposed_aug_dat_step3, theta, obs_dat,
-  # hyperparameters, index_dates, range_dates) -
-  # lposterior_total(curr_aug_dat, theta, obs_dat, hyperparameters, index_dates, range_dates)
 
   # This is not a symmetric move so need a correction factor
 
@@ -1674,34 +1656,6 @@ swap_Ei <- function(i,
 
   ### Second type of move
   # Each move from E0 to E1 is made with probability
-
-  # # For the forward move it is:
-  # corr_1_E0_to_E1 <- sum(
-  #   sapply(seq_along(date_idx_E0_to_E1), function(e) {
-  #     compute_p_accept_move_E(direction = "E0_to_E1",
-  #       i = i,
-  #       group_idx = group_idx,
-  #       date_idx = date_idx_E0_to_E1[e],
-  #       curr_aug_dat = proposed_aug_dat_step1,
-  #       proposed_aug_dat = proposed_aug_dat_step2,
-  #       theta = theta,
-  #       obs_dat = obs_dat,
-  #       index_dates = index_dates,
-  #       range_dates = range_dates)[2]}))
-
-  # # For the backwards move it is:
-  # corr_1_E0_to_E1_rev <-  - sum(
-  #   sapply(seq_along(date_idx_E0_to_E1), function(e) {
-  #     compute_p_accept_move_E(direction = "E0_to_E1",
-  #       i = i,
-  #       group_idx = group_idx,
-  #       date_idx = date_idx_E0_to_E1[e],
-  #       curr_aug_dat = proposed_aug_dat_rev2,
-  #       proposed_aug_dat = proposed_aug_dat_rev1,
-  #       theta = theta,
-  #       obs_dat = obs_dat,
-  #       index_dates = index_dates,
-  #       range_dates = range_dates)[2]}))
 
   ### Third type of move
   # Moving missing data

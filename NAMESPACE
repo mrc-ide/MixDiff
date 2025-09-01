@@ -2,6 +2,7 @@
 
 export(DiscrGamma)
 export(RunMCMC)
+export(calculate_obs_ratio)
 export(check_MCMC_settings)
 export(compute_autocorr)
 export(compute_correlations_mu_CV)

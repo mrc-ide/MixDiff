@@ -1361,6 +1361,37 @@ identify_affected_delays <- function(index_dates_group, all_changed_dates){
   return(which(affected_cols))
 }
 
+#' Calculate the change in observation log-likelihood
+#' 
+#' @description
+#' Calculate the change in the observation component of the log-likelihood
+#' between a proposed and current state.
+#' 
+#' @param proposed_dat Proposed augmented data (e.g. `proposed_aug_dat_step3`)
+#' @param current_dat Current augmented data (state before the new proposal)
+#' @param i Index for individual
+#' @param group_idx Index for group
+#' @param all_changed_dates Vector of all date indices that were modified
+#' @param obs_dat List of observed data
+#' @param range_dates Vector of overall date range
+#' 
+#' @export
+#' @return Numeric value of the log-ratio of observation likelihoods
+#' 
+calculate_obs_ratio <- function(proposed_dat, current_dat, i, group_idx,
+                                all_changed_dates, obs_dat, range_dates) {
+  
+  ratio <- sum(
+  LL_observation_term_by_group_delay_and_indiv(
+    proposed_dat, obs_dat, group_idx,
+    all_changed_dates, i, range_dates = range_dates
+    ) - LL_observation_term_by_group_delay_and_indiv(
+      current_dat, obs_dat, group_idx,
+      all_changed_dates, i, range_dates = range_dates)
+  )
+  return(ratio)
+}
+
 #' Performs one iteration of an MCMC move for the augmented data where the
 #'  indicators of error in observations for one individual are swapped, i.e.
 #'   the errors become non errors and vice versa.
@@ -1519,32 +1550,14 @@ swap_Ei <- function(i,
   )
 
   # Calculate the change in the observation likelihood term
-  ratio_post_obs <- sum(
-    LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, obs_dat, group_idx,
-      date_idx_E1_to_E0, i, range_dates = range_dates
-    ) - LL_observation_term_by_group_delay_and_indiv(
-      curr_aug_dat, obs_dat, group_idx,
-      date_idx_E1_to_E0, i, range_dates = range_dates)
-  ) + sum(
-    LL_observation_term_by_group_delay_and_indiv(
-      proposed_aug_dat_step3, obs_dat, group_idx,
-      date_idx_E0_to_E1, i, range_dates = range_dates
-    ) - LL_observation_term_by_group_delay_and_indiv(
-      curr_aug_dat, obs_dat, group_idx,
-      date_idx_E0_to_E1, i, range_dates = range_dates)
-  )
-
-  if(length(date_idx_resample) > 0) {
-    ratio_post_obs <- ratio_post_obs + sum(
-      LL_observation_term_by_group_delay_and_indiv(
-        proposed_aug_dat_step3, obs_dat, group_idx,
-        date_idx_resample, i, range_dates = range_dates
-      ) - LL_observation_term_by_group_delay_and_indiv(
-        curr_aug_dat, obs_dat, group_idx,
-        date_idx_resample, i, range_dates = range_dates)
-    )
-  }
+  ratio_post_obs <- calculate_obs_ratio(proposed_dat = proposed_aug_dat_step3,
+                                        current_dat = curr_aug_dat,
+                                        i = i,
+                                        group_idx = group_idx,
+                                        all_changed_dates = all_changed_dates,
+                                        obs_dat = obs_dat,
+                                        range_dates = range_dates)
+    
   ## should be the same as:
   # LL_observation_term(proposed_aug_dat_step3, obs_dat, range_dates) -
   # LL_observation_term(curr_aug_dat, obs_dat, range_dates)

@@ -1422,6 +1422,42 @@ calculate_error_ratio <- function(proposed_dat, current_dat, i, group_idx,
   return(ratio)
 }
 
+#' Calculates the change in the delay log-likelihood
+#'
+#' @description
+#' Calculate the change in the delay component of the log-likelihood
+#' between a proposed and current state.
+#' 
+#' @param proposed_dat Proposed augmented data (e.g. `proposed_aug_dat_step3`)
+#' @param current_dat Current augmented data (state before the new proposal)
+#' @param i Index for individual
+#' @param group_idx Index for group
+#' @param delay_idx Vector of delay indices affected by the date changes
+#' @param theta List of model parameters, including `mu` and `CV`
+#' @param obs_dat List of observed data
+#' @param index_dates List defining the delays
+#'
+#' @export
+#' @return Numeric value for the log-ratio of the delay likelihoods
+#' 
+calculate_delay_ratio <- function(proposed_dat, current_dat, i, group_idx,
+                                  delay_idx, theta, obs_dat, index_dates) {
+  
+  ratio <- 0
+  # Loop through each affected delay
+  for (d in delay_idx) {
+    ratio <- ratio + sum(
+      LL_delays_term_by_group_delay_and_indiv(
+        proposed_dat, theta, obs_dat, group_idx, d, i, index_dates
+      ) - LL_delays_term_by_group_delay_and_indiv(
+        current_dat, theta, obs_dat, group_idx, d, i, index_dates
+      )
+    )
+  }
+  return(ratio)
+}
+
+
 #' Performs one iteration of an MCMC move for the augmented data where the
 #'  indicators of error in observations for one individual are swapped, i.e.
 #'   the errors become non errors and vice versa.
@@ -1592,6 +1628,7 @@ swap_Ei <- function(i,
   # LL_observation_term(proposed_aug_dat_step3, obs_dat, range_dates) -
   # LL_observation_term(curr_aug_dat, obs_dat, range_dates)
 
+  # Calculate the change in the error likelihood term
   ratio_post_error <- calculate_error_ratio(proposed_dat = proposed_aug_dat_step3,
                                             current_dat = curr_aug_dat,
                                             i = i,
@@ -1604,16 +1641,16 @@ swap_Ei <- function(i,
   ## LL_error_term_slow(proposed_aug_dat_step3, theta, obs_dat) -
   ## LL_error_term_slow(curr_aug_dat, theta, obs_dat)
 
-  ratio_post_delay <- 0
-  for (d in delay_idx) {
-    ratio_post_delay <- ratio_post_delay + sum(
-      LL_delays_term_by_group_delay_and_indiv(
-        proposed_aug_dat_step3, theta, obs_dat, group_idx, d, i, index_dates
-      ) - LL_delays_term_by_group_delay_and_indiv(
-        curr_aug_dat, theta, obs_dat, group_idx, d, i, index_dates
-      )
-    )
-  }
+  # Calculate the change in the delay likelihood term
+  ratio_post_delay <- calculate_delay_ratio(proposed_dat = proposed_aug_dat_step3,
+                                            current_dat = curr_aug_dat,
+                                            i = i,
+                                            group_idx = group_idx,
+                                            delay_idx = delay_idx,
+                                            theta = theta,
+                                            obs_dat = obs_dat,
+                                            index_dates = index_dates)
+  
   ## should be the same as:
   # LL_delays_term(proposed_aug_dat_step3, theta, obs_dat, index_dates) -
   # LL_delays_term(curr_aug_dat, theta, obs_dat, index_dates)

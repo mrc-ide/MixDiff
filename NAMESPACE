@@ -2,6 +2,7 @@
 
 export(DiscrGamma)
 export(RunMCMC)
+export(calculate_delay_ratio)
 export(calculate_error_ratio)
 export(calculate_obs_ratio)
 export(check_MCMC_settings)

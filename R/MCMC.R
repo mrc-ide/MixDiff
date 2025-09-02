@@ -268,7 +268,9 @@ RunMCMC <- function(obs_dat,
                 (seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))
               ]
 
-            tmp <- move_Di(indices,
+            for (indiv_idx in indices) {
+            
+            tmp <- move_Di(indiv_idx,
                            g,
                            j,
                            curr_aug_dat,
@@ -283,6 +285,7 @@ RunMCMC <- function(obs_dat,
 
             # if accepted move, update accordingly
             if(tmp$accept == 1) curr_aug_dat <- tmp$new_aug_dat
+            }
           }
         }
       }

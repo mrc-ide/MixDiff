@@ -1682,23 +1682,9 @@ swap_Ei <- function(i,
 
   p_accept <- ratio_post + corr
 
-  if (p_accept > 0) p_accept <- 0
-  # print(p_accept)
-
-  # accept/reject step
-  tmp <- log(runif(1))
-  if (tmp < p_accept) { # accepting with a certain probability
-    new_aug_dat <- proposed_aug_dat_step3
-    accept <- 1
-  } else { # reject
-    new_aug_dat <- curr_aug_dat
-    accept <- 0
-  }
-
-  # return a list of size 2 where
-  #		the first value is the new augmented data set in the chain
-  #		the second value is 1 if the proposed value was accepted, 0 otherwise
-  res <- list(new_aug_dat = new_aug_dat, accept = accept)
+  res <- decide_acceptance(log_p_accept = p_accept,
+                           proposed_dat = proposed_aug_dat_step3,
+                           current_dat = curr_aug_dat)
 
   return(res)
 

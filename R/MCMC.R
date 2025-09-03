@@ -268,7 +268,7 @@ RunMCMC <- function(obs_dat,
                 (seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))
               ]
             
-            tmp <- move_Di(indiv_idx,
+            tmp <- move_Di(indices,
                            g,
                            j,
                            curr_aug_dat,

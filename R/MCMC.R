@@ -126,7 +126,7 @@
 #'
 #' # Set up MCMC
 #' MCMC_settings <- list(
-#' moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+#'   moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
 #'                     mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
 #'   moves_options = list(
 #'     fraction_Di_to_update = 1 / 10,
@@ -267,8 +267,6 @@ RunMCMC <- function(obs_dat,
               MCMC_settings$moves_options$move_D_by_groups_of_size * (i - 1) +
                 (seq_len(MCMC_settings$moves_options$move_D_by_groups_of_size))
               ]
-
-            for (indiv_idx in indices) {
             
             tmp <- move_Di(indiv_idx,
                            g,
@@ -285,7 +283,6 @@ RunMCMC <- function(obs_dat,
 
             # if accepted move, update accordingly
             if(tmp$accept == 1) curr_aug_dat <- tmp$new_aug_dat
-            }
           }
         }
       }

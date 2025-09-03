@@ -139,7 +139,7 @@ hyperparameters <- list(
 
 # Set up MCMC
 MCMC_settings <- list(
-moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
+  moves_switch = list(D_on = TRUE, E_on = TRUE, swapE_on = TRUE,
                     mu_on = TRUE, CV_on = TRUE, zeta_on = TRUE),
   moves_options = list(
     fraction_Di_to_update = 1 / 10,

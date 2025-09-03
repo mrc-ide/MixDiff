@@ -4,7 +4,7 @@
 \alias{date_to_int}
 \title{Convert date to integer corresponding to number of days from a given origin}
 \usage{
-date_to_int(date, origin = "1970-01-01")
+date_to_int(date, origin = as.Date("1970-01-01"))
 }
 \arguments{
 \item{date}{\code{Date} object to be converted to integer.}

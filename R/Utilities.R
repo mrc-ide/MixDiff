@@ -96,8 +96,14 @@ discr_gamma_sample <- function(n, mu, cv) {
 #' @export
 #' @examples
 #' date_to_int(as.Date("1970-01-01"))
-date_to_int <- function(date, origin = "1970-01-01") {
-  return(as.integer(date - as.Date(origin)))
+date_to_int <- function(date, origin = as.Date("1970-01-01")) {
+  if (!inherits(date, "Date")) {
+    stop("`date` argument must be a Date object. Use as.Date().")
+  }
+  if (!inherits(origin, "Date")) {
+    stop("`origin` argument must be a Date object. Use as.Date().")
+  }
+  return(as.integer(date - origin))
 }
 
 #' Convert integer to date, based on a given origin from which the integer
@@ -110,8 +116,14 @@ date_to_int <- function(date, origin = "1970-01-01") {
 #' @export
 #' @examples
 #' int_to_date(365)
-int_to_date <- function(int, origin = "1970-01-01") {
-  return(int + as.Date(origin))
+int_to_date <- function(int, origin = as.Date("1970-01-01")) {
+  if (!is.numeric(int)) {
+    stop("`int` argument must be numeric.")
+  }
+  if (!inherits(origin, "Date")) {
+    stop("`origin` argument must be a Date object. Use as.Date().")
+  }
+  return(int + origin)
 }
 
 ###----------------------------------------------------------------------------

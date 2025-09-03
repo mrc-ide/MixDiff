@@ -279,15 +279,20 @@ compute_delta_group_delay_and_indiv <- function(D, group_idx, indiv_idx,
 #'
 compute_delta <- function(D, index_dates) {
   
-  Delta <- lapply(seq_len(length(D)), function(g) {
-    m <- matrix(NA, nrow(D[[g]]), ncol(D[[g]]) - 1)
-    for (j in seq_len(ncol(m))) {
-      m[, j] <- D[[g]][, index_dates[[g]][, j][2]] -
-        D[[g]][, index_dates[[g]][, j][1]]
+  delta <- lapply(seq_len(length(D)), function(g) {
+
+    n_delays <- ncol(index_dates[[g]])
+    m <- matrix(NA, nrow(D[[g]]), n_delays)
+    
+    for (j in seq_len(n_delays)) {
+      date_col_to <- index_dates[[g]][2, j]
+      date_col_from <- index_dates[[g]][1, j]
+        
+      m[, j] <- D[[g]][, date_col_to] - D[[g]][, date_col_from]
     }
     return(m)
   })
-  return(Delta)
+  return(delta)
 }
 
 ###----------------------------------------------------------------------------

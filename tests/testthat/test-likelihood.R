@@ -1,262 +1,388 @@
+# Functions in LikelihoodPrior.R
+# - lprior_total (x)
+# - lprior_prob_error (x)
+# - lprior_params_delay (x)
+# - compute_n_errors (x)
+# - lposterior_total (x)
+# - LL_total (x)
+# - LL_observation_term (x)
+# - LL_observation_term_by_group_delay_and_indiv (x)
+# - LL_error_term (x)
+# - LL_error_term_by_group_delay_and_indiv (x)
+# - LL_delays_term (x)
+# - LL_delays_term_by_group_delay_and_indiv (x)
+
+#------------------------------------------------------------------------------
+# Priors
+#------------------------------------------------------------------------------
+
+# lprior_prob_error() ---------------------------------------------------------
+
+test_that("lprior_prob_error correcty calculates the log-prior for zeta", {
+  theta <- list(zeta = 0.1)
+  hyperparameters <- list(shape1_prob_error = 1, shape2_prob_error = 10)
+  out <- lprior_prob_error(theta, hyperparameters)
+  exp_out <- dbeta(theta$zeta,
+                   hyperparameters$shape1_prob_error,
+                   hyperparameters$shape2_prob_error,
+                   log = TRUE)
+  expect_equal(out, exp_out)
+})
+
+test_that("lprior_prob_error returns -Inf for zeta outside [0, 1]", {
+  hyperparameters <- list(shape1_prob_error = 1, shape2_prob_error = 10)
+  
+  # zeta > 1 should be impossible
+  theta_high <- list(zeta = 1.1)
+  expect_equal(lprior_prob_error(theta_high, hyperparameters), -Inf)
+  
+  # zeta < 0 should be impossible
+  theta_low <- list(zeta = -0.1)
+  expect_equal(lprior_prob_error(theta_low, hyperparameters), -Inf)
+})
+
+# lprior_params_delay() -------------------------------------------------------
+
+test_that("lprior_params_delay correctly calculates log-prior for mu and cv", {
+  theta <- list(zeta = 0.1,
+                mu = list(12, c(5, 10)),
+                CV = list(0.15, c(0.3, 0.2)))
+  hyperparameters <- list(shape1_prob_error = 1, shape2_prob_error = 10,
+                          mean_mean_delay = 15, mean_CV_delay = 1)
+  all_mu <- unlist(theta$mu)
+  mu_out <- lprior_params_delay("mu", theta, hyperparameters)
+  mu_exp <- sum(dexp(all_mu,
+                     rate = 1 / hyperparameters$mean_mean_delay,
+                     log = TRUE))
+  expect_equal(mu_out, mu_exp)
+  
+  all_cv <- unlist(theta$CV)
+  cv_out <- lprior_params_delay("CV", theta, hyperparameters)
+  cv_exp <- sum(dexp(all_cv,
+                     rate = 1 / hyperparameters$mean_mean_delay,
+                     log = TRUE))
+  expect_equal(cv_out, cv_exp)
+})
+
+# lprior_total() -------------------------------------------------------
+
+test_that("lprior_total correctly sums individual log priors", {
+  theta <- list(zeta = 0.1,
+                mu = list(12, c(5, 10)),
+                CV = list(0.15, c(0.3, 0.2)))
+  hyperparameters <- list(shape1_prob_error = 1, shape2_prob_error = 10,
+                          mean_mean_delay = 15, mean_CV_delay = 1)
+  prior_zeta <- lprior_prob_error(theta, hyperparameters)
+  prior_mu <- lprior_params_delay("mu", theta, hyperparameters)
+  prior_cv <- lprior_params_delay("CV", theta, hyperparameters)
+  
+  out <- lprior_total(theta, hyperparameters)
+  exp <- prior_zeta + prior_mu + prior_cv
+  
+  expect_equal(out, exp)
+})
+
+#------------------------------------------------------------------------------
+# Observation terms
+#------------------------------------------------------------------------------
+
 # LL_observation_term_by_group_delay_and_indiv() ------------------------------
 
-test_that("LL_observation_term_by_group_delay_and_indiv handles E = 0", {
+test_that("LL_observation_term_by_group_delay_and_indiv works correctly", {
+  obs_dat <- list(matrix(c(10, 15, 26,
+                           11, NA, 30),
+                         nrow = 2, byrow = TRUE))
   
-  # create aug_dat with all correct dates
-  aug_dat <- list(
-    D = list(matrix(c(1, 2, 3), nrow = 3, ncol = 1)),
-    E = list(matrix(0, nrow = 3, ncol = 1))
-  )
-  obs_dat <- list(matrix(c(1, 2, 3), nrow = 3, ncol = 1))
-  theta <- list(zeta = 0.1)
+  aug_dat <- list(D = list(matrix(c(10, 15, 25, # date 3 is actually 25
+                                    11, 19, 30),  # date 2 is actually 19
+                                  nrow = 2, byrow = TRUE)),
+                  E = list(matrix(c(0, 0, 1, # date 3 recorded with error
+                                    0, -1, 0), # date 2 was missing
+                                  nrow = 2, byrow = TRUE)))
   
-  ll <- LL_observation_term_by_group_delay_and_indiv(
-    aug_dat, theta, obs_dat, group_idx = 1,
-    date_idx = 1, indiv_idx = 1:3,
-    range_dates = c(1, 10)
-  )
+  range_dates <- c(1, 50)
   
-  expect_true(all(ll == 0)) # correct obs gives 0 log-likelihood
+  # indiv 1, date 1 = no error, dates in aug_dat and obs_dat match -> log(1) = 0
+  out_match <- LL_observation_term_by_group_delay_and_indiv(
+    aug_dat, obs_dat, group_idx = 1, date_idx = 1, indiv_idx = 1, range_dates)
+  expect_equal(out_match[1,1], 0)
+  
+  # indiv 1, date 3 = error (dates don't match) -> log(1 / (50-1))
+  # assumes true date could be any date within range_dates with equal prob
+  # K = 1 / diff(range_dates)
+  out_error <- LL_observation_term_by_group_delay_and_indiv(
+    aug_dat, obs_dat, group_idx = 1, date_idx = 3, indiv_idx = 1, range_dates)
+  expect_equal(out_error[1,1], log(1 / as.numeric(diff(range_dates))))
+  
+  # indiv 2, date 2 = missing -> log(1 / (50-1))
+  # same as above - date could be any date within range_dates with equal prob
+  out_missing <- LL_observation_term_by_group_delay_and_indiv(
+    aug_dat, obs_dat, group_idx = 1, date_idx = 2, indiv_idx = 2, range_dates)
+  expect_equal(out_missing[1,1], log(1 / as.numeric(diff(range_dates))))
+  
+  # sanity check - no error, but data mismatch -> log(0) = -1e5
+  # this shouldn't be possible, if there's no error then aug_dat = obs_dat
+  # to avoid problems with -Inf, it is replaced by a large negative number
+  aug_dat_mismatch <- aug_dat
+  aug_dat_mismatch$D[[1]][1, 1] <- 99 # force a mismatch
+  out_mismatch <- LL_observation_term_by_group_delay_and_indiv(
+    aug_dat_mismatch, obs_dat, group_idx = 1, date_idx = 1, indiv_idx = 1,
+    range_dates)
+  expect_equal(out_mismatch[1, 1], -1e5)
 })
 
-test_that("LL_observation_term_by_group_delay_and_indiv handles E = 1", {
-  
-  # create aug_dat with all incorrect dates
-  aug_dat <- list(
-    D = list(matrix(c(5, 5, 5), nrow = 3, ncol = 1)),
-    E = list(matrix(1, nrow = 3, ncol = 1))
-  )
-  obs_dat <- list(matrix(c(9, 9, 9), nrow = 3, ncol = 1))
-  theta <- list(zeta = 0.1)
-  
-  ll <- LL_observation_term_by_group_delay_and_indiv(
-    aug_dat, theta, obs_dat, group_idx = 1,
-    date_idx = 1, indiv_idx = 1:3,
-    range_dates = c(1, 10)
-  )
-  
-  expect_true(all(is.finite(ll)))
-  # If the true date is incorrectly observed then any date in the valid range
-  # is equally likely (uniform probability of drawing any date in range_dates)
-  # K = 1 / diff(range_dates) = 1/9
-  expect_true(all(ll == log(1/9)))
+test_that("LL_observation_term correctly sums individual likelihoods", {
+  obs_dat <- list(matrix(c(10, 15, 26,
+                           11, NA, 30),
+                         nrow = 2, byrow = TRUE))
+  aug_dat <- list(D = list(matrix(c(10, 15, 25, # date 3 is actually 25
+                                    11, 19, 30),  # date 2 is actually 19
+                                  nrow = 2, byrow = TRUE)),
+                  E = list(matrix(c(0, 0, 1, # date 3 recorded with error
+                                    0, -1, 0), # date 2 was missing
+                                  nrow = 2, byrow = TRUE)))
+  range_dates <- c(1, 50)
+  out <- LL_observation_term(aug_dat, obs_dat, range_dates)
+  # sum of all individual observation likelihoods
+  manual_sum <- sum(LL_observation_term_by_group_delay_and_indiv(
+    aug_dat, obs_dat, group_idx = 1, 
+    date_idx = seq_len(ncol(aug_dat$D[[1]])), 
+    indiv_idx = seq_len(nrow(aug_dat$D[[1]])), 
+    range_dates
+  ))
+  expect_equal(out, manual_sum)
 })
+
+
+#------------------------------------------------------------------------------
+# Error terms
+#------------------------------------------------------------------------------
 
 # compute_n_errors() ----------------------------------------------------------
 
 test_that("compute_n_errors correctly counts errors and recorded dates", {
-  aug_dat <- list(E = list(
-    matrix(c( 1,  0, -1,
-              0,  1,  1), nrow = 2)
-  ))
-  
-  obs_dat <- NULL
-  
-  result <- compute_n_errors(aug_dat, obs_dat)
-  
+  aug_dat <- list(E = list(matrix(c( 1,  0, -1,
+                                     0,  1,  1), nrow = 2, byrow = TRUE)))
+  result <- compute_n_errors(aug_dat)
   expect_equal(result[1], 3) # number of errors
   expect_equal(result[2], 5) # number of recorded dates
+})
+
+# LL_error_term_by_group_delay_and_indiv() ------------------------------------
+
+test_that("LL_error_term_by_group_delay_and_indiv works correctly", {
+  obs_dat <- list(matrix(c(10, 15, 26,
+                           11, NA, 30),
+                         nrow = 2, byrow = TRUE))
+  aug_dat <- list(D = list(matrix(c(10, 15, 25, # date 3 is actually 25
+                                    11, 19, 30),  # date 2 is actually 19
+                                  nrow = 2, byrow = TRUE)),
+                  E = list(matrix(c(0, 0, 1, # date 3 recorded with error
+                                    0, -1, 0), # date 2 was missing
+                                  nrow = 2, byrow = TRUE)))
+  theta <- list(
+    zeta = 0.1, # 10% chance of error
+    mu = list(c(5, 10)), # Mean delays
+    CV = list(c(0.2, 0.3))  # CV for delays
+  )
+  
+  # indiv 1, date 1 is E = 0 (no error) -> log(1 - zeta)
+  out_correct <- LL_error_term_by_group_delay_and_indiv(
+    aug_dat, theta, group_idx = 1, date_idx = 1, indiv_idx = 1)
+  expect_equal(out_correct[1, 1], log(1 - theta$zeta))
+  
+  # indiv 1, date 3 is E = 1 (error) -> log(zeta)
+  out_error <- LL_error_term_by_group_delay_and_indiv(
+    aug_dat, theta, group_idx = 1, date_idx = 3, indiv_idx = 1)
+  expect_equal(out_error[1, 1], log(theta$zeta))
+  
+  # indiv 2, date 2 is E = -1 (missing) -> 0
+  out_missing <- LL_error_term_by_group_delay_and_indiv(
+    aug_dat, theta, group_idx = 1, date_idx = 2, indiv_idx = 2)
+  expect_equal(out_missing[1, 1], 0)
 })
 
 # LL_error_term() -------------------------------------------------------------
 
 test_that("LL_error_term returns expected log-prob with known errors", {
-  aug_dat <- list( E = list(matrix(c(1, 0, -1, 1), nrow = 2)))
-  obs_dat <- list(matrix(1:4, nrow = 2))
+  aug_dat <- list(E = list(matrix(c(1, 0, -1, 1), nrow = 2)))
   theta <- list(zeta = 0.25)
-  
-  result <- LL_error_term(aug_dat, theta, obs_dat)
-  
+  result <- LL_error_term(aug_dat, theta)
   # 2 errors, 1 correct, 1 missing -> 3 recorded values in total
-  # 2 recorded with error = log(0.25) * 2, and 1 recorded correctly = log(0.75) * 1
+  # 2 recorded with error = log(0.25) * 2, 1 recorded correctly = log(0.75) * 1
   expected <- log(0.25) * 2 + log(0.75) * 1
   expect_equal(result, expected)
 })
 
+test_that("LL_error_term aggregates errors across multiple groups", {
+  aug_dat <- list(E = list(matrix(c(1, 0, 0, 0), nrow = 2), 
+                           matrix(c(1, 1, 0, 0), nrow = 2)))
+  theta <- list(zeta = 0.25)
+  # 3 errors, 5 correct
+  result <- LL_error_term(aug_dat, theta)
+  expected <- log(0.25) * 3 + log(1 - 0.25) * 5
+  expect_equal(result, expected)
+})
+
+
+#------------------------------------------------------------------------------
+# Delay terms
+#------------------------------------------------------------------------------
 
 # LL_delays_term_by_group_delay_and_indiv() -----------------------------------
 
-test_that("LL_delays_term_by_group_delay_and_indiv returns valid log-density", {
-  aug_dat <- list(
-    D = list(matrix(c(1, 6), ncol = 2))
-  )
-  obs_dat <- list(matrix(NA, nrow = 1, ncol = 2))
-  theta <- list(mu = list(5), CV = list(0.5))
+test_that("LL_delays_term_by_group_delay_and_indiv handles one individual", {
+  aug_dat <- list(D = list(matrix(c(10, 20,
+                                    12, 25), nrow = 2, byrow = TRUE)))
+  obs_dat <- aug_dat$D
   index_dates <- list(matrix(c(1, 2), nrow = 2))
+  theta <- list(mu = list(10), CV = list(0.15))
   
-  log_ll <- LL_delays_term_by_group_delay_and_indiv(
-    aug_dat, theta, obs_dat, group_idx = 1,
-    delay_idx = 1, indiv_idx = 1,
+  ll_out <- LL_delays_term_by_group_delay_and_indiv(
+    aug_dat, theta, obs_dat, 
+    group_idx = 1, delay_idx = 1, indiv_idx = 2, 
+    index_dates = index_dates
+  )
+
+  # for group 1, indiv 1, the delay is 25 - 12 = 13
+  expected_ll <- DiscrGamma(k = 13, 
+                            mu = theta$mu[[1]], 
+                            cv = theta$CV[[1]], 
+                            log = TRUE)
+  
+  expect_equal(ll_out, expected_ll)
+})
+
+test_that("LL_delays_term_by_group_delay_and_indiv handles multiple individuals", {
+  aug_dat <- list(D = list(matrix(c(100, 110, 130,
+                                    105, 120, 145), nrow = 2, byrow = TRUE)))
+  obs_dat <- aug_dat$D
+  index_dates <- list(matrix(c(2, 3), nrow = 2))
+  theta <- list(mu = list(20), CV = list(0.15))
+  
+  ll_out <- LL_delays_term_by_group_delay_and_indiv(
+    aug_dat, theta, obs_dat, 
+    group_idx = 1, delay_idx = 1, indiv_idx = c(1, 2), 
     index_dates = index_dates
   )
   
-  expect_type(log_ll, "double")
-  expect_true(is.finite(log_ll))
+  # delays are: 130 - 110 = 20 (indiv 1), 145 - 120 = 25 (indiv 2)
+  delays <- c(20, 25)
+  expected_ll_vec <- DiscrGamma(k = delays, 
+                                mu = theta$mu[[1]], 
+                                cv = theta$CV[[1]], 
+                                log = TRUE)
+  
+  expect_equal(ll_out, expected_ll_vec)
 })
 
+# LL_delays_term() ------------------------------------------------------------
 
-test_that("LL_delays_term_by_group_delay_and_indiv handles >2 delays", {
-  theta <- list(mu = list(c(5, 10, 15)), CV = list(c(0.5, 0.5, 0.5)))
-  aug_dat <- list(
-    # dates: 1) onset, 2) hosp, 3) disch, 4) report
-    D = list(matrix(c(1, 6, 16, 21), nrow = 1))
-  )
-  obs_dat <- list(matrix(NA, nrow = 1, ncol = 4))
-  index_dates <- list(
-    cbind(c(1, 2), c(2, 3), c(1, 4))  # three delays
-  )
+test_that("LL_delays_term correctly sums individual likelihoods", {
+  aug_dat <- list(D = list(matrix(c(10, 20,
+                                    12, 25), nrow = 2, byrow = TRUE),
+                           matrix(c(100, 110, 130, 135,
+                                    105, 120, 145, 140), nrow = 2, byrow = TRUE)))
+  obs_dat <- aug_dat$D
+  index_dates <- list(matrix(c(1, 2), nrow = 2),
+                      matrix(c(1, 2, 1,
+                               2, 3, 4), nrow = 2, byrow = TRUE))
+  theta <- list(mu = list(11.5, c(12.5, 22.5, 40)),
+                CV = list(0.15, c(0.15, 0.15, 0.15)))
   
-  # Check all delay likelihoods are finite
-  lls <- purrr::map_dbl(1:3, function(d) {
-    LL_delays_term_by_group_delay_and_indiv(
-      aug_dat, theta, obs_dat, group_idx = 1,
-      delay_idx = d, indiv_idx = 1,
-      index_dates = index_dates
-    )
-  })
+  total_ll_out <- LL_delays_term(aug_dat, theta, obs_dat, index_dates)
   
-  expect_true(all(is.finite(lls)))
+  # manually calculate the total by summing the parts
+  ll_g1_d1 <- sum(DiscrGamma(c(10, 13), theta$mu[[1]], theta$CV[[1]], log = TRUE))
+  ll_g2_d1 <- sum(DiscrGamma(c(10, 15), theta$mu[[2]][1], theta$CV[[2]][1], log = TRUE))
+  ll_g2_d2 <- sum(DiscrGamma(c(20, 25), theta$mu[[2]][2], theta$CV[[2]][2], log = TRUE))
+  ll_g2_d3 <- sum(DiscrGamma(c(35, 35), theta$mu[[2]][3], theta$CV[[2]][3], log = TRUE))
+  expected_total_ll <- ll_g1_d1 + ll_g2_d1 + ll_g2_d2 + ll_g2_d3
+  
+  expect_equal(total_ll_out, expected_total_ll)
 })
+
+test_that("LL_delays_term returns a single numeric value", {
+  aug_dat <- list(D = list(matrix(c(10, 20, 12, 25), nrow = 2, byrow = TRUE)))
+  obs_dat <- aug_dat$D
+  index_dates <- list(matrix(c(1, 2), nrow = 2))
+  theta <- list(mu = list(11), CV = list(0.15))
+  
+  ll_out <- LL_delays_term(aug_dat, theta, obs_dat, index_dates)
+  
+  expect_true(is.numeric(ll_out))
+  expect_length(ll_out, 1)
+})
+
+#------------------------------------------------------------------------------
+# Total
+#------------------------------------------------------------------------------
 
 # LL_total() ------------------------------------------------------------------
 
-test_that("LL_total returns finite value for simple valid input", {
-  theta <- list(mu = list(5), CV = list(0.5), zeta = 0.1)
-  index_dates <- list(matrix(c(1, 2), nrow = 2))
+test_that("LL_total correctly sums all likelihood components", {
+  aug_dat <- list(D = list(matrix(c(10, 20,
+                                    12, 25), nrow = 2, byrow = TRUE),
+                           matrix(c(100, 110, 130, 135,
+                                    105, 120, 145, 140), nrow = 2, byrow = TRUE)),
+                  E = list(matrix(c(0, 1,
+                                    0, 0), nrow = 2, byrow = TRUE),
+                           matrix(c(0, 1, -1, 0,
+                                    0, 0, 0, 1), nrow = 2, byrow = TRUE)))
+  obs_dat <- list(matrix(c(10, 50,
+                           12, 25), nrow = 2, byrow = TRUE),
+                  matrix(c(100, 80, NA, 135,
+                           105, 120, 145, 200), nrow = 2, byrow = TRUE))
   
-  aug_dat <- list(
-    D = list(matrix(c(1, 6), ncol = 2, byrow = TRUE)),
-    E = list(matrix(c(0, 1), ncol = 2))
-  )
-  obs_dat <- list(matrix(c(1, 3), ncol = 2))
+  index_dates <- list(matrix(c(1, 2), nrow = 2),
+                      matrix(c(1, 2, 1,
+                               2, 3, 4), nrow = 2, byrow = TRUE))
+  theta <- list(zeta = 0.1,
+                mu = list(11.5, c(12.5, 22.5, 40)),
+                CV = list(0.15, c(0.15, 0.15, 0.15)))
+  range_dates <- c(1, 150)
   
-  result <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates = c(1, 10))
+  out <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates)
   
-  expect_type(result, "double")
-  expect_true(is.finite(result))
+  exp_out <- LL_observation_term(aug_dat, obs_dat, range_dates) +
+    LL_error_term(aug_dat, theta) +
+    LL_delays_term(aug_dat, theta, obs_dat, index_dates)
+  
+  expect_equal(out, exp_out)
 })
 
-
-test_that("LL_total works for group with >2 delays", {
-  theta <- list(
-    mu = list(c(5, 10, 15)),
-    CV = list(c(0.5, 0.5, 0.5)),
-    zeta = 0.1
-  )
-  index_dates <- list(
-    cbind(c(1, 2), c(2, 3), c(1, 4))  # three delays
-  )
-  
-  D <- matrix(c(1, 6, 16, 21), nrow = 1)
-  E <- matrix(0, nrow = 1, ncol = 4)
-  
-  aug_dat <- list(D = list(D), E = list(E))
-  obs_dat <- list(D) # assume perfectly observed
-  
-  result <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates = c(1, 30))
-  
-  expect_type(result, "double")
-  expect_true(is.finite(result))
-})
-
-
-# lprior_prob_error() ---------------------------------------------------------
-
-test_that("find_params_beta returns valid beta parameters", {
-  param_beta <- find_params_beta(mean = 0.2, var = 0.01)
-
-  # Check structure
-  expect_type(param_beta, "double")
-  expect_length(param_beta, 2)
-  expect_true(all(param_beta > 0))
-  
-})
-
-test_that("lprior_prob_error works as expected", {
-  param_beta <- find_params_beta(mean = 0.2, var = 0.01)
-  theta <- list(zeta = 0.2)
-  hyperparams <- list(shape1_prob_error = param_beta[1],
-                      shape2_prob_error = param_beta[2])
-  
-  log_prior <- lprior_prob_error(theta, hyperparams)
-  
-  expect_type(log_prior, "double")
-  expect_true(is.finite(log_prior))
-})
-
-# lprior_params_delay() -------------------------------------------------------
-
-test_that("lprior_params_delay returns finite log-density for valid delays", {
-  theta <- list(
-    mu = list(c(5, 10), c(7, 8)),
-    CV = list(c(0.5, 0.6), c(0.4, 0.7))
-  )
-  hyperparams <- list(mean_mean_delay = 10, mean_CV_delay = 10)
-  
-  log_prior_mu <- lprior_params_delay("mu", theta, hyperparams)
-  log_prior_cv <- lprior_params_delay("CV", theta, hyperparams)
-  
-  expect_type(log_prior_mu, "double")
-  expect_type(log_prior_cv, "double")
-  expect_true(is.finite(log_prior_mu))
-  expect_true(is.finite(log_prior_cv))
-})
-
-# lprior_total() -------------------------------------------------------
-
-test_that("lprior_total combines priors correctly and returns finite value", {
-  theta <- list(
-    mu = list(c(5, 10), c(7, 8)),
-    CV = list(c(0.5, 0.6), c(0.4, 0.7)),
-    zeta = 0.1
-  )
-  
-  hyperparams <- list(
-    shape1_prob_error = 3,
-    shape2_prob_error = 12,
-    mean_mean_delay = 100,
-    mean_CV_delay = 100
-  )
-  
-  log_prior <- lprior_total(theta, hyperparams)
-  
-  expect_type(log_prior, "double")
-  expect_true(is.finite(log_prior))
-})
 
 # lposterior_total() -------------------------------------------------------
 
-test_that("lposterior_total returns finite value for simulated data", {
-
-  set.seed(10)
-  theta <- list(
-    prop_missing_data = 0.2,
-    zeta = 0.05,
-    mu = list(5, c(10, 15)),
-    CV = list(0.5, c(0.5, 0.5))
-  )
-  n_groups <- 2
-  n_per_group <- c(10, 10)
-  range_dates <- date_to_int(c(as.Date("01/01/2014", "%d/%m/%Y"),
-                               as.Date("01/01/2015", "%d/%m/%Y")))
+test_that("lposterior_total correctly sums likelihood and prior", {
+  aug_dat <- list(D = list(matrix(c(10, 20,
+                                    12, 25), nrow = 2, byrow = TRUE),
+                           matrix(c(100, 110, 130, 135,
+                                    105, 120, 145, 140), nrow = 2, byrow = TRUE)),
+                  E = list(matrix(c(0, 1,
+                                    0, 0), nrow = 2, byrow = TRUE),
+                           matrix(c(0, 1, -1, 0,
+                                    0, 0, 0, 1), nrow = 2, byrow = TRUE)))
+  obs_dat <- list(matrix(c(10, 50,
+                           12, 25), nrow = 2, byrow = TRUE),
+                  matrix(c(100, 80, NA, 135,
+                           105, 120, 145, 200), nrow = 2, byrow = TRUE))
+  
   index_dates <- list(matrix(c(1, 2), nrow = 2),
-                      cbind(c(1, 2), c(1, 3)))
+                      matrix(c(1, 2, 1,
+                               2, 3, 4), nrow = 2, byrow = TRUE))
+  theta <- list(zeta = 0.1,
+                mu = list(11.5, c(12.5, 22.5, 40)),
+                CV = list(0.15, c(0.15, 0.15, 0.15)))
+  range_dates <- c(1, 150)
+  hyperparameters <- list(shape1_prob_error = 1, shape2_prob_error = 10,
+                          mean_mean_delay = 15, mean_CV_delay = 1)
   
-  D <- simul_true_data(theta, n_per_group, range_dates, index_dates,
-                       simul_error = TRUE)
+  out <- lposterior_total(aug_dat, theta, obs_dat,
+                          hyperparameters, index_dates, range_dates)
   
-  aug_dat <- list(D = D$true_dat, E = D$E)
-  obs_dat <- D$obs_dat
+  exp_out <- LL_total(aug_dat, theta, obs_dat, index_dates, range_dates) +
+    lprior_total(theta, hyperparameters)
   
-  hyperparams <- list(
-    shape1_prob_error = 3,
-    shape2_prob_error = 12,
-    mean_mean_delay = 100,
-    mean_CV_delay = 100
-  )
-  
-  log_post <- lposterior_total(aug_dat, theta, obs_dat, hyperparams, index_dates)
-  
-  expect_type(log_post, "double")
-  expect_true(is.finite(log_post))
+  expect_equal(out, exp_out)
 })
